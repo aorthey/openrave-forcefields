@@ -1,0 +1,19 @@
+<robot name="point">
+  <kinbody name="spoint">
+    <body name="circle" type="dynamic">
+      <offsetfrom>Base</offsetfrom>
+      <translation>0.0  0.0  0.0</translation>
+      <mass type="cylinder">
+        <total>5</total>
+        <radius>0.1</radius>
+        <height>0.02</height>
+      </mass>
+      <geom type="cylinder">
+        <rotationaxis>1 0 0 90</rotationaxis>
+        <radius>0.1</radius>
+        <height>0.02</height>
+        <diffusecolor>0.05 0.05 0.05</diffusecolor>
+      </geom>
+    </body>
+  </kinbody>
+</robot>
