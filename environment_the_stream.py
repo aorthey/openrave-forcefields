@@ -16,10 +16,10 @@ class EnvironmentTheStream(ForceEnvironment):
 
         def GetForces(self):
                 ##
-                F1=numpy.array((1.0,0.0,0.0))
-                F2=numpy.array((0.0,-3.0,0.0))
-                F3=numpy.array((0.0,0.0,0.0))
-                self.forces = [F1,F2,F3]
+                self.forces=[]
+                self.forces.append(numpy.array((0.0,0.0,0.0)))
+                self.forces.append(numpy.array((0.0,-3.0,0.0)))
+                self.forces.append(numpy.array((0.0,0.0,0.0)))
                 return self.forces
 
         def RobotGetInitialPosition(self):
@@ -27,7 +27,6 @@ class EnvironmentTheStream(ForceEnvironment):
 
         def RobotGetGoalPosition(self):
                 return [4.0,2.0]
-
 
 
 

@@ -59,6 +59,7 @@ class ForceEnvironment():
                                    pointsize=0.15,
                                    colors=array(((0.0,1.0,0.0))),
                                    drawstyle=1))
+                return self.robot
 
 
         def DisplayForces(self):
