@@ -1,10 +1,10 @@
-from environment import *
+from environment_force import *
 import openravepy
 
-class EnvironmentTheStream(ForceEnvironment):
+class EnvironmentTheCounterStream(ForceEnvironment):
         def __init__(self):
                 ForceEnvironment.__init__(self)
-                xmlenv='environments/the_stream.env.xml'
+                xmlenv='environments/the_counterstream.env.xml'
                 xmlrobot='robots/pointrobot.robot.xml'
                 self.setrobotenv(xmlrobot,xmlenv)
 
@@ -18,15 +18,18 @@ class EnvironmentTheStream(ForceEnvironment):
                 ##
                 self.forces=[]
                 self.forces.append(numpy.array((0.0,0.0,0.0)))
-                self.forces.append(numpy.array((0.0,-3.0,0.0)))
+                self.forces.append(numpy.array((0.0,0.0,0.0)))
+                self.forces.append(numpy.array((3.0,0.0,0.0)))
+                self.forces.append(numpy.array((-3.0,0.0,0.0)))
                 self.forces.append(numpy.array((0.0,0.0,0.0)))
                 return self.forces
 
         def RobotGetInitialPosition(self):
-                return [-4.0,-2.5]
+                return [-2.0,1.0]
 
         def RobotGetGoalPosition(self):
-                return [4.0,2.0]
+                return [5.0,-3.0]
+
 
 
 
