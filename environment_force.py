@@ -153,18 +153,19 @@ class ForceEnvironment():
 
 
         def DisplayForces(self):
-                if self.forces is None:
-                        self.forces = self.GetForces()
-                if self.cells is None:
-                        self.cells = self.GetCells()
+                with self.env:
+                        if self.forces is None:
+                                self.forces = self.GetForces()
+                        if self.cells is None:
+                                self.cells = self.GetCells()
 
-                assert(len(self.forces)==len(self.GetCells()))
+                        assert(len(self.forces)==len(self.GetCells()))
 
-                for i in range(0,len(self.cells)):
-                        h = self.DrawBorderAroundCell(self.cells[i])
-                        self.handles.append(h)
-                        h = self.DrawForceArrowsInCell(self.cells[i], self.forces[i])
-                        self.handles.append(h)
+                        for i in range(0,len(self.cells)):
+                                h = self.DrawBorderAroundCell(self.cells[i])
+                                self.handles.append(h)
+                                h = self.DrawForceArrowsInCell(self.cells[i], self.forces[i])
+                                self.handles.append(h)
 
 if __name__ == "__main__":
         env = ForceEnvironment()

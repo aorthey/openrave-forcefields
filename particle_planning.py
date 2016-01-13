@@ -162,8 +162,8 @@ if __name__ == "__main__":
     #        handles[0].SetTransform(Hr)
     #        handles[1].SetTransform(Hr)
 
-    #with env:
-        #L = robot.GetLinks()[1]
-        #physics.SetBodyForce(L,array((-5.0,0.0,0.0)),array((0.0,0.0,0.0)),True)
+    with env:
+        L = robot.GetLinks()[1]
+        physics.SetBodyForce(L,array((-5.0,0.0,0.0)),array((0.0,0.0,0.0)),True)
 
     raw_input('Enter any key to quit. ')
