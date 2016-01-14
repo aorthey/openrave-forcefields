@@ -1,0 +1,36 @@
+<robot name="point">
+  <kinbody name="spoint">
+    <body name="circle" type="dynamic">
+      <offsetfrom>Base</offsetfrom>
+      <translation>0.0  0.0  0.1</translation>
+      <mass type="cylinder">
+        <total>5</total>
+        <radius>0.1</radius>
+        <height>0.1</height>
+      </mass>
+      <geom type="cylinder">
+        <rotationaxis>1 0 0 90</rotationaxis>
+        <radius>0.1</radius>
+        <height>0.1</height>
+        <diffusecolor>0.05 0.05 0.05</diffusecolor>
+      </geom>
+    </body>
+    <body name="direct0r" type="dynamic">
+      <offsetfrom>Base</offsetfrom>
+      <translation>-0.05  0.0  0.12</translation>
+      <mass type="box">
+        <total>0</total>
+        <extents>0.05 0.02 0.02</extents>
+      </mass>
+      <geom type="box">
+        <extents>0.05 0.02 0.02</extents>
+        <diffusecolor>0.05 0.95 0.05</diffusecolor>
+      </geom>
+    </body>
+    <joint type="hinge" enable="false">
+      <body>circle</body>
+      <body>direct0r</body>
+      <limits>0 0</limits>
+    </joint>
+  </kinbody>
+</robot>

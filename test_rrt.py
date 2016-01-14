@@ -46,13 +46,14 @@ if __name__ == "__main__":
         with env.env:
                 #robot.SetActiveDOFs([],openravepy.DOFAffine.X|openravepy.DOFAffine.Y|openravepy.DOFAffine.Z,[0,0,1])
                 robot.SetActiveDOFs([],
-                                openravepy.DOFAffine.X|openravepy.DOFAffine.Y|openravepy.DOFAffine.Z|openravepy.DOFAffine.RotationAxis,
-                                [0,0,0,1])
+                                openravepy.DOFAffine.X|openravepy.DOFAffine.Y|openravepy.DOFAffine.RotationAxis,
+                                [0,0,1])
 
         basemanip = interfaces.BaseManipulation(robot) # create the interface
         with env.env:
                 goal = env.RobotGetGoalPosition()
-                res = basemanip.MoveActiveJoints(goal = [goal[0],goal[1],0,0.14], execute=True, outputtrajobj = True)
+                print goal
+                res = basemanip.MoveActiveJoints(goal = [goal[0],goal[1],0.14], execute=True, outputtrajobj = True)
 
         N = res.GetNumWaypoints()
         W=[]
