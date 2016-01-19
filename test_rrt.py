@@ -2,6 +2,7 @@
 import time
 import openravepy
 import scipy
+import numpy as np
 from math import *
 from environment_force_the_stream import *
 from environment_force_the_counterstream import *
@@ -37,17 +38,18 @@ if __name__ == "__main__":
 
         #with self.env:
         #    self.robot.SetAffineTranslationLimits(envmin,envmax)
-        #    self.robot.SetAffineTranslationMaxVels([0.3,0.3,0.3])
-        #    self.robot.SetAffineRotationAxisMaxVels(np.ones(4))
         #    self.robot.SetActiveDOFs([],
         #        openravepy.DOFAffine.X|openravepy.DOFAffine.Y|openravepy.DOFAffine.RotationAxis,
         #        [0,0,1])
 
         with env.env:
                 #robot.SetActiveDOFs([],openravepy.DOFAffine.X|openravepy.DOFAffine.Y|openravepy.DOFAffine.Z,[0,0,1])
+                #robot.SetAffineTranslationMaxVels([0.3,0.3,0.3])
+                #robot.SetAffineRotationAxisMaxVels(np.ones(4))
                 robot.SetActiveDOFs([],
                                 openravepy.DOFAffine.X|openravepy.DOFAffine.Y|openravepy.DOFAffine.RotationAxis,
                                 [0,0,1])
+
 
         basemanip = interfaces.BaseManipulation(robot) # create the interface
         with env.env:

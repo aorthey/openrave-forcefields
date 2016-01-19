@@ -55,15 +55,21 @@ class ForceEnvironment():
         def GetRobot(self):
                 with self.env:
                         self.robot = self.env.GetRobots()[0]
-                        [x,y]=self.RobotGetInitialPosition()
-                        H = self.robot.GetTransform()
-                        H[0,3] = x
-                        H[1,3] = y
-                        self.robot.SetTransform(H)
+                        [xi,yi]=self.RobotGetInitialPosition()
+
+                        self.robot.SetDOFLimits((-10,-10),(5,5))
+                        self.robot.SetDOFValues((xi,yi))
+                        self.robot.SetDOFVelocities((0.001,0.001))
+
                         [xg,yg]=self.RobotGetGoalPosition()
                         self.handles.append(self.env.plot3(points=array(((xg,yg,0.05))),
                                            pointsize=0.15,
-                                           colors=array(((0.0,1.0,0.0))),
+                                           colors=array(((1.0,0.0,0.0))),
+                                           drawstyle=1))
+
+                        self.handles.append(self.env.plot3(points=array(((xi,yi,0.05))),
+                                           pointsize=0.15,
+                                           colors=array(((0.0,1.0,0.0,0.2))),
                                            drawstyle=1))
                         return self.robot
 

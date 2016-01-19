@@ -1,6 +1,16 @@
 <robot name="point">
-  <kinbody name="spoint">
-    <body name="circle" type="dynamic">
+  <kinbody name="robot_point_mobile">
+
+    <body name="originX" type="static">
+      <offsetfrom>Base</offsetfrom>
+      <translation>0.0  0.0  0.0</translation>
+    </body>
+    <body name="originY" type="dynamic">
+      <offsetfrom>Base</offsetfrom>
+      <translation>0.0  0.0  0.0</translation>
+    </body>
+
+    <body name="robot" type="dynamic">
       <offsetfrom>Base</offsetfrom>
       <translation>0.0  0.0  0.1</translation>
       <mass type="cylinder">
@@ -15,22 +25,34 @@
         <diffusecolor>0.05 0.05 0.05</diffusecolor>
       </geom>
     </body>
+
     <body name="direct0r" type="dynamic">
       <offsetfrom>Base</offsetfrom>
-      <translation>-0.05  0.0  0.12</translation>
-      <mass type="box">
-        <total>0</total>
-        <extents>0.05 0.02 0.02</extents>
-      </mass>
+      <translation>-0.05  0.0  0.2</translation>
       <geom type="box">
         <extents>0.05 0.02 0.02</extents>
         <diffusecolor>0.05 0.95 0.05</diffusecolor>
       </geom>
     </body>
+
+    <Joint name="X" type="slider" enable="true">
+        <Body>originX</Body>
+        <Body>originY</Body>
+        <Axis>1 0 0</Axis>
+        <limits>-10 10</limits>
+    </Joint>
+    <Joint name="Y" type="slider" enable="true">
+        <Body>originY</Body>
+        <Body>robot</Body>
+        <Axis>0 1 0</Axis>
+        <limits>-10 10</limits>
+    </Joint>
+
     <joint type="hinge" enable="false">
-      <body>circle</body>
+      <body>robot</body>
       <body>direct0r</body>
       <limits>0 0</limits>
     </joint>
+
   </kinbody>
 </robot>
