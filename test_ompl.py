@@ -21,7 +21,7 @@ if __name__ == "__main__":
         env = EnvironmentTheRay()
         robot = env.GetRobot()
         t = 0
-        #env.DisplayForces()
+        env.DisplayForces()
         #time.sleep(0.2)
 
         [xi,yi]=env.RobotGetInitialPosition()
@@ -43,84 +43,98 @@ if __name__ == "__main__":
         #######################################################################
 
         existing_planners=[
-        'birrt',
-        'OMPL_BKPIECE1',
-        'OMPL_EST',
-        'OMPL_KPIECE1',
-        'OMPL_LazyRRT',
-        'OMPL_LBKPIECE1',
-        'OMPL_PDST',
-        'OMPL_PRM',
-        'OMPL_LazyPRM',
-        'OMPL_PRMstar',
-        'OMPL_pSBL',
-        'OMPL_RRT',
-        'OMPL_RRTConnect',
-        'OMPL_RRTstar',
-        'OMPL_SBL',
-        'OMPL_SPARS',
-        'OMPL_SPARStwo',
-        'OMPL_TRRT']
+                'birrt',
+                'OMPL_BKPIECE1',
+                'OMPL_EST',
+                'OMPL_KPIECE1',
+                'OMPL_LazyRRT',
+                'OMPL_LBKPIECE1',
+                'OMPL_PDST',
+                'OMPL_PRM',
+                'OMPL_LazyPRM',
+                'OMPL_PRMstar',
+                'OMPL_pSBL',
+                'OMPL_RRT',
+                'OMPL_RRTConnect',
+                'OMPL_RRTstar',
+                'OMPL_SBL',
+                'OMPL_SPARS',
+                'OMPL_SPARStwo',
+                'OMPL_TRRT']
 
         ## not working:
         #'OMPL_BITstar',
         #'OMPL_FMT',
         #'OMPL_pRRT',
 
-        existing_planners = ['OMPL_KPIECE1']
-
         print existing_planners
+        #P = 'birrt'
+        P = 'OMPL_RRTConnect'
+        P = 'OMPL_RRT'
+        #P = 'OMPL_LBKPIECE1'
+
+        simplifier = RaveCreatePlanner(env.env, 'OMPL_Simplifier')
+        planner=RaveCreatePlanner(env.env,P)
+        print planner.SendCommand('GetParameters')
+        params.SetExtraParameters('<range>0.1</range>')
+
+        if planner is None:
+                print "###############################################################"
+                print "PLANNER",P,"not implemented"
+                print "###############################################################"
+
+        print "###############################################################"
+        print "EXECUTING PLANNER:",P
+        print "###############################################################"
+
+        #######################################################################
+        planner.InitPlan(env.robot, params)
+
+        traj = RaveCreateTrajectory(env.env,'')
+        result = planner.PlanPath(traj)
+        assert result == PlannerStatus.HasSolution
+
+        result = planningutils.RetimeTrajectory(traj,False,0.15)
+        assert result == PlannerStatus.HasSolution
+
+        ########################################################################
+        #print "###############################################################"
+        #print "SIMPLIFYING PLAN"
+        #print "###############################################################"
+        ########################################################################
+        
+        #simplifier.InitPlan(env.robot, Planner.PlannerParameters())
+        #result = simplifier.PlanPath(traj)
+        #assert result == PlannerStatus.HasSolution
 
 
         #######################################################################
-        ### PLANNING
+        #basemanip=interfaces.BaseManipulation(robot)
+        N = traj.GetNumWaypoints()
+        W=[]
+        for i in range(0,N):
+                w = array((traj.GetWaypoint(i)[0],traj.GetWaypoint(i)[1],0.2))
+                W.append((w))
+        
+        print "###############################################################"
+        print N,"waypoints"
+        print traj.GetWaypoint(N-1)
+        print "###############################################################"
+        with env.env:
+                env.handles.append(env.env.drawlinestrip(points=array(W),
+                                           linewidth=5.0,
+                                           colors=array(((0.2,0.8,0.2)))))
+
         #######################################################################
-        for P in existing_planners:
-                planner=RaveCreatePlanner(env.env,P)
-
-                if planner is None:
-                        print "###############################################################"
-                        print "PLANNER",P,"not implemented"
-                        print "###############################################################"
-                        continue
 
 
-                print "###############################################################"
-                print "EXECUTING PLANNER:",P
-                print "###############################################################"
-                #planner.SendCommand('GetParameters')
-                planner.InitPlan(env.robot, params)
 
-                traj = RaveCreateTrajectory(env.env,'')
-                planner.PlanPath(traj)
-
-                #######################################################################
-                #basemanip=interfaces.BaseManipulation(robot)
-                N = traj.GetNumWaypoints()
-                W=[]
-                for i in range(0,N):
-                        #print traj.GetWaypoint(i)
-                        w = array((traj.GetWaypoint(i)[0],traj.GetWaypoint(i)[1],0.2))
-                        W.append((w))
-                        #traj=basemanip.MoveToHandPosition(matrices=[w],execute=True,outputtrajobj=True)
-
-                
-                #print N,"waypoints",W
-                with env.env:
-                        env.handles.append(env.env.drawlinestrip(points=array(W),
-                                                   linewidth=5.0,
-                                                   colors=array(((0.2,0.8,0.2)))))
-
-                #######################################################################
-                basemanip = interfaces.BaseManipulation(robot) # create the interface
-                res = basemanip.MoveActiveJoints(goal = [goal[0],goal[1]], maxiter=3000,steplength=0.01,execute=True)
-
-                #RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug
-                openravepy.RaveLogInfo("Waiting for controller to finish")
-                robot.WaitForController(0)
-                robot.GetController().Reset()
-                time.sleep(2)
-                del env.handles[-1]
+        #raw_input('Press <ENTER> to execute trajectory.')
+        #RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug
+        openravepy.RaveLogInfo("Waiting for controller to finish")
+        robot.GetController().SetPath(traj)
+        robot.WaitForController(0)
+        robot.GetController().Reset()
                 
         raw_input('Enter any key to quit. ')
 

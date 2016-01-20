@@ -11,8 +11,24 @@ class ForceEnvironment():
         env=''
         robot=''
         handles = []
+        force_handles = []
         cells = None
         forces = None
+
+        def ResetForceHandles(self):
+                force_handles = []
+
+        def PrintForceHandleInfo(self):
+                print len(self.force_handles)
+                print self.force_handles
+
+        def AddForceHandles(self,H):
+                if H is None:
+                        return
+                else:
+                        for h in H:
+                                self.force_handles.append(h)
+
         def __init__(self):
                 self.env=Environment()
                 self.env.SetViewer('qtcoin')
@@ -34,6 +50,7 @@ class ForceEnvironment():
         def GetCellsAll(self):
                 with self.env:
                         B = self.env.GetBodies()[1]
+                        print B.GetLinks()
                         return B.GetLinks()
 
         @abc.abstractmethod
@@ -64,16 +81,17 @@ class ForceEnvironment():
                         [xg,yg]=self.RobotGetGoalPosition()
                         self.handles.append(self.env.plot3(points=array(((xg,yg,0.05))),
                                            pointsize=0.15,
-                                           colors=array(((1.0,0.0,0.0))),
+                                           colors=array(((1.0,0.0,0.0,0.8))),
                                            drawstyle=1))
 
                         self.handles.append(self.env.plot3(points=array(((xi,yi,0.05))),
                                            pointsize=0.15,
-                                           colors=array(((0.0,1.0,0.0,0.2))),
+                                           colors=array(((0.0,1.0,0.0,0.8))),
                                            drawstyle=1))
                         return self.robot
 
         def DrawBorderAroundCell(self, cell):
+                handle = []
                 with self.env:
                         G1 = cell.GetGeometries()[0]
                         B = G1.GetBoxExtents()
@@ -88,63 +106,63 @@ class ForceEnvironment():
                                 (T[0,3]-B[0],T[1,3]+B[1],B[2]+T[2,3]),\
                                 (T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3])))
 
-                        handle=self.env.drawlinestrip(points=P,linewidth=5.0,colors=array(((1,1,1))))
+                        h=self.env.drawlinestrip(points=P,linewidth=5.0,colors=array(((1,1,1,0.5))))
+                        handle.append(h)
                         return handle
 
         def DrawForceArrowsInCell(self, cell, force):
-                with self.env:
-                        G1 = cell.GetGeometries()[0]
-                        B = G1.GetBoxExtents()
-                        T = G1.GetTransform()
-                        Fx = force[0]
-                        Fy = force[1]
+                G1 = cell.GetGeometries()[0]
+                B = G1.GetBoxExtents()
+                T = G1.GetTransform()
+                Fx = force[0]
+                Fy = force[1]
 
-                        ########################################################
-                        ## compute arrows inside of box
-                        ########################################################
-                        bx = T[0,3]
-                        by = T[1,3]
-                        N = int(math.ceil(B[0]))+1
-                        M = int(math.ceil(B[1]))+1
-                        dxspacing = B[0]/N
-                        dyspacing = B[1]/M
+                ########################################################
+                ## compute arrows inside of box
+                ########################################################
+                bx = T[0,3]
+                by = T[1,3]
+                N = int(math.ceil(B[0]))+1
+                M = int(math.ceil(B[1]))+1
+                dxspacing = B[0]/N
+                dyspacing = B[1]/M
 
-                        if sqrt(Fx*Fx+Fy*Fy) < 0.001:
-                                return None
+                if sqrt(Fx*Fx+Fy*Fy) < 0.001:
+                        return None
 
-                        ### lx,ly == direction vector of line
-                        maxlx = dxspacing-dxspacing/4
-                        minlx = -maxlx
-                        maxly = dyspacing-dyspacing/4
-                        minly = -maxly
-                        lx = Fx
-                        ly = Fy
+                ### lx,ly == direction vector of line
+                maxlx = dxspacing-dxspacing/4
+                minlx = -maxlx
+                maxly = dyspacing-dyspacing/4
+                minly = -maxly
+                lx = Fx
+                ly = Fy
 
-                        if lx > maxlx:
-                                lx = maxlx
-                        if lx < minlx:
-                                lx = minlx
-                        if ly > maxly:
-                                ly = maxly
-                        if ly < minly:
-                                ly = minly
+                if lx > maxlx:
+                        lx = maxlx
+                if lx < minlx:
+                        lx = minlx
+                if ly > maxly:
+                        ly = maxly
+                if ly < minly:
+                        ly = minly
 
-                        if (lx == 0) & (ly==0):
-                                lx=lx+0.001
+                if (lx == 0) & (ly==0):
+                        lx=lx+0.001
 
-                        l = sqrt(lx*lx+ly*ly)
+                l = sqrt(lx*lx+ly*ly)
 
-                        xstart = -B[0]+bx
-                        ystart = -B[1]+by
-                        zval=0.1
-                        handles=[]
-                        for i in range(0,2*N-1):
-                            for j in range(0,2*M-1):
-                                x = xstart+i*dxspacing+dxspacing
-                                y = ystart+j*dyspacing+dyspacing
-                                A = self.env.drawarrow(array((x,y,zval)),array((x+lx,y+ly,zval)),linewidth=0.08*l,color=array((1,0,0,0.5)))
-                                handles.append(A)
-                        return handles
+                xstart = -B[0]+bx
+                ystart = -B[1]+by
+                zval=0.1
+                handles=[]
+                for i in range(0,2*N-1):
+                    for j in range(0,2*M-1):
+                        x = xstart+i*dxspacing+dxspacing
+                        y = ystart+j*dyspacing+dyspacing
+                        A = self.env.drawarrow(array((x,y,zval)),array((x+lx,y+ly,zval)),linewidth=0.08*l,color=array((1,0,0)))
+                        handles.append(A)
+                return handles
 
         recorder = None
         def VideoRecordStart(self, fname):
@@ -159,19 +177,21 @@ class ForceEnvironment():
 
 
         def DisplayForces(self):
-                with self.env:
-                        if self.forces is None:
-                                self.forces = self.GetForces()
-                        if self.cells is None:
-                                self.cells = self.GetCells()
+                if self.forces is None:
+                        self.forces = self.GetForces()
+                if self.cells is None:
+                        self.cells = self.GetCells()
 
-                        assert(len(self.forces)==len(self.GetCells()))
+                #with self.env:
+                print len(self.forces),len(self.cells)
+                assert(len(self.forces)==len(self.cells))
 
-                        for i in range(0,len(self.cells)):
-                                h = self.DrawBorderAroundCell(self.cells[i])
-                                self.handles.append(h)
-                                h = self.DrawForceArrowsInCell(self.cells[i], self.forces[i])
-                                self.handles.append(h)
+                self.ResetForceHandles()
+                for i in range(0,len(self.cells)):
+                        h = self.DrawBorderAroundCell(self.cells[i])
+                        self.AddForceHandles(h)
+                        h = self.DrawForceArrowsInCell(self.cells[i], self.forces[i])
+                        self.AddForceHandles(h)
 
 if __name__ == "__main__":
         env = ForceEnvironment()

@@ -23,7 +23,8 @@ if __name__ == "__main__":
     #env = EnvironmentCrossroadStream()
 
     while True:
-            env.DisplayForces()
+            env.DisplayForces() 
             time.sleep(0.01)
+    #h = env.env.drawarrow(array((0,0,0.3)),array((1,0,0.3)),linewidth=0.05,color=array((1,0,0)))
 
     raw_input('Enter any key to quit. ')

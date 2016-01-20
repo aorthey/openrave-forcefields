@@ -11,7 +11,7 @@ class EnvironmentTheRay(ForceEnvironment):
         def GetCells(self):
                 C = self.GetCellsAll()
                 ## do not use the first link, because it is a background
-                self.cells = C[1:]
+                self.cells = C[0:3]
                 return self.cells
 
         def GetForces(self):
