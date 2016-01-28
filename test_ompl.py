@@ -1,8 +1,10 @@
-#!/usr/bin/env python
+#P!/usr/bin/env python
 import time
-import openravepy
 import scipy
+import sys
 import numpy as np
+import openravepy
+from openravepy import *
 from math import *
 from environment_force_the_stream import *
 from environment_force_the_counterstream import *
@@ -11,9 +13,10 @@ from environment_periodic_force_the_hideout import *
 from environment_periodic_force_triple_stream import *
 from environment_periodic_force_crossroad_stream import *
 
-if not __openravepy_build_doc__:
-    from openravepy import *
-    from numpy import *
+
+
+#def ConfigurationTransitionFunction(q,u):
+        #return 
 
 ###
 if __name__ == "__main__":
@@ -22,7 +25,7 @@ if __name__ == "__main__":
         robot = env.GetRobot()
         t = 0
         env.DisplayForces()
-        #time.sleep(0.2)
+        time.sleep(0.2)
 
         [xi,yi]=env.RobotGetInitialPosition()
 
@@ -69,19 +72,21 @@ if __name__ == "__main__":
 
         print existing_planners
         #P = 'birrt'
-        P = 'OMPL_RRTConnect'
-        P = 'OMPL_RRT'
+        #P = 'birrt'
+        #P = 'OMPL_RRTConnect'
+        #P = 'OMPL_RRT'
+        P = 'kinodynamicrrt'
         #P = 'OMPL_LBKPIECE1'
 
-        simplifier = RaveCreatePlanner(env.env, 'OMPL_Simplifier')
         planner=RaveCreatePlanner(env.env,P)
-        print planner.SendCommand('GetParameters')
-        params.SetExtraParameters('<range>0.1</range>')
+        #print planner.SendCommand('GetParameters')
+        #params.SetExtraParameters('<range>0.1</range>')
 
         if planner is None:
                 print "###############################################################"
                 print "PLANNER",P,"not implemented"
                 print "###############################################################"
+                sys.exit(0)
 
         print "###############################################################"
         print "EXECUTING PLANNER:",P
@@ -113,7 +118,7 @@ if __name__ == "__main__":
         N = traj.GetNumWaypoints()
         W=[]
         for i in range(0,N):
-                w = array((traj.GetWaypoint(i)[0],traj.GetWaypoint(i)[1],0.2))
+                w = array((traj.GetWaypoint(i)[0],traj.GetWaypoint(i)[1],0.5))
                 W.append((w))
         
         print "###############################################################"

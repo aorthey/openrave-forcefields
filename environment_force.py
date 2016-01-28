@@ -6,6 +6,11 @@ if not __openravepy_build_doc__:
 
 class ForceEnvironment():
         __metaclass__ = abc.ABCMeta
+        #######################################################################
+        ViewerName = 'qtcoin'
+        PhysicsEngineName = 'ode'
+        CollisionCheckerName = 'pqp'
+        #######################################################################
         env_xml=''
         robot_xml=''
         env=''
@@ -31,14 +36,18 @@ class ForceEnvironment():
 
         def __init__(self):
                 self.env=Environment()
-                self.env.SetViewer('qtcoin')
+
+                self.env.SetViewer(self.ViewerName)
                 self.env.Reset()
                 with self.env:
-                        self.physics = RaveCreatePhysicsEngine(self.env,'ode')
+                        self.physics = RaveCreatePhysicsEngine(self.env, self.PhysicsEngineName)
                         self.physics.SetGravity(array((0,0,-9.81)))
                         self.env.SetPhysicsEngine(self.physics)
+                        self.cc = RaveCreateCollisionChecker(self.env, self.CollisionCheckerName)
+                        self.env.SetCollisionChecker(self.cc)
                         #self.recorder = RaveCreateModule(self.env,'viewerrecorder')
                         #self.env.AddModule(self.recorder,'')
+
 
         def setrobotenv(self,robot_xml,env_xml):
                 with self.env:
