@@ -9,7 +9,7 @@ class ForceEnvironment():
         #######################################################################
         ViewerName = 'qtcoin'
         PhysicsEngineName = 'ode'
-        CollisionCheckerName = 'pqp'
+        CollisionCheckerName = 'ode'
         #######################################################################
         env_xml=''
         robot_xml=''

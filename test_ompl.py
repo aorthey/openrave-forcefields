@@ -13,12 +13,6 @@ from environment_periodic_force_the_hideout import *
 from environment_periodic_force_triple_stream import *
 from environment_periodic_force_crossroad_stream import *
 
-
-
-#def ConfigurationTransitionFunction(q,u):
-        #return 
-
-###
 if __name__ == "__main__":
 
         env = EnvironmentTheRay()
