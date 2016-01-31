@@ -20,7 +20,6 @@ if __name__ == "__main__":
         t = 0
         env.DisplayForces()
         time.sleep(0.2)
-
         [xi,yi]=env.RobotGetInitialPosition()
 
         print robot.GetDOF()
@@ -37,6 +36,8 @@ if __name__ == "__main__":
         params.SetRobotActiveJoints(robot)
         goal=env.RobotGetGoalPosition()
         params.SetGoalConfig(goal)
+
+
         #######################################################################
 
         existing_planners=[

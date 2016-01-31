@@ -1,8 +1,6 @@
 import abc
-import openravepy
-if not __openravepy_build_doc__:
-    from openravepy import *
-    from numpy import *
+from openravepy import *
+from numpy import *
 
 class ForceEnvironment():
         __metaclass__ = abc.ABCMeta
