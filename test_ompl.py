@@ -16,15 +16,14 @@ from environment_periodic_force_crossroad_stream import *
 if __name__ == "__main__":
 
         env = EnvironmentTheRay()
+        #env = EnvironmentTheCounterStream()
+
         robot = env.GetRobot()
         t = 0
         env.DisplayForces()
         time.sleep(0.2)
-        [xi,yi]=env.RobotGetInitialPosition()
 
         print robot.GetDOF()
-        print "###############################################################"
-        print xi,yi
         print "###############################################################"
         #controller = RaveCreateController(env,'MyController controller arguments here')
         #robot.SetController(controller,range(robot.GetDOF()),controltransform=1)
@@ -37,6 +36,7 @@ if __name__ == "__main__":
         goal=env.RobotGetGoalPosition()
         params.SetGoalConfig(goal)
 
+        print env.env.GetForces()
 
         #######################################################################
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         N = traj.GetNumWaypoints()
         W=[]
         for i in range(0,N):
-                w = array((traj.GetWaypoint(i)[0],traj.GetWaypoint(i)[1],0.5))
+                w = array((traj.GetWaypoint(i)[0],traj.GetWaypoint(i)[1],traj.GetWaypoint(i)[2]))
                 W.append((w))
         
         print "###############################################################"

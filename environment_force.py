@@ -43,6 +43,7 @@ class ForceEnvironment():
                         self.env.SetPhysicsEngine(self.physics)
                         self.cc = RaveCreateCollisionChecker(self.env, self.CollisionCheckerName)
                         self.env.SetCollisionChecker(self.cc)
+                        self.env.SetForces( self.GetForces() )
                         #self.recorder = RaveCreateModule(self.env,'viewerrecorder')
                         #self.env.AddModule(self.recorder,'')
 
@@ -79,19 +80,19 @@ class ForceEnvironment():
         def GetRobot(self):
                 with self.env:
                         self.robot = self.env.GetRobots()[0]
-                        [xi,yi]=self.RobotGetInitialPosition()
+                        [xi,yi,zi]=self.RobotGetInitialPosition()
 
-                        self.robot.SetDOFLimits((-10,-10),(5,5))
-                        self.robot.SetDOFValues((xi,yi))
-                        self.robot.SetDOFVelocities((0.001,0.001))
+                        #self.robot.SetDOFLimits((-10,10),(-5,5),(-1,1))
+                        self.robot.SetDOFValues((xi,yi,zi))
+                        self.robot.SetDOFVelocities((0.0,0.0,0.0))
 
-                        [xg,yg]=self.RobotGetGoalPosition()
-                        self.handles.append(self.env.plot3(points=array(((xg,yg,0.05))),
+                        [xg,yg,zg]=self.RobotGetGoalPosition()
+                        self.handles.append(self.env.plot3(points=array(((xg,yg,zg))),
                                            pointsize=0.15,
                                            colors=array(((1.0,0.0,0.0,0.8))),
                                            drawstyle=1))
 
-                        self.handles.append(self.env.plot3(points=array(((xi,yi,0.05))),
+                        self.handles.append(self.env.plot3(points=array(((xi,yi,zg))),
                                            pointsize=0.15,
                                            colors=array(((0.0,1.0,0.0,0.8))),
                                            drawstyle=1))
