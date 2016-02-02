@@ -10,24 +10,22 @@ class EnvironmentTheStream(ForceEnvironment):
 
         def GetCells(self):
                 C = self.GetCellsAll()
-                ## do not use the first link, because it is a background
-                self.cells = C[1:]
+                self.cells = C[0:3]
                 return self.cells
 
         def GetForces(self):
                 ##
                 self.forces=[]
                 self.forces.append(numpy.array((0.0,0.0,0.0)))
-                self.forces.append(numpy.array((0.0,-3.0,0.0)))
+                self.forces.append(numpy.array((0.0,-0.5,0.0)))
                 self.forces.append(numpy.array((0.0,0.0,0.0)))
                 return self.forces
 
         def RobotGetInitialPosition(self):
-                return [-4.0,-2.5]
+                return [-4.0,-2.5,0.15,0,0,0,0,0]
 
         def RobotGetGoalPosition(self):
-                return [4.0,2.0]
-
+                return [4.0,1.7,0.15,0,0,0,0,0]
 
 
 if __name__ == "__main__":

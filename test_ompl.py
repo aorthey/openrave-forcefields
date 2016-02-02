@@ -15,8 +15,9 @@ from environment_periodic_force_crossroad_stream import *
 
 if __name__ == "__main__":
 
-        env = EnvironmentTheRay()
-        #env = EnvironmentTheCounterStream()
+        #env = EnvironmentTheRay()
+        env = EnvironmentTheCounterStream()
+        #env = EnvironmentTheStream()
 
         robot = env.GetRobot()
         t = 0
@@ -98,8 +99,8 @@ if __name__ == "__main__":
         result = planner.PlanPath(traj)
         assert result == PlannerStatus.HasSolution
 
-        result = planningutils.RetimeTrajectory(traj,False,0.15)
-        assert result == PlannerStatus.HasSolution
+        #result = planningutils.RetimeTrajectory(traj,False,0.15)
+        #assert result == PlannerStatus.HasSolution
 
         ########################################################################
         #print "###############################################################"
@@ -126,7 +127,7 @@ if __name__ == "__main__":
         print "###############################################################"
         with env.env:
                 env.handles.append(env.env.drawlinestrip(points=array(W),
-                                           linewidth=5.0,
+                                           linewidth=10.0,
                                            colors=array(((0.2,0.8,0.2)))))
 
         #######################################################################

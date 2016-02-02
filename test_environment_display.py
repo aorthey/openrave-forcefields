@@ -16,8 +16,8 @@ if not __openravepy_build_doc__:
 
 if __name__ == "__main__":
     #env = EnvironmentTheStream()
-    #env = EnvironmentTheCounterStream()
-    env = EnvironmentTheRay()
+    env = EnvironmentTheCounterStream()
+    #env = EnvironmentTheRay()
     #env = EnvironmentTheHideout()
     #env = EnvironmentTripleStream()
     #env = EnvironmentCrossroadStream()

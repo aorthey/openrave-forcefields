@@ -11,7 +11,7 @@ class EnvironmentTheCounterStream(ForceEnvironment):
         def GetCells(self):
                 C = self.GetCellsAll()
                 ## do not use the first link, because it is a background
-                self.cells = C[1:]
+                self.cells = C[0:5]
                 return self.cells
 
         def GetForces(self):
@@ -19,16 +19,16 @@ class EnvironmentTheCounterStream(ForceEnvironment):
                 self.forces=[]
                 self.forces.append(numpy.array((0.0,0.0,0.0)))
                 self.forces.append(numpy.array((0.0,0.0,0.0)))
-                self.forces.append(numpy.array((3.0,0.0,0.0)))
-                self.forces.append(numpy.array((-3.0,0.0,0.0)))
+                self.forces.append(numpy.array((0.5,0.0,0.0)))
+                self.forces.append(numpy.array((-0.5,0.0,0.0)))
                 self.forces.append(numpy.array((0.0,0.0,0.0)))
                 return self.forces
 
         def RobotGetInitialPosition(self):
-                return [-2.0,1.0]
+                return [-2.0,1.0,0.15,0,0,0,0,0]
 
         def RobotGetGoalPosition(self):
-                return [5.0,-3.0]
+                return [5.0,-3.0,0.15,0,0,0,0,0]
 
 
 
