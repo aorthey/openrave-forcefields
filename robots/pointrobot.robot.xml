@@ -13,6 +13,10 @@
       <offsetfrom>Base</offsetfrom>
       <translation>0.0  0.0  0.0</translation>
     </body>
+    <body name="rotat0r" type="dynamic">
+      <offsetfrom>Base</offsetfrom>
+      <translation>0.0  0.0  0.0</translation>
+    </body>
 
     <body name="robot" type="dynamic">
       <offsetfrom>Base</offsetfrom>
@@ -53,9 +57,14 @@
     </Joint>
     <Joint name="Z" type="slider" enable="true">
         <Body>originZ</Body>
-        <Body>robot</Body>
+        <Body>rotat0r</Body>
         <Axis>0 0 1</Axis>
         <limits>-1 1</limits>
+    </Joint>
+    <Joint circular="true" name="rot" type="hinge" enable="true">
+        <Body>rotat0r</Body>
+        <Body>robot</Body>
+        <Axis>0 0 1</Axis>
     </Joint>
 
     <joint type="hinge" enable="false">

@@ -18,16 +18,16 @@ class EnvironmentTheRay(ForceEnvironment):
         def GetForces(self):
                 ##
                 self.forces = np.array((0.0,0.0,0.0))
-                self.forces = np.vstack([self.forces,(0.0,-0.4,0.0)])
+                self.forces = np.vstack([self.forces,(0.0,-0.6,0.0)])
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
                 return self.forces
 
         def RobotGetInitialPosition(self):
-                return [-3.5,2.0,0.15]
+                return [-2.5,0.0,0.15,0,0,0,0,0]
                 #return [3.0,3.0]
 
         def RobotGetGoalPosition(self):
-                return [-4.5,0.0,0.15]
+                return [-4.5,-0.2,0.15,0,0,0,0,0]
 
 
 

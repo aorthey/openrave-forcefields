@@ -5,6 +5,7 @@ from numpy import *
 class ForceEnvironment():
         __metaclass__ = abc.ABCMeta
         #######################################################################
+        ZPOS_ARROW = 0.05
         ViewerName = 'qtcoin'
         PhysicsEngineName = 'ode'
         CollisionCheckerName = 'ode'
@@ -80,13 +81,16 @@ class ForceEnvironment():
         def GetRobot(self):
                 with self.env:
                         self.robot = self.env.GetRobots()[0]
-                        [xi,yi,zi]=self.RobotGetInitialPosition()
+
+                        [xi,yi,zi,ti,dxi,dyi,dzi,dti]=self.RobotGetInitialPosition()
+                        [xg,yg,zg,tg,dxg,dyg,dzg,dtg]=self.RobotGetGoalPosition()
 
                         #self.robot.SetDOFLimits((-10,10),(-5,5),(-1,1))
-                        self.robot.SetDOFValues((xi,yi,zi))
-                        self.robot.SetDOFVelocities((0.0,0.0,0.0))
+                        self.robot.SetDOFValues((xi,yi,zi,ti))
+                        self.robot.SetDOFVelocities((dxi,dyi,dzi,dti))
+                        self.robot.SetDOFVelocityLimits([5.0,5.0,5.0,5.0])
 
-                        [xg,yg,zg]=self.RobotGetGoalPosition()
+
                         self.handles.append(self.env.plot3(points=array(((xg,yg,zg))),
                                            pointsize=0.15,
                                            colors=array(((1.0,0.0,0.0,0.8))),
@@ -162,13 +166,12 @@ class ForceEnvironment():
 
                 xstart = -B[0]+bx
                 ystart = -B[1]+by
-                zval=0.1
                 handles=[]
                 for i in range(0,2*N-1):
                     for j in range(0,2*M-1):
                         x = xstart+i*dxspacing+dxspacing
                         y = ystart+j*dyspacing+dyspacing
-                        A = self.env.drawarrow(array((x,y,zval)),array((x+lx,y+ly,zval)),linewidth=0.08*l,color=array((1,0,0)))
+                        A = self.env.drawarrow(array((x,y,self.ZPOS_ARROW)),array((x+lx,y+ly,self.ZPOS_ARROW)),linewidth=0.08*l,color=array((1,0,0)))
                         handles.append(A)
                 return handles
 
@@ -191,7 +194,6 @@ class ForceEnvironment():
                         self.cells = self.GetCells()
 
                 #with self.env:
-                print len(self.forces),len(self.cells)
                 assert(len(self.forces)==len(self.cells))
 
                 self.ResetForceHandles()

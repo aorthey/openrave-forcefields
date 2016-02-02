@@ -33,7 +33,11 @@ if __name__ == "__main__":
         #######################################################################
         params = Planner.PlannerParameters()
         params.SetRobotActiveJoints(robot)
+
+        init=env.RobotGetInitialPosition()
         goal=env.RobotGetGoalPosition()
+
+        params.SetInitialConfig(init)
         params.SetGoalConfig(goal)
 
         print env.env.GetForces()
@@ -132,9 +136,9 @@ if __name__ == "__main__":
         #raw_input('Press <ENTER> to execute trajectory.')
         #RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug
         openravepy.RaveLogInfo("Waiting for controller to finish")
-        robot.GetController().SetPath(traj)
-        robot.WaitForController(0)
-        robot.GetController().Reset()
+        #robot.GetController().SetPath(traj)
+        #robot.WaitForController(0)
+        #robot.GetController().Reset()
                 
         raw_input('Enter any key to quit. ')
 
