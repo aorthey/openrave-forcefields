@@ -1,6 +1,7 @@
 import abc
 from openravepy import *
-from numpy import *
+from numpy import array,pi
+import numpy as np
 
 class ForceEnvironment():
         __metaclass__ = abc.ABCMeta
@@ -85,7 +86,7 @@ class ForceEnvironment():
                         [xi,yi,zi,ti,dxi,dyi,dzi,dti]=self.RobotGetInitialPosition()
                         [xg,yg,zg,tg,dxg,dyg,dzg,dtg]=self.RobotGetGoalPosition()
                         #self.robot.SetDOFLimits((-10,10),(-5,5),(-1,1))
-                        self.robot.SetDOFLimits((-8,-6,-0.15,-4*pi),(8,6,0.15,4*pi))
+                        self.robot.SetDOFLimits((-10,-8,-0.15,-4*pi),(10,8,0.15,4*pi))
                         self.robot.SetDOFValues((xi,yi,zi,ti))
                         self.robot.SetDOFVelocities((dxi,dyi,dzi,dti))
                         self.robot.SetDOFVelocityLimits([5.0,5.0,5.0,5.0])
@@ -121,6 +122,19 @@ class ForceEnvironment():
                         h=self.env.drawlinestrip(points=P,linewidth=5.0,colors=array(((1,1,1,0.5))))
                         handle.append(h)
                         return handle
+        def GetZeroForce(self):
+                return np.zeros(self.forces[0].shape)
+
+        def GetForceAtX(self, X):
+                self.robot.SetDOFValues(X)
+
+                F = self.GetZeroForce()
+                for i in range(0,len(self.cells)):
+                        robotIsInsideCell = self.env.CheckCollision(self.robot, self.cells[i])
+                        if robotIsInsideCell:
+                                F = F + self.forces[i]
+
+                return F
 
         def DrawForceArrowsInCell(self, cell, force):
                 G1 = cell.GetGeometries()[0]
@@ -134,12 +148,12 @@ class ForceEnvironment():
                 ########################################################
                 bx = T[0,3]
                 by = T[1,3]
-                N = int(math.ceil(B[0]))+1
-                M = int(math.ceil(B[1]))+1
+                N = int(np.ceil(B[0]))+1
+                M = int(np.ceil(B[1]))+1
                 dxspacing = B[0]/N
                 dyspacing = B[1]/M
 
-                if sqrt(Fx*Fx+Fy*Fy) < 0.001:
+                if np.sqrt(Fx*Fx+Fy*Fy) < 0.001:
                         return None
 
                 ### lx,ly == direction vector of line
@@ -162,7 +176,7 @@ class ForceEnvironment():
                 if (lx == 0) & (ly==0):
                         lx=lx+0.001
 
-                l = sqrt(lx*lx+ly*ly)
+                l = np.sqrt(lx*lx+ly*ly)
 
                 xstart = -B[0]+bx
                 ystart = -B[1]+by

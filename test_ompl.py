@@ -13,14 +13,15 @@ from environment_periodic_force_the_hideout import *
 from environment_periodic_force_triple_stream import *
 from environment_periodic_force_crossroad_stream import *
 
+from trajectory_analyzer import *
+
 if __name__ == "__main__":
 
-        #env = EnvironmentTheRay()
-        env = EnvironmentTheCounterStream()
+        env = EnvironmentTheRay()
+        #env = EnvironmentTheCounterStream()
         #env = EnvironmentTheStream()
 
         robot = env.GetRobot()
-        t = 0
         env.DisplayForces()
         time.sleep(0.2)
 
@@ -71,16 +72,13 @@ if __name__ == "__main__":
         #'OMPL_pRRT',
 
         print existing_planners
-        #P = 'birrt'
-        #P = 'birrt'
-        #P = 'OMPL_RRTConnect'
-        #P = 'OMPL_RRT'
         P = 'kinodynamicrrt'
-        #P = 'OMPL_LBKPIECE1'
+        P = 'birrt'
+        #P = 'basicrrt'
 
         planner=RaveCreatePlanner(env.env,P)
         #print planner.SendCommand('GetParameters')
-        #params.SetExtraParameters('<range>0.1</range>')
+        #params.SetExtraParameters('<range>0.01</range>')
 
         if planner is None:
                 print "###############################################################"
@@ -112,9 +110,9 @@ if __name__ == "__main__":
         #result = simplifier.PlanPath(traj)
         #assert result == PlannerStatus.HasSolution
 
-
         #######################################################################
         #basemanip=interfaces.BaseManipulation(robot)
+
         N = traj.GetNumWaypoints()
         W=[]
         for i in range(0,N):
@@ -125,12 +123,20 @@ if __name__ == "__main__":
         print N,"waypoints"
         print traj.GetWaypoint(N-1)
         print "###############################################################"
-        with env.env:
-                env.handles.append(env.env.drawlinestrip(points=array(W),
-                                           linewidth=10.0,
-                                           colors=array(((0.2,0.8,0.2)))))
+        #jwith env.env:
+        #j        env.handles.append(env.env.drawlinestrip(points=array(W),
+        #j                                   linewidth=10.0,
+        #j                                   colors=array(((0.2,0.8,0.2)))))
 
         #######################################################################
+        #W = np.array((1,0,0),(1.5,0,0),(2.0,0,0),(2.5,0,0))
+        W = np.array(W)[:,0:2].T
+        print W
+
+        ta = TrajectoryAnalyzer(W)
+
+        with env.env:
+                ta.deform(env)
 
 
 

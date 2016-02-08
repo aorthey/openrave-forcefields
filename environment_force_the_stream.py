@@ -22,7 +22,7 @@ class EnvironmentTheStream(ForceEnvironment):
                 return self.forces
 
         def RobotGetInitialPosition(self):
-                return [-4.0,-2.5,0.15,0,0,0,0,0]
+                return [-4.0,-2.5,0.15,pi,0,0,0,0]
 
         def RobotGetGoalPosition(self):
                 return [4.0,1.7,0.15,0,0,0,0,0]
