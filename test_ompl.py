@@ -14,6 +14,7 @@ from environment_periodic_force_triple_stream import *
 from environment_periodic_force_crossroad_stream import *
 
 from trajectory_analyzer import *
+from trajectory_speed_profiler import *
 
 if __name__ == "__main__":
 
@@ -134,9 +135,15 @@ if __name__ == "__main__":
         print W
 
         ta = TrajectoryAnalyzer(W)
+        #ta.draw(env)
+        #time.sleep(0.1)
 
-        with env.env:
-                ta.deform(env)
+        [told, tnew] = ta.deform_onestep(env)
+        #ta.draw(env)
+        ta.draw_deformation(env, told,tnew)
+        #tsp = TrajectorySpeedProfiler(robot)
+        #traj = tsp.retime(traj)
+
 
 
 

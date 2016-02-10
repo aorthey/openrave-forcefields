@@ -63,6 +63,11 @@ class TrajectoryAnalyzer():
                                    pointsize=self.ptsize,
                                    colors=np.array(((0.8,0.0,0.0,0.9))),
                                    drawstyle=1))
+
+        def DrawRedArrow(self,env,X,dX):
+                A = env.env.drawarrow(X,X+dX,linewidth=0.02,color=np.array((1,0,0)))
+                self.handles.append(A)
+
         def DrawGreenPoint(self,env,X):
                 self.handles.append(env.env.plot3(points=X,
                                    pointsize=self.ptsize,
@@ -83,23 +88,63 @@ class TrajectoryAnalyzer():
 
 
         def DrawWaypoints(self, Win, env):
-                tau = self.WaypointsToTrajectory(Win)
+                Nwaypoints = Win.shape[1]
 
-                L = self.GetLengthOfTrajectory(tau)
+                self.Whandle = []
+                for i in range(0,Nwaypoints):
+                        pt = np.array(((Win[0,i],Win[1,i],0.1)))
+                        self.Whandle.append(env.env.plot3(points=pt,
+                                           pointsize=self.ptsize,
+                                           colors=np.array(((0.7,0.2,0.7,0.9))),
+                                           drawstyle=1))
+
+        def draw(self, env, keep=False):
+                L = self.GetLengthOfTrajectory(self.tau)
                 dt = 0.05
                 Nwaypoints = int(L/dt)
                 print Nwaypoints
 
-                [W,dW] = self.TrajectoryToWaypoints(tau,N=Nwaypoints)
+                [W,dW] = self.TrajectoryToWaypoints(self.tau,N=200)
 
                 Nwaypoints = W.shape[1]
-                self.Whandle = []
+
+                if not keep:
+                        self.Whandle = []
                 for i in range(0,Nwaypoints):
                         pt = np.array(((W[0,i],W[1,i],0.1)))
                         self.Whandle.append(env.env.plot3(points=pt,
                                            pointsize=self.ptsize,
                                            colors=np.array(((0.7,0.2,0.7,0.9))),
                                            drawstyle=1))
+
+        def draw_deformation(self, env, tau0, tau1):
+
+                M = 20
+
+                L = self.GetLengthOfTrajectory(self.tau)
+                dt = 0.05
+                Nwaypoints = int(L/dt)
+                print Nwaypoints
+
+                [W0,dW] = self.TrajectoryToWaypoints(tau0,N=Nwaypoints)
+                [W1,dW] = self.TrajectoryToWaypoints(tau1,N=Nwaypoints)
+
+                
+                for i in range(0,M):
+                        k = float(i)/float(M)
+                        Wk = (1-k)*W0 + k*W1
+                        print k
+                        self.Whandle = []
+                        for i in range(0,Nwaypoints):
+                                pt = np.array(((Wk[0,i],Wk[1,i],0.1)))
+                                self.Whandle.append(env.env.plot3(points=pt,
+                                                   pointsize=self.ptsize,
+                                                   colors=np.array(((0.7,0.2,0.7,0.9))),
+                                                   drawstyle=1))
+                        time.sleep(0.1)
+
+
+
 
         def analyze(self,env):
 
@@ -125,51 +170,155 @@ class TrajectoryAnalyzer():
 
                 ##no deform necessary
 
+        def gaussian(self, a, b, c, t):
+                return a*np.exp(-((t-b)*(t-b))/(2*c*c))
 
-        def deform(self, env):
+        def lambda_position(self, t0, tidx):
+                a = 0.25
+                c = 15.0
+                return self.gaussian(a,0,c,abs(t0-tidx))
 
-                [W,dW] = self.TrajectoryToWaypoints(self.tau, N = 100)
+        def lambda_endpoint(self, t0, endT):
+                a = 1.0
+                c = 0.5
+                return self.gaussian(a,0,c,abs(t0-endT))
 
-                Nwaypoints = W.shape[1]
+        def lambda_stretch(self, t0, tidx):
+                ## a has to be 1.0 to make sure that we stretch the last
+                ##point the correct amount
+                a = 1.0 
+                c = 10.0
+                return self.gaussian(a,0,c,abs(t0-tidx))
 
-                F = self.GetForcesAtWaypoints(W, env)
+        ## idx: index at which waypoint will be shifted
+        ## W  : array of waypoints
+        ## dF : direction of force applied at W[:,idx]
+        ## 
+        ## return: a force direction to each waypoint
+        def GetForcePosition(self, idx, W, dF):
 
-                i_infeasible = self.GetFirstInfeasibleWaypoint(W, dW, F)
+                N = W.shape[1]
+                dW = np.zeros((3,N))
+                for i in range(0,N):
+                        dW[:,i] = self.lambda_position(i, idx)*dF
 
-                dW_direction = dW[:,i_infeasible]/(np.linalg.norm(dW[:,i_infeasible]))
+                return dW
 
-                self.DrawRedPoint(env,W[:,i_infeasible])
-                self.DrawGreenPoint(env,W[:,i_infeasible]+dW_direction)
-                self.DrawWaypoints(W, env)
+        def GetForceCellCorrection(self, W, Cells, dF):
 
-                qmax = 1.0
+                N = W.shape[1]
+                dW = np.zeros((3,N))
+                for i in range(0,N):
+                        dW[:,i] = self.lambda_position(i, idx)*dF
+                return dW
 
-                for p in range(0,20):
-                        ##velocity applied to each iteration
-                        dV = 0.5*p
+        def GetForceStretch(self, idx, W, dF):
+
+                assert(idx>=1)
+
+                N = W.shape[1]
+                dW = np.zeros((3,N))
+
+                for i in range(0,idx):
+                        dW[:,i] = self.lambda_stretch(i, idx)*dF
+                return dW
+
+        ### remove any updates on the endpoint, keep them static
+        def GetForceEndpointCorrection(self, Wupdate, W, Winit, Wgoal):
+
+                N = Wupdate.shape[1]
+                dW = np.zeros((3,N))
+
+                assert(W.shape[1]==Wupdate.shape[1])
+
+                for i in range(0,N):
+                        dW[:,i] = dW[:,i] + self.lambda_endpoint(i, 0)*(-Wupdate[:,0])
+                        dW[:,i] = dW[:,i] + self.lambda_endpoint(i, N-1)*(-Wupdate[:,-1])
+
+                if np.linalg.norm(dW[:,-1])>0.001:
+                        print "update correction not successful!"
+                        sys.exit(0)
+
+                dWinit = Winit[0:3] - W[:,0]
+                dWgoal = Wgoal[0:3] - W[:,-1]
+
+                for i in range(0,N):
+                        dW[:,i] = dW[:,i] + self.lambda_endpoint(i, 0)*(dWinit)
+                        dW[:,i] = dW[:,i] + self.lambda_endpoint(i, N-1)*(dWgoal)
+
+                Wcorrection = Wupdate + dW
+                return Wcorrection
 
 
-                        dist_until_captured = dV*dV/(2*qmax)
-                        print dist_until_captured,dW_direction
-                        #self.DrawGreenPoint(env,W[:,i_infeasible]-dist_until_captured*dW_direction)
+        def deform_onestep(self, env):
+                Ninsert = 50
+                lambda_insert = 0.03
 
-                        Wupdate = np.zeros((3,Nwaypoints))
-                        dd = 0.0
+                traj_old = self.tau
+                [Wori,dWori] = self.TrajectoryToWaypoints(self.tau, N = 100)
+                Nwaypoints = Wori.shape[1]
+                F = self.GetForcesAtWaypoints(Wori, env)
 
-                        i = i_infeasible
-                        while dd < dist_until_captured and i > 1:
-                                ##project W[:,i-1] onto W - distW*dWdirection
-                                scale = -(i-i_infeasible)
-                                dd = scale * dist_until_captured/100
-                                #dd = np.linalg.norm(W[:,i_infeasible] - W[:,i-1])
-                                W_line = W[:,i_infeasible] - dd*dW_direction
-                                Wupdate[:,i-1] = W_line - W[:,i-1]
-                                i = i - 1
+                idx_invalid = self.GetFirstInfeasibleWaypoint(Wori, dWori, F)
+                dW_invalid = dWori[:,idx_invalid]/(np.linalg.norm(dWori[:,idx_invalid]))
+                print "############################################################"
+                print "INVALID POINT FOUND"
+                print idx_invalid
+                print Wori[:,idx_invalid], dW_invalid
 
-                        print "projected",-(i-i_infeasible),"points"
-                        W = W + 0.1*Wupdate 
-                        print W[:,-1]
+                #self.DrawRedPoint(env, Wori[:,idx_invalid])
+                self.DrawRedArrow(env, Wori[:,idx_invalid], dW_invalid)
 
-                        self.DrawWaypoints(W, env)
-                        time.sleep(0.1)
+                Wdown = Wori[:,0:idx_invalid]
+                Wup = Wori[:,idx_invalid:]
+
+                W = np.zeros((3,Ninsert+Nwaypoints))
+
+                W[:,0:idx_invalid] = Wdown
+                W[:,idx_invalid+Ninsert:] = Wup
+
+                Wmiddle = np.zeros((3,Ninsert))
+
+                for i in range(0,Ninsert):
+                        Wstretch = (Ninsert-(i))*lambda_insert*dW_invalid
+                        Wmiddle[:,i] = Wori[:,idx_invalid] - Wstretch
+
+                W[:,idx_invalid:idx_invalid+Ninsert] = Wmiddle
+
+                Wupdate_stretch = self.GetForceStretch(idx_invalid, W, -(Ninsert+1)*lambda_insert*dW_invalid)
+                Wupdate_position = self.GetForcePosition(idx_invalid+Ninsert, W, -F[:,idx_invalid])
+
+                Wupdate = Wupdate_position+Wupdate_stretch
+
+                Winit=env.RobotGetInitialPosition()
+                Wgoal=env.RobotGetGoalPosition()
+                Wupdate_correction = self.GetForceEndpointCorrection(Wupdate, W, Winit, Wgoal)
+
+                W = W + Wupdate_correction
+
+                print "UPDATE WAYPOINTS:"
+                print np.around(Wupdate_correction[:,0],decimals=2)
+                print np.around(Wupdate_correction[:,-1],decimals=2)
+
+                #print np.around(W[:,:idx_invalid+Ninsert+2].T,decimals=2)
+                #print np.around(W[:,idx_invalid+Ninsert-2:].T,decimals=2)
+                self.tau = self.WaypointsToTrajectory(W)
+                [f0,df0] = self.funcEval(self.tau,0)
+                print "FUNCTION WAYPOINTS VS ORIGINAL WAYPOINTS"
+                print np.around(f0,decimals=2), W[:,0]
+                [f1,df1] = self.funcEval(self.tau,1)
+                print np.around(f1,decimals=2), W[:,-1]
+
+                #self.DrawWaypoints(W, env)
+                print "############################################################"
+                #for i in range(0,20):
+                        #self.DrawWaypoints(W, env)
+                        #time.sleep(0.05)
+                traj_new = self.tau
+
+
+                return [traj_old, traj_new]
+
+                #W = self.TrajectoryToWaypoints(self.tau, N=220)
+                #print np.around(np.array(W).T,decimals=2)
 

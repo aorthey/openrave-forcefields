@@ -27,7 +27,7 @@ class EnvironmentTheRay(ForceEnvironment):
                 #return [3.0,3.0]
 
         def RobotGetGoalPosition(self):
-                return [-4.5,-0.2,0.15,0,0,0,0,0]
+                return [-4.5,-0.0,0.15,0,0,0,0,0]
 
 
 
