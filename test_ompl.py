@@ -115,26 +115,17 @@ if __name__ == "__main__":
         #######################################################################
         #basemanip=interfaces.BaseManipulation(robot)
 
-        N = traj.GetNumWaypoints()
-        #W=[]
-        #for i in range(0,N):
-        #        w = array((traj.GetWaypoint(i)[0],traj.GetWaypoint(i)[1],traj.GetWaypoint(i)[2]))
-        #        W.append((w))
-        
         print "###############################################################"
+        N = traj.GetNumWaypoints()
         print N,"waypoints"
         print traj.GetWaypoint(N-1)
         print "###############################################################"
-        #jwith env.env:
-        #j        env.handles.append(env.env.drawlinestrip(points=array(W),
-        #j                                   linewidth=10.0,
-        #j                                   colors=array(((0.2,0.8,0.2)))))
 
-        #######################################################################
-        #W = np.array((1,0,0),(1.5,0,0),(2.0,0,0),(2.5,0,0))
-        #W = np.array(W)[:,0:2].T
-        #print W
-        
+        from trajectory import *
+        tt = Trajectory.from_ravetraj(traj)
+
+        print tt.evaluateAt(0)
+
         td = TrajectoryDeformationNaive.from_ravetraj(traj, env)
         td.deform()
         td.draw_trajectory_original()

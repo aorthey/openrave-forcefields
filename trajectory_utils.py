@@ -2,17 +2,6 @@ import numpy as np
 from scipy.interpolate import interp1d,splev,splrep,splprep
 from scipy.misc import derivative
 
-#class Trajectory():
-#       def __init__(self):
-#
-#       @classmethod 
-#       def from_waypoints(cls, W):
-#       @classmethod 
-#       def from_ravetraj(cls, W):
-#
-#
-#       def draw(self):
-
 
 def funcEval(tau, t):
         f0 = splev(t,tau)
