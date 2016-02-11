@@ -14,7 +14,8 @@ from environment_periodic_force_triple_stream import *
 from environment_periodic_force_crossroad_stream import *
 
 from trajectory_analyzer import *
-from trajectory_speed_profiler import *
+#from trajectory_speed_profiler import *
+from trajectory_deformation_naive import *
 
 if __name__ == "__main__":
 
@@ -115,10 +116,10 @@ if __name__ == "__main__":
         #basemanip=interfaces.BaseManipulation(robot)
 
         N = traj.GetNumWaypoints()
-        W=[]
-        for i in range(0,N):
-                w = array((traj.GetWaypoint(i)[0],traj.GetWaypoint(i)[1],traj.GetWaypoint(i)[2]))
-                W.append((w))
+        #W=[]
+        #for i in range(0,N):
+        #        w = array((traj.GetWaypoint(i)[0],traj.GetWaypoint(i)[1],traj.GetWaypoint(i)[2]))
+        #        W.append((w))
         
         print "###############################################################"
         print N,"waypoints"
@@ -131,18 +132,25 @@ if __name__ == "__main__":
 
         #######################################################################
         #W = np.array((1,0,0),(1.5,0,0),(2.0,0,0),(2.5,0,0))
-        W = np.array(W)[:,0:2].T
-        print W
+        #W = np.array(W)[:,0:2].T
+        #print W
+        
+        td = TrajectoryDeformationNaive.from_ravetraj(traj, env)
+        td.deform()
+        td.draw_trajectory_original()
+        td.draw_deformation()
 
-        ta = TrajectoryAnalyzer(W)
+        #ta = TrajectoryAnalyzer(W)
         #ta.draw(env)
         #time.sleep(0.1)
 
-        [told, tnew] = ta.deform_onestep(env)
+        #[told, tnew] = ta.deform_onestep(env)
         #ta.draw(env)
-        ta.draw_deformation(env, told,tnew)
+        #ta.draw_deformation(env, told,tnew)
         #tsp = TrajectorySpeedProfiler(robot)
         #traj = tsp.retime(traj)
+
+
 
 
 
