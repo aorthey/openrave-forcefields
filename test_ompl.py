@@ -1,4 +1,4 @@
-#P!/usr/bin/env python
+#!/usr/bin/env python
 import time
 import scipy
 import sys
@@ -15,8 +15,13 @@ from environment_periodic_force_crossroad_stream import *
 
 from deformation_naive import *
 from trajectory_bspline import *
+import numpy as np
+import pylab as plt
+import statsmodels.api as sm
 
 if __name__ == "__main__":
+
+
 
         env = EnvironmentTheRay()
         #env = EnvironmentTheCounterStream()
@@ -73,8 +78,8 @@ if __name__ == "__main__":
         #'OMPL_pRRT',
 
         print existing_planners
-        P = 'kinodynamicrrt'
         P = 'birrt'
+        #P = 'kinodynamicrrt'
         #P = 'basicrrt'
 
         planner=RaveCreatePlanner(env.env,P)
@@ -99,18 +104,26 @@ if __name__ == "__main__":
         assert result == PlannerStatus.HasSolution
 
         #result = planningutils.RetimeTrajectory(traj,False,0.15)
-        #assert result == PlannerStatus.HasSolution
 
-        N = rave_traj.GetNumWaypoints()
-        print N,"waypoints"
-        print rave_traj.GetWaypoint(N-1)
-        print "###############################################################"
+        from util import draw_waypoints, draw_ravetraj
+        #handle = draw_ravetraj(rave_traj, env)
+        from trajectory_polynomial import *
 
-        traj = TrajectoryBSpline.from_ravetraj(rave_traj)
+        traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
+        #traj = TrajectoryBSpline.from_ravetraj(rave_traj)
+        traj.info()
+        traj.draw(env)
+
         td = DeformationNaive(traj, env)
-        td.deform()
-        td.draw_deformation()
 
+        td.draw_trajectory_original()
+
+        #td.deform()
+
+        #td.draw_deformation()
+
+        #td.deform()
+        #td.draw_deformation()
 
         #raw_input('Press <ENTER> to execute trajectory.')
         #RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug

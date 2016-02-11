@@ -11,12 +11,13 @@ class DeformationNaive(Deformation):
         lambda_stretch_peak = 1.0
         lambda_stretch_sigma = 10.0
 
-        Ninsert = 50
-        lambda_insert = 0.05
+        Ninsert = 10
+        lambda_insert = 0.01
 
+        ## change only traj_deformed here
         def deform_onestep(self):
 
-                [Wori,dWori] = self.traj_old_deformed.get_waypoints(N=100)#(self.traj_ori, N = 100)
+                [Wori,dWori] = self.traj_deformed.get_waypoints(N=100)#(self.traj_ori, N = 100)
 
                 Nwaypoints = Wori.shape[1]
                 F = self.GetForcesAtWaypoints(Wori)
@@ -62,10 +63,7 @@ class DeformationNaive(Deformation):
                 #print np.around(W[:,0],decimals=2)
                 #print np.around(W[:,-1],decimals=2)
 
-                self.traj_old_deformed = self.traj_deformed
                 self.traj_deformed.new_from_waypoints(W)
-
-
 
 
         def gaussian(self, a, b, c, t):
@@ -118,6 +116,10 @@ class DeformationNaive(Deformation):
                 return dW
 
         def GetForceStretch(self, idx, W, dF):
+
+                if idx < 1:
+                        print "\nERROR: initial point was not feasible, cannot \n stretch this without changing initial \n point. Solution: Change your trajectory \n to make sure that your initial point is feasible\n"
+                        sys.exit(0)
 
                 assert(idx>=1)
 

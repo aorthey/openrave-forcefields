@@ -89,7 +89,7 @@ class ForceEnvironment():
                         self.robot.SetDOFLimits((-10,-8,-0.15,-4*pi),(10,8,0.15,4*pi))
                         self.robot.SetDOFValues((xi,yi,zi,ti))
                         self.robot.SetDOFVelocities((dxi,dyi,dzi,dti))
-                        self.robot.SetDOFVelocityLimits([5.0,5.0,5.0,5.0])
+                        self.robot.SetDOFVelocityLimits([5.0,5.0,0.0,5.0])
 
 
                         self.handles.append(self.env.plot3(points=array(((xg,yg,zg))),
