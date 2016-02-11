@@ -1,32 +1,34 @@
 import abc
 import time
 import numpy as np
+from copy import copy,deepcopy
 
 from trajectory import *
-#from trajectory_utils import *
 
-class TrajectoryDeformation():
+class Deformation():
         __metaclass__ = abc.ABCMeta
 
         env = []
         traj_ori = []
         traj_deformed = []
+        traj_old_deformed = []
         handle = []
 
 
         def __init__(self, trajectory, environment):
                 self.env = environment
                 self.traj_ori = trajectory 
-                self.traj_deformed = trajectory 
+                self.traj_deformed = copy(trajectory)
+                self.traj_old_deformed = copy(trajectory)
 
         @abc.abstractmethod 
         def deform_onestep(self):
                 pass
 
-        def deform(self, N_iter = 1):
+        def deform(self, N_iter = 2):
                 for i in range(0,N_iter):
+                        self.traj_old_deformed = self.traj_deformed
                         self.deform_onestep()
-
 
         def GetForcesAtWaypoints(self, W):
                 Nwaypoints = W.shape[1]
@@ -50,10 +52,10 @@ class TrajectoryDeformation():
                 L = self.traj_ori.get_length()
                 dt = 0.05
                 Nwaypoints = int(L/dt)
-                print Nwaypoints
 
-                #[W0,dW] = TrajectoryToWaypoints(self.traj_ori,N=Nwaypoints)
-                #[W1,dW] = TrajectoryToWaypoints(self.traj_deformed,N=Nwaypoints)
+                print self.traj_ori.info()
+                print self.traj_deformed.info()
+
                 [W0,dW] = self.traj_ori.get_waypoints(N=Nwaypoints) 
                 [W1,dW] = self.traj_deformed.get_waypoints(N=Nwaypoints) 
 
@@ -61,8 +63,8 @@ class TrajectoryDeformation():
                 for i in range(0,M):
                         k = float(i)/float(M)
                         Wk = (1-k)*W0 + k*W1
-                        Tk = Trajectory.from_waypoints(Wk)
-                        self.handle = Tk.draw(self.env, keep_handle=False)
+                        self.traj_deformed.new_from_waypoints(Wk)
+                        self.handle = self.traj_deformed.draw(self.env, keep_handle=False)
                         time.sleep(0.01)
 
         def draw_waypoints(self, Win):
@@ -82,22 +84,4 @@ class TrajectoryDeformation():
 
         def draw_trajectory_deformed(self):
                 self.traj_deformed.draw(self.env)
-
-
-
-        #def DrawRedPoint(self,env,X):
-        #        self.handles.append(env.env.plot3(points=X,
-        #                           pointsize=self.ptsize,
-        #                           colors=np.array(((0.8,0.0,0.0,0.9))),
-        #                           drawstyle=1))
-
-        #def DrawRedArrow(self,env,X,dX):
-        #        A = env.env.drawarrow(X,X+dX,linewidth=0.02,color=np.array((1,0,0)))
-        #        self.handles.append(A)
-
-        #def DrawGreenPoint(self,env,X):
-        #        self.handles.append(env.env.plot3(points=X,
-        #                           pointsize=self.ptsize,
-        #                           colors=np.array(((0.0,0.8,0.0,0.9))),
-        #                           drawstyle=1))
 

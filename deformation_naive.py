@@ -1,6 +1,6 @@
-from trajectory_deformation_factory import *
+from deformation_factory import *
 
-class TrajectoryDeformationNaive(TrajectoryDeformation):
+class DeformationNaive(Deformation):
 
         lambda_position_peak = 0.25
         lambda_position_sigma = 15.0
@@ -16,8 +16,7 @@ class TrajectoryDeformationNaive(TrajectoryDeformation):
 
         def deform_onestep(self):
 
-                #[Wori,dWori] = TrajectoryToWaypoints(self.traj_ori, N = 100)
-                [Wori,dWori] = self.traj_ori.get_waypoints(N=100)#(self.traj_ori, N = 100)
+                [Wori,dWori] = self.traj_old_deformed.get_waypoints(N=100)#(self.traj_ori, N = 100)
 
                 Nwaypoints = Wori.shape[1]
                 F = self.GetForcesAtWaypoints(Wori)
@@ -56,16 +55,17 @@ class TrajectoryDeformationNaive(TrajectoryDeformation):
 
                 W = W + Wupdate_correction
 
-                print "UPDATE WAYPOINTS:"
-                print np.around(Wupdate_correction[:,0],decimals=2)
-                print np.around(Wupdate_correction[:,-1],decimals=2)
-                print "NEW END WAYPOINTS:"
-                print np.around(W[:,0],decimals=2)
-                print np.around(W[:,-1],decimals=2)
+                #print "UPDATE WAYPOINTS:"
+                #print np.around(Wupdate_correction[:,0],decimals=2)
+                #print np.around(Wupdate_correction[:,-1],decimals=2)
+                #print "NEW END WAYPOINTS:"
+                #print np.around(W[:,0],decimals=2)
+                #print np.around(W[:,-1],decimals=2)
 
-                self.traj_deformed = Trajectory.from_waypoints(W)
+                self.traj_old_deformed = self.traj_deformed
+                self.traj_deformed.new_from_waypoints(W)
 
-                print "############################################################"
+
 
 
         def gaussian(self, a, b, c, t):

@@ -13,8 +13,8 @@ from environment_periodic_force_the_hideout import *
 from environment_periodic_force_triple_stream import *
 from environment_periodic_force_crossroad_stream import *
 
-from trajectory_deformation_naive import *
-from trajectory import *
+from deformation_naive import *
+from trajectory_bspline import *
 
 if __name__ == "__main__":
 
@@ -101,44 +101,15 @@ if __name__ == "__main__":
         #result = planningutils.RetimeTrajectory(traj,False,0.15)
         #assert result == PlannerStatus.HasSolution
 
-        ########################################################################
-        #print "###############################################################"
-        #print "SIMPLIFYING PLAN"
-        #print "###############################################################"
-        ########################################################################
-        
-        #simplifier.InitPlan(env.robot, Planner.PlannerParameters())
-        #result = simplifier.PlanPath(traj)
-        #assert result == PlannerStatus.HasSolution
-
-        #######################################################################
-        #basemanip=interfaces.BaseManipulation(robot)
-
-        print "###############################################################"
         N = rave_traj.GetNumWaypoints()
         print N,"waypoints"
         print rave_traj.GetWaypoint(N-1)
         print "###############################################################"
 
-
-        traj = Trajectory.from_ravetraj(rave_traj)
-        td = TrajectoryDeformationNaive(traj, env)
+        traj = TrajectoryBSpline.from_ravetraj(rave_traj)
+        td = DeformationNaive(traj, env)
         td.deform()
         td.draw_deformation()
-
-        #ta = TrajectoryAnalyzer(W)
-        #ta.draw(env)
-        #time.sleep(0.1)
-
-        #[told, tnew] = ta.deform_onestep(env)
-        #ta.draw(env)
-        #ta.draw_deformation(env, told,tnew)
-        #tsp = TrajectorySpeedProfiler(robot)
-        #traj = tsp.retime(traj)
-
-
-
-
 
 
         #raw_input('Press <ENTER> to execute trajectory.')
