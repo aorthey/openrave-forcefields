@@ -13,9 +13,8 @@ from environment_periodic_force_the_hideout import *
 from environment_periodic_force_triple_stream import *
 from environment_periodic_force_crossroad_stream import *
 
-from trajectory_analyzer import *
-#from trajectory_speed_profiler import *
 from trajectory_deformation_naive import *
+from trajectory import *
 
 if __name__ == "__main__":
 
@@ -95,8 +94,8 @@ if __name__ == "__main__":
         #######################################################################
         planner.InitPlan(env.robot, params)
 
-        traj = RaveCreateTrajectory(env.env,'')
-        result = planner.PlanPath(traj)
+        rave_traj = RaveCreateTrajectory(env.env,'')
+        result = planner.PlanPath(rave_traj)
         assert result == PlannerStatus.HasSolution
 
         #result = planningutils.RetimeTrajectory(traj,False,0.15)
@@ -116,19 +115,15 @@ if __name__ == "__main__":
         #basemanip=interfaces.BaseManipulation(robot)
 
         print "###############################################################"
-        N = traj.GetNumWaypoints()
+        N = rave_traj.GetNumWaypoints()
         print N,"waypoints"
-        print traj.GetWaypoint(N-1)
+        print rave_traj.GetWaypoint(N-1)
         print "###############################################################"
 
-        from trajectory import *
-        tt = Trajectory.from_ravetraj(traj)
 
-        print tt.evaluateAt(0)
-
-        td = TrajectoryDeformationNaive.from_ravetraj(traj, env)
+        traj = Trajectory.from_ravetraj(rave_traj)
+        td = TrajectoryDeformationNaive(traj, env)
         td.deform()
-        td.draw_trajectory_original()
         td.draw_deformation()
 
         #ta = TrajectoryAnalyzer(W)

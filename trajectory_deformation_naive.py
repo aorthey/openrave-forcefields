@@ -16,7 +16,9 @@ class TrajectoryDeformationNaive(TrajectoryDeformation):
 
         def deform_onestep(self):
 
-                [Wori,dWori] = TrajectoryToWaypoints(self.traj_ori, N = 100)
+                #[Wori,dWori] = TrajectoryToWaypoints(self.traj_ori, N = 100)
+                [Wori,dWori] = self.traj_ori.get_waypoints(N=100)#(self.traj_ori, N = 100)
+
                 Nwaypoints = Wori.shape[1]
                 F = self.GetForcesAtWaypoints(Wori)
 
@@ -61,14 +63,7 @@ class TrajectoryDeformationNaive(TrajectoryDeformation):
                 print np.around(W[:,0],decimals=2)
                 print np.around(W[:,-1],decimals=2)
 
-                #print np.around(W[:,:idx_invalid+self.Ninsert+2].T,decimals=2)
-                #print np.around(W[:,idx_invalid+self.Ninsert-2:].T,decimals=2)
-                self.traj_deformed = WaypointsToTrajectory(W)
-                #[f0,df0] = self.funcEval(self.tau,0)
-                #print "FUNCTION WAYPOINTS VS ORIGINAL WAYPOINTS"
-                #print np.around(f0,decimals=2), W[:,0]
-                #[f1,df1] = self.funcEval(self.tau,1)
-                #print np.around(f1,decimals=2), W[:,-1]
+                self.traj_deformed = Trajectory.from_waypoints(W)
 
                 print "############################################################"
 
