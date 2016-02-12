@@ -9,10 +9,10 @@ class DeformationNaive(Deformation):
         lambda_endpoint_sigma = 0.5
 
         lambda_stretch_peak = 1.0
-        lambda_stretch_sigma = 10.0
+        lambda_stretch_sigma = 5.0
 
-        Ninsert = 10
-        lambda_insert = 0.01
+        Ninsert = 20
+        lambda_insert = 0.2
 
         ## change only traj_deformed here
         def deform_onestep(self):

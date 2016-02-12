@@ -56,7 +56,7 @@ class Deformation():
 
 
         def draw_deformation(self):
-                M = 10
+                M = 20
                 L = self.traj_ori.get_length()
                 dt = 0.05
                 Nwaypoints = int(L/dt)
@@ -72,7 +72,7 @@ class Deformation():
                         Wk = (1-k)*W0 + k*W1
                         self.traj_current.new_from_waypoints(Wk)
                         self.handle = self.traj_current.draw(self.env, keep_handle=False)
-                        time.sleep(0.001)
+                        time.sleep(0.01)
 
                 self.traj_display = copy(self.traj_current)
 

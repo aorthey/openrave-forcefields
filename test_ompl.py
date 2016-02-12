@@ -109,25 +109,26 @@ if __name__ == "__main__":
         #handle = draw_ravetraj(rave_traj, env)
         from trajectory_polynomial import *
 
-        traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
-        #traj = TrajectoryBSpline.from_ravetraj(rave_traj)
+        #traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
+        traj = TrajectoryBSpline.from_ravetraj(rave_traj)
         traj.info()
-        traj.draw(env)
+
+        #traj.draw(env)
 
         td = DeformationNaive(traj, env)
 
-        td.draw_trajectory_original()
+        #td.draw_trajectory_original()
 
-        #td.deform()
+        td.deform()
 
-        #td.draw_deformation()
+        td.draw_deformation()
 
         #td.deform()
         #td.draw_deformation()
 
         #raw_input('Press <ENTER> to execute trajectory.')
         #RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug
-        openravepy.RaveLogInfo("Waiting for controller to finish")
+        #openravepy.RaveLogInfo("Waiting for controller to finish")
         #robot.GetController().SetPath(traj)
         #robot.WaitForController(0)
         #robot.GetController().Reset()

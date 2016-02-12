@@ -29,7 +29,6 @@ class Trajectory():
                 for tt in np.linspace(0,1,10):
                         [f,df]=self.evaluate_at(tt)
                         print np.around(f,decimals=2)
-                sys.exit(0)
 
         def get_dimension(self):
                 [F,dF] = self.evaluate_at(0)
@@ -97,8 +96,8 @@ class Trajectory():
                 return dd
 
         def draw(self, env, keep_handle=True):
-                Nwaypoints=100
-                [W,dW] = self.get_waypoints()
+                Nwaypoints=300
+                [W,dW] = self.get_waypoints(N=Nwaypoints)
 
                 tmp_handle = []
                 for i in range(0,Nwaypoints):
