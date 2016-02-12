@@ -16,7 +16,6 @@ from environment_periodic_force_crossroad_stream import *
 from deformation_naive import *
 from trajectory_bspline import *
 import numpy as np
-import pylab as plt
 import statsmodels.api as sm
 
 if __name__ == "__main__":
@@ -105,22 +104,19 @@ if __name__ == "__main__":
 
         #result = planningutils.RetimeTrajectory(traj,False,0.15)
 
-        from util import draw_waypoints, draw_ravetraj
+        #from util import draw_waypoints, draw_ravetraj
         #handle = draw_ravetraj(rave_traj, env)
         from trajectory_polynomial import *
 
-        #traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
-        traj = TrajectoryBSpline.from_ravetraj(rave_traj)
-        traj.info()
+        traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
 
+        #traj = TrajectoryBSpline.from_ravetraj(rave_traj)
+        #traj.info()
+        #traj.plot_speed_profile(env)
         #traj.draw(env)
 
         td = DeformationNaive(traj, env)
-
-        #td.draw_trajectory_original()
-
         td.deform()
-
         td.draw_deformation()
 
         #td.deform()

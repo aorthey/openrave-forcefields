@@ -28,6 +28,7 @@ class DeformationNaive(Deformation):
                 print "INVALID POINT FOUND"
                 print idx_invalid
                 print Wori[:,idx_invalid], dW_invalid
+                print "############################################################"
 
                 Wdown = Wori[:,0:idx_invalid]
                 Wup = Wori[:,idx_invalid:]
@@ -55,13 +56,6 @@ class DeformationNaive(Deformation):
                 Wupdate_correction = self.GetForceEndpointCorrection(Wupdate, W, Winit, Wgoal)
 
                 W = W + Wupdate_correction
-
-                #print "UPDATE WAYPOINTS:"
-                #print np.around(Wupdate_correction[:,0],decimals=2)
-                #print np.around(Wupdate_correction[:,-1],decimals=2)
-                #print "NEW END WAYPOINTS:"
-                #print np.around(W[:,0],decimals=2)
-                #print np.around(W[:,-1],decimals=2)
 
                 self.traj_deformed.new_from_waypoints(W)
 
