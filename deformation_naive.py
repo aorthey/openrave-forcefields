@@ -3,7 +3,7 @@ from deformation_factory import *
 class DeformationNaive(Deformation):
 
         lambda_position_peak = 0.25
-        lambda_position_sigma = 15.0
+        lambda_position_sigma = 10.0
 
         lambda_endpoint_peak = 1.0
         lambda_endpoint_sigma = 0.5
@@ -18,9 +18,11 @@ class DeformationNaive(Deformation):
         def deform_onestep(self):
 
                 [Wori,dWori] = self.traj_deformed.get_waypoints(N=100)#(self.traj_ori, N = 100)
+                Ndim = Wori.shape[0]
 
                 Nwaypoints = Wori.shape[1]
                 F = self.GetForcesAtWaypoints(Wori)
+                print F.shape
 
                 idx_invalid = self.GetFirstInfeasibleWaypoint(Wori, dWori, F)
                 dW_invalid = dWori[:,idx_invalid]/(np.linalg.norm(dWori[:,idx_invalid]))
@@ -33,12 +35,12 @@ class DeformationNaive(Deformation):
                 Wdown = Wori[:,0:idx_invalid]
                 Wup = Wori[:,idx_invalid:]
 
-                W = np.zeros((3,self.Ninsert+Nwaypoints))
+                W = np.zeros((Ndim,self.Ninsert+Nwaypoints))
 
                 W[:,0:idx_invalid] = Wdown
                 W[:,idx_invalid+self.Ninsert:] = Wup
 
-                Wmiddle = np.zeros((3,self.Ninsert))
+                Wmiddle = np.zeros((Ndim,self.Ninsert))
 
                 for i in range(0,self.Ninsert):
                         Wstretch = (self.Ninsert-(i))*self.lambda_insert*dW_invalid
@@ -53,7 +55,8 @@ class DeformationNaive(Deformation):
 
                 Winit=self.env.RobotGetInitialPosition()
                 Wgoal=self.env.RobotGetGoalPosition()
-                Wupdate_correction = self.GetForceEndpointCorrection(Wupdate, W, Winit, Wgoal)
+
+                Wupdate_correction = self.GetForceEndpointCorrection(Wupdate, W, Winit[:Ndim], Wgoal[:Ndim])
 
                 W = W + Wupdate_correction
 
@@ -93,9 +96,9 @@ class DeformationNaive(Deformation):
         ## 
         ## return: a force direction to each waypoint
         def GetForcePosition(self, idx, W, dF):
-
+                Ndim = W.shape[0]
                 N = W.shape[1]
-                dW = np.zeros((3,N))
+                dW = np.zeros((Ndim,N))
                 for i in range(0,N):
                         dW[:,i] = self.lambda_position(i, idx)*dF
 
@@ -103,8 +106,9 @@ class DeformationNaive(Deformation):
 
         def GetForceCellCorrection(self, W, Cells, dF):
 
+                Ndim = W.shape[0]
                 N = W.shape[1]
-                dW = np.zeros((3,N))
+                dW = np.zeros((Ndim,N))
                 for i in range(0,N):
                         dW[:,i] = self.lambda_position(i, idx)*dF
                 return dW
@@ -117,8 +121,9 @@ class DeformationNaive(Deformation):
 
                 assert(idx>=1)
 
+                Ndim = W.shape[0]
                 N = W.shape[1]
-                dW = np.zeros((3,N))
+                dW = np.zeros((Ndim,N))
 
                 for i in range(0,idx):
                         dW[:,i] = self.lambda_stretch(i, idx)*dF
@@ -127,8 +132,9 @@ class DeformationNaive(Deformation):
         ### remove any updates on the endpoint, keep them static
         def GetForceEndpointCorrection(self, Wupdate, W, Winit, Wgoal):
 
-                N = Wupdate.shape[1]
-                dW = np.zeros((3,N))
+                Ndim = W.shape[0]
+                N = W.shape[1]
+                dW = np.zeros((Ndim,N))
 
                 assert(W.shape[1]==Wupdate.shape[1])
 
@@ -140,8 +146,8 @@ class DeformationNaive(Deformation):
                         print "update correction not successful!"
                         sys.exit(0)
 
-                dWinit = Winit[0:3] - W[:,0]
-                dWgoal = Wgoal[0:3] - W[:,-1]
+                dWinit = Winit - W[:,0]
+                dWgoal = Wgoal - W[:,-1]
 
                 for i in range(0,N):
                         dW[:,i] = dW[:,i] + self.lambda_endpoint(i, 0)*(dWinit)

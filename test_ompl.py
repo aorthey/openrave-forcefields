@@ -108,10 +108,10 @@ if __name__ == "__main__":
         #handle = draw_ravetraj(rave_traj, env)
         from trajectory_polynomial import *
 
-        traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
+        #traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
 
-        #traj = TrajectoryBSpline.from_ravetraj(rave_traj)
-        #traj.info()
+        traj = TrajectoryBSpline.from_ravetraj(rave_traj)
+        traj.info()
         #traj.plot_speed_profile(env)
         #traj.draw(env)
 

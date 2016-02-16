@@ -39,11 +39,12 @@ class Deformation():
                         self.traj_current = copy(self.traj_deformed)
 
         def GetForcesAtWaypoints(self, W):
+                Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
-                F = np.zeros((3,Nwaypoints))
+                F = np.zeros((Ndim,Nwaypoints))
                 for i in range(0,Nwaypoints):
                         pt = np.array(((W[0,i],W[1,i],-0.1,0.001)))
-                        F[:,i] = self.env.GetForceAtX(pt)
+                        F[0:3,i] = self.env.GetForceAtX(pt)
                 return F
 
         def GetFirstInfeasibleWaypoint(self, W, dW, F):
@@ -57,7 +58,7 @@ class Deformation():
 
         def draw_deformation(self):
                 M = 20
-                L = self.traj_ori.get_length()
+                L = self.traj_current.get_length()
                 dt = 0.05
                 Nwaypoints = int(L/dt)
 

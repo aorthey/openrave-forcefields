@@ -58,8 +58,8 @@ def WaypointsToWeights(waypts):
         #######################################################################
         ## discretization of trajectory
         #######################################################################
-        M = 1000 ## points on precomputed functions
-        K = 200  ## number of precomputed basis functions
+        M = 500 ## points on precomputed functions
+        K = 500  ## number of precomputed basis functions
         plotFunctionalSpace = True
         #######################################################################
 
