@@ -100,7 +100,6 @@ if __name__ == "__main__":
         result = planner.PlanPath(rave_traj)
         assert result == PlannerStatus.HasSolution
 
-        #result = planningutils.RetimeTrajectory(traj,False,0.15)
 
         #from util import draw_waypoints, draw_ravetraj
         #handle = draw_ravetraj(rave_traj, env)
@@ -117,6 +116,8 @@ if __name__ == "__main__":
         td.deform()
         td.draw_deformation()
         td.traj_current.plot_speed_profile(env)
+
+        #result = planningutils.RetimeTrajectory(traj,False,0.15)
 
         #td.deform()
         #td.draw_deformation()
