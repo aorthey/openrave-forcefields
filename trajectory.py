@@ -6,10 +6,13 @@ from numpy import sqrt,sin,cos,pi
 import abc
 import time
 import numpy as np
+from util import Rz
 from scipy.interpolate import interp1d,splev,splrep,splprep
 from scipy.misc import derivative
 from pylab import plot,title,xlabel,ylabel
 import pylab as plt
+
+from util_force import *
 
 class Trajectory():
         __metaclass__ = abc.ABCMeta
@@ -55,20 +58,27 @@ class Trajectory():
                         F[:,i] = env.GetForceAtX(pt)
                 return F
 
+        def normalize_velocity_vector(self, dW):
+                Ndim = dW.shape[1]
+                for i in range(0,Ndim):
+                        dW[:,i] = dW[:,i]/np.linalg.norm(dW[:,i])
+                return dW
+
         def plot_speed_profile(self, env):
 
                 L = self.get_length()
-                dt = 0.05
+                dt = 0.1
                 Nwaypoints = int(L/dt)
 
                 [W,dW] = self.get_waypoints(N=Nwaypoints)
                 F = self.get_forces_at_waypoints(W, env)
+                dW = self.normalize_velocity_vector(dW)
                 ### we need F, W, dW
 
                 V = np.zeros((Nwaypoints-1))
                 T = np.linspace(0.0,1.0,num=Nwaypoints-1)
                 for i in range(0,Nwaypoints-1):
-                        V[i] = self.get_minimum_feasible_velocity(W[:,i],W[:,i+1],dW[:,i],F[:,i])
+                        V[i] = self.get_minimum_feasible_velocity(dt, W[:,i],W[:,i+1],dW[:,i],F[:,i])
 
                 plot(T,V,'or',linewidth=3,markersize=2)        
                 title('Speed Profile Trajectory', fontsize=self.FONT_SIZE)
@@ -79,23 +89,23 @@ class Trajectory():
 
         from util import Rz
 
-        def get_minimum_feasible_velocity(self, W0, W1, dW0, F):
-
+        def get_minimum_feasible_velocity(self, dt, W0, W1, dW0, F):
 
                 ## assume that W contains [x,y,z,theta]
                 ## note: a force along x,y,z corresponds to a linear acc field, a force along theta would be a twisted acc field 
 
                 ## project F onto the identity element, here the identity is at (0,0,0,0), with x pointing towards the 'right'
-                theta = W[3]
+                theta = W0[3]
                 R = Rz(theta)
-                Fp = R.T*F
+                Fp = np.dot(R.T,F)
+                Fp = Fp[0:2].flatten()
 
                 u1min = 0.0
                 u1max = 2.0
                 u2min = -2.0
                 u2max = 2.0
 
-                dt = 0.1
+                dt2 = dt*dt/2
 
                 ### question (1) : can we produce an acceleration ddW, such that it counteracts F?
                 [d,nearest_ddq] = ForceCanBeCounteractedByAcceleration(dt, Fp, u1min, u1max, u2min, u2max)
@@ -107,20 +117,15 @@ class Trajectory():
                 
                 ### question (2) : if ddW cannot counteract F, what is the minimal speed dW, such that we still follow tau?
                 ## check that we are in an epsilon neighborhood of next waypoint!
-                dF = Fp[0:2] - nearest_ddq
-
-                GetMinimalSpeedToReachEpsilonNeighbordhood(W0, W1, dW0, dF)
+                dF = np.zeros((2,1))
+                dF[0] = dt2*Fp[0] - nearest_ddq[0]
+                dF[1] = dt2*Fp[1] - nearest_ddq[1]
 
                 epsilon = 0.01
 
+                vmin = GetMinimalSpeedToReachEpsilonNeighbordhood(dt, epsilon, W0, W1, dW0, dF)
 
-
-
-                #if d > 0.5:
-                #        return 0.8
-                #else:
-                #        return 0.01
-
+                return vmin
 
         @abc.abstractmethod 
         def evaluate_at(self, t):

@@ -25,8 +25,24 @@ def PlotReachableSetForceDistance(dt, u1min, u1max, u2min, u2max, F, p):
         plt.fill(X[:,0], X[:,1])
         plt.show()
 
-#def GetMinimalSpeedToReachEpsilonNeighbordhood(W0, W1, dW0, dF):
+def GetMinimalSpeedToReachEpsilonNeighbordhood(dt, epsilon, W0, W1, dW0, dF):
+        dw = np.linalg.norm(W1-W0)
 
+        p = Variable(1)
+        sM = Variable(1)
+
+        constraints = []
+        constraints.append( norm(p*dt*dW0[0:2] + dF +np.dot(dw,np.array((1,0))) ) < epsilon )
+        constraints.append( sM > p )
+        constraints.append( sM > 0 )
+        constraints.append( p > 0 )
+
+        objective = Minimize(norm(sM))
+
+        prob = Problem(objective, constraints)
+        result = prob.solve(solver=SCS)
+
+        return sM.value
 
 
 def ForceCanBeCounteractedByAcceleration(dt, Fp, u1min, u1max, u2min, u2max, plot=False) :
@@ -42,7 +58,7 @@ def ForceCanBeCounteractedByAcceleration(dt, Fp, u1min, u1max, u2min, u2max, plo
         dt2 = dt*dt/2
 
         ## span dt2-hyperball in Ndim
-        F = dt2*Fp[0:2]
+        F = dt2*Fp
         thetamin = dt2*u2min
         thetamax = dt2*u2max
         xmin = 0.0
@@ -72,7 +88,7 @@ def ForceCanBeCounteractedByAcceleration(dt, Fp, u1min, u1max, u2min, u2max, plo
         return [d,nearest_ddq]
 
 if __name__ == '__main__':
-        F = np.array((2.5,0.01,0,0))
+        F = np.array((2.5,0.01))
 
         u1min = 0.0
         u1max = 2.0

@@ -20,8 +20,6 @@ import statsmodels.api as sm
 
 if __name__ == "__main__":
 
-
-
         env = EnvironmentTheRay()
         #env = EnvironmentTheCounterStream()
         #env = EnvironmentTheStream()
@@ -112,12 +110,13 @@ if __name__ == "__main__":
 
         traj = TrajectoryBSpline.from_ravetraj(rave_traj)
         traj.info()
-        #traj.plot_speed_profile(env)
+        traj.plot_speed_profile(env)
         #traj.draw(env)
 
         td = DeformationNaive(traj, env)
         td.deform()
         td.draw_deformation()
+        td.traj_current.plot_speed_profile(env)
 
         #td.deform()
         #td.draw_deformation()
