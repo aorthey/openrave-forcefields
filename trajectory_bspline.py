@@ -34,4 +34,5 @@ class TrajectoryBSpline(Trajectory):
                 df0 = splev(t,self.traj,der=1)
                 f0 = np.array(f0)
                 df0 = np.array(df0)
+                df0=df0/np.linalg.norm(df0)
                 return [f0,df0]

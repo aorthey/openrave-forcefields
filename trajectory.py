@@ -51,11 +51,12 @@ class Trajectory():
                 return F.shape[0]
 
         def get_forces_at_waypoints(self, W, env):
+                Ndims = W.shape[0]
                 Nwaypoints = W.shape[1]
-                F = np.zeros((3,Nwaypoints))
+                F = np.zeros((Ndims,Nwaypoints))
                 for i in range(0,Nwaypoints):
                         pt = np.array(((W[0,i],W[1,i],-0.1,0.001)))
-                        F[:,i] = env.GetForceAtX(pt)
+                        F[0:3,i] = env.GetForceAtX(pt)
                 return F
 
         def normalize_velocity_vector(self, dW):
@@ -89,8 +90,50 @@ class Trajectory():
                 ylabel('$s$', fontsize=self.FONT_SIZE)
                 plt.show()
 
+        def speed_profile_MVC(self, ravetraj):
+                poly_traj = TOPPopenravepy.FromRaveTraj(self.robot, ravetraj)
+
+                grav=[0,0,-9.8]
+                ndof=self.robot.GetDOF()
+                dof_lim=self.robot.GetDOFLimits()
+                vel_lim=self.robot.GetDOFVelocityLimits()
+                #robot.SetDOFLimits(-10*ones(ndof),10*ones(ndof)) # Overrides robot joint limits for TOPP computations
+                #robot.SetDOFVelocityLimits(100*vel_lim) # Override robot velocity limits for TOPP computations
+
+
+
+                ret = traj.RunComputeProfiles(0,0)
+                if(ret == 1):
+                        traj.ReparameterizeTrajectory()
+                        return traj
+                else:
+                        print "Trajectory is not time-parameterizable"
 
         from util import Rz
+
+        ### return the disturbance force after we counteract them with the best
+        ### acceleration available (from our dt reachable set)
+        def get_minimal_disturbance_forces(self, dt, W, F, u1min, u1max, u2min, u2max):
+                dt2 = dt*dt/2
+                Ndim = W.shape[0]
+                Nsamples = W.shape[1]
+                Fp = np.zeros((Ndim,Nsamples))
+
+                for i in range(0,Nsamples):
+                        theta = W[3,i]
+                        Fp[0:3,i] = np.dot(Rz(theta).T,F[0:3,i])[0:3].flatten()
+
+                ### question (1) : can we produce an acceleration ddW, such that it counteracts F?
+                nearest_ddq = ForceCanBeCounteractedByAccelerationVector(dt, Fp, u1min, u1max, u2min, u2max)
+
+                Ndim = Fp.shape[0]
+                Nsamples = Fp.shape[1]
+                dF = np.zeros((Ndim,Nsamples))
+
+                for i in range(0,Nsamples):
+                        for j in range(0,Ndim):
+                                dF[j,i] = (Fp[j,i] - nearest_ddq[j,i])
+                return dF
 
         def get_minimum_feasible_velocity_vector(self, dt, epsilon, W, dW, F):
 

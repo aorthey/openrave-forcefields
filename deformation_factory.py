@@ -73,8 +73,8 @@ class Deformation():
                         Wk = (1-k)*W0 + k*W1
                         self.traj_current.new_from_waypoints(Wk)
                         self.handle = self.traj_current.draw(self.env, keep_handle=False)
-                        #if i == 0:
-                                #raw_input('Press <ENTER> to draw deformation.')
+                        if i == 0:
+                                raw_input('Press <ENTER> to draw deformation.')
                         time.sleep(0.1)
 
                 self.traj_display = copy(self.traj_current)
