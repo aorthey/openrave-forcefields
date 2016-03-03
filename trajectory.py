@@ -9,7 +9,7 @@ import numpy as np
 from util import Rz
 from scipy.interpolate import interp1d,splev,splrep,splprep
 from scipy.misc import derivative
-from pylab import plot,title,xlabel,ylabel
+from pylab import plot,title,xlabel,ylabel,figure
 import pylab as plt
 
 from util_force import *
@@ -23,7 +23,7 @@ class Trajectory():
 
         ptsize = 0.03
         linsize = 1.5
-        FONT_SIZE = 10
+        FONT_SIZE = 20
         dVECTOR_LENGTH = 0.5
 
         trajectory_color = np.array((0.7,0.2,0.7,0.9))
@@ -89,6 +89,20 @@ class Trajectory():
                 xlabel('$\theta$', fontsize=self.FONT_SIZE)
                 ylabel('$s$', fontsize=self.FONT_SIZE)
                 plt.show()
+
+        def plot_speed_profile(self, P):
+                Nwaypoints = P.shape[0]
+                S = np.linspace(0,1,Nwaypoints)
+
+                fig=figure(facecolor='white')
+                plot(S,P,'-r',linewidth=5,markersize=8)        
+                plt.tick_params(labelsize=self.FONT_SIZE)
+                title('Speed Profile Trajectory', fontsize=self.FONT_SIZE)
+                xlabel('$s$', fontsize=2*self.FONT_SIZE)
+                ylabel('$\dot s$', fontsize=2*self.FONT_SIZE)
+
+                plt.show()
+
 
         def speed_profile_MVC(self, ravetraj):
                 poly_traj = TOPPopenravepy.FromRaveTraj(self.robot, ravetraj)

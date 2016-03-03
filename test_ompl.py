@@ -114,8 +114,9 @@ if __name__ == "__main__":
 
         #td = DeformationNaive(traj, env)
         td = DeformationPotentials(traj, env)
-        td.deform()
-        td.draw_deformation()
+        for i in range(10):
+                td.deform()
+                td.draw_deformation()
         #td.traj_current.plot_speed_profile(env)
 
         #ravetraj = td.traj_current.to_ravetraj()

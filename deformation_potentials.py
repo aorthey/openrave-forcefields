@@ -1,4 +1,5 @@
 from deformation_factory import *
+from util_mvc import *
 
 import sys
 
@@ -27,7 +28,7 @@ def compute_lambda_updates(W, dW, dF, Vmax, Amax_linear):
         #[lambda_1, lambda_2] = compute_lambda_updates(W, dW, dF, Vmax, Amax_linear)
         Ndim = W.shape[0]
         lstep = 0.01
-        tstep = 0.001
+        tstep = 0.0001
         if W.ndim <= 1:
                 print "Cannot compute with only one waypoint. Abort"
                 sys.exit(1)
@@ -39,20 +40,21 @@ def compute_lambda_updates(W, dW, dF, Vmax, Amax_linear):
         lambda_2 = np.zeros(Nwaypoints)
         dt = np.zeros((Nwaypoints))
         for i in range(0,Nwaypoints-1):
+                print i,"/",Nwaypoints
                 dold_lambda = 2000.0
                 d_lambda = 1000.0
 
-                while d_lambda < dold_lambda:
+                while d_lambda+0.0001 < dold_lambda:
                         dold_lambda = d_lambda
                         dold = 2000.0
                         d = 1000.0
                         dt[i]=0.0
                         Wstarr = W[:,i]
-                        while d < dold:
+                        while d+0.0001 < dold:
                                 dold = d
                                 dt[i] = dt[i]+tstep
                                 #sys.stdout.write(str(np.around(dt[i],decimals=2))+"("+str(np.around(d,decimals=2))+')|')
-                                #print np.around(dt[i],decimals=2),np.around(d,decimals=2)
+                                #print np.around(dt[i],decimals=2),np.around(d,decimals=2),np.around(dold,decimals=2)
                                 [d,Wst] = eval_norm(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_1, lambda_2)
                                 Wstarr = np.vstack((Wstarr,Wst))
 
@@ -95,14 +97,14 @@ class DeformationPotentials(Deformation):
                 u1max = 2.0
                 u2min = -2.0
                 u2max = 2.0
-                dt = 0.02
+                dt = 0.1
                 epsilon = 0.001
 
                 traj = self.traj_deformed
                 L = traj.get_length()
                 Nwaypoints = int(L/dt)
 
-                [Wori,dWori] = traj.get_waypoints(N=100)#(self.traj_ori, N = 100)
+                [Wori,dWori] = traj.get_waypoints(N=50)#(self.traj_ori, N = 100)
                 Ndim = Wori.shape[0]
                 Nwaypoints = Wori.shape[1]
 
@@ -118,10 +120,11 @@ class DeformationPotentials(Deformation):
                 ### compute the maximum velocity curve (MVC)
                 ###############################################################
 
-                ##TODO!! integrate mvc from TOPP
-                Vmax = GetMinimalSpeedToReachEpsilonNeighbordhoodVector(dt, epsilon, Wori, dWori, dF)
-                self.Vmax=Vmax
-                print Vmax
+                #Vmax = GetMinimalSpeedToReachEpsilonNeighbordhoodVector(dt, epsilon, Wori, dWori, dF)
+                Vmax = GetMVC(Wori, dWori, u1min, u1max, u2min, u2max, dF)
+                
+                #traj.plot_speed_profile(Vmax)
+                #sys.exit(0)
 
                 ###############################################################
                 ## for all points where dF = 0, we can say that lambda_1 = lambda_2 = 0
@@ -135,14 +138,10 @@ class DeformationPotentials(Deformation):
                 ###############################################################
 
                 dU = np.zeros((Ndim,Nwaypoints))
-                print Wori.shape
-                print dU.shape
-                print lambda_1
-                print lambda_2
                 for i in range(0,Nwaypoints):
                         dU[:,i] = -lambda_1[i] * dF[:,i] - lambda_2[i] * dWori[:,i]
 
-                eta = 100
+                eta = 10
                 W = Wori + eta*dU
                 self.traj_deformed.new_from_waypoints(W)
 
