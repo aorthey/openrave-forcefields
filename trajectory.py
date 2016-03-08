@@ -50,13 +50,19 @@ class Trajectory():
                 [F,dF] = self.evaluate_at(0)
                 return F.shape[0]
 
+        def waypoint_to_force(self, env, W):
+                Ndims = W.shape[0]
+                pt = np.array(((W[0],W[1],-0.1,0.001)))
+                F = np.zeros((Ndims))
+                F[0:3] = env.GetForceAtX(pt)
+                return F
+
         def get_forces_at_waypoints(self, W, env):
                 Ndims = W.shape[0]
                 Nwaypoints = W.shape[1]
                 F = np.zeros((Ndims,Nwaypoints))
                 for i in range(0,Nwaypoints):
-                        pt = np.array(((W[0,i],W[1,i],-0.1,0.001)))
-                        F[0:3,i] = env.GetForceAtX(pt)
+                        F[:,i] = self.waypoint_to_force(env, W[:,i])
                 return F
 
         def normalize_velocity_vector(self, dW):
@@ -268,10 +274,31 @@ class Trajectory():
                         dd = dd + np.linalg.norm(ft-ftdt)
                 return dd
 
-        def draw(self, env, keep_handle=True):
-                Nwaypoints=200
-                [W,dW] = self.get_waypoints(N=Nwaypoints)
+        def forward_simulate(self, theta, env):
+                Ndim = self.get_dimension()
+                Nwaypoints=theta.shape[0]
+                W = np.zeros((Ndim,Nwaypoints))
+                dW = np.zeros((Ndim,Nwaypoints))
 
+                [f0,df0] = self.evaluate_at(0)
+                W[:,0] = f0
+                dW[:,0] = df0
+                dt = 0.01
+                dt2 = dt*dt/2.0
+
+                T = np.linspace(0.0,1.0,num=Nwaypoints)
+                for i in range(0,Nwaypoints-1):
+                        t = T[i]
+                        F = self.waypoint_to_force(env, W[:,i])
+                        W[:,i+1] = W[:,i] + dW[:,i]*theta[i]*dt + F*dt2
+                        dW[:,i+1] = dW[:,i] + F*dt
+                        print W[:,i+1],dt,dW[:,i]
+
+                self.handle = self.get_handle_draw_waypoints(env, W, dW)
+
+        def get_handle_draw_waypoints(self, env, W, dW):
+                Ndims = W.shape[0]
+                Nwaypoints = W.shape[1]
                 tmp_handle = []
                 for i in range(0,Nwaypoints):
                         pt = np.array(((W[0,i],W[1,i],W[2,i])))
@@ -286,7 +313,12 @@ class Trajectory():
                                 (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
                         h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=np.array(((0.2,0.9,0.2,0.9))))
                         tmp_handle.append(h)
+                return tmp_handle
 
+        def draw(self, env, keep_handle=True):
+                Nwaypoints=200
+                [W,dW] = self.get_waypoints(N=Nwaypoints)
+                tmp_handle = self.get_handle_draw_waypoints(env, W, dW)
 
                 if keep_handle:
                         self.handle = tmp_handle

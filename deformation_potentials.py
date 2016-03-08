@@ -45,7 +45,7 @@ def compute_minimum_distance(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_1, lamb
 
 def eval_norm2(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_2):
         dt2 = dt[i]*dt[i]/2
-        Wst = dt2*dF[:,i]+dW[:,i]*dt[i]*(Vmax[i-1]+sqrt(2*lambda_2[i]*Amax_linear[i]))+W[:,i]
+        Wst = dt2*dF[:,i]+dW[:,i]*dt[i]*(Vmax[i-1]+lambda_2[i]*sqrt(2*Amax_linear[i]))+W[:,i]
         d = np.linalg.norm(Wst-W[:,i+1])
         return [d,Wst]
 
@@ -91,9 +91,18 @@ def compute_lambda_updates(epsilon, W, dW, dF, Vmax, Amax_linear):
         for i in range(1,Nwaypoints-1):
                 print i,"/",Nwaypoints
                 d_lambda = compute_minimum_distance2(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_2)
-                while d_lambda > epsilon:
-                        d_lambda = compute_minimum_distance2(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_2)
-                        lambda_2[i] += lstep 
+                if d_lambda < epsilon:
+                        ## step down
+                        dold = d_lambda+1.0
+                        while d_lambda < dold:
+                                lambda_2[i] -= lstep
+                                dold = d_lambda
+                                d_lambda = compute_minimum_distance2(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_2)
+                        lambda_2[i] += lstep
+                else:
+                        while d_lambda > epsilon:
+                                lambda_2[i] += lstep 
+                                d_lambda = compute_minimum_distance2(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_2)
 
         if DEBUG:
                 plt.subplot(2,1,1)
@@ -154,7 +163,7 @@ class DeformationPotentials(Deformation):
 
                 F = self.GetForcesAtWaypoints(Wori)
                 dF = traj.get_minimal_disturbance_forces(dt, Wori, F, u1min, u1max, u2min, u2max)
-                self.draw_forces_at_waypoints(Wori, dF)
+                #self.draw_forces_at_waypoints(Wori, dF)
 
                 ###############################################################
                 ### compute the maximum velocity curve (MVC)
@@ -191,7 +200,7 @@ class DeformationPotentials(Deformation):
 
                 dU = np.zeros((Ndim,Nwaypoints))
                 for i in range(0,Nwaypoints):
-                        dU[:,i] = -lambda_1[i] * dFcomponent[:,i] - 5*lambda_2[i] * dWori[:,i]
+                        dU[:,i] = -lambda_1[i] * dFcomponent[:,i] - 3*lambda_2[i] * dWori[:,i]
 
                 eta = 10
                 W = Wori + eta*dU

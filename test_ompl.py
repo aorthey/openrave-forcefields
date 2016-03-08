@@ -101,7 +101,6 @@ if __name__ == "__main__":
         result = planner.PlanPath(rave_traj)
         assert result == PlannerStatus.HasSolution
 
-
         #from util import draw_waypoints, draw_ravetraj
         #handle = draw_ravetraj(rave_traj, env)
         from trajectory_polynomial import *
@@ -111,12 +110,14 @@ if __name__ == "__main__":
         traj.info()
         #traj.plot_speed_profile(env)
         #traj.draw(env)
+        theta = 10*np.ones((100))
+        traj.forward_simulate(theta, env)
 
         #td = DeformationNaive(traj, env)
-        td = DeformationPotentials(traj, env)
-        for i in range(10):
-                td.deform()
-                td.draw_deformation()
+        #td = DeformationPotentials(traj, env)
+        #for i in range(10):
+        #        td.deform()
+        #        td.draw_deformation()
 
         #td.traj_current.plot_speed_profile(env)
 
