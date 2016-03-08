@@ -135,7 +135,7 @@ class DeformationPotentials(Deformation):
                 u1max = 20.0
                 u2min = -3.0
                 u2max = 3.0
-                dt = 0.05
+                dt = 0.01
                 epsilon = 0.005
 
                 traj = self.traj_deformed
@@ -154,8 +154,7 @@ class DeformationPotentials(Deformation):
 
                 F = self.GetForcesAtWaypoints(Wori)
                 dF = traj.get_minimal_disturbance_forces(dt, Wori, F, u1min, u1max, u2min, u2max)
-                #self.draw_forces_at_waypoints(Wori, dF)
-
+                self.draw_forces_at_waypoints(Wori, dF)
 
                 ###############################################################
                 ### compute the maximum velocity curve (MVC)
@@ -166,7 +165,7 @@ class DeformationPotentials(Deformation):
 
                 #Vmax = GetEpsilonVC(epsilon, Wori, dWori, u1min, u1max, u2min, u2max, dF)
                 Vmax = get_minimal_epsilon_velocity_curve(epsilon, Wori, dWori, dF)
-                #traj.plot_speed_profile(Vmax)
+                traj.plot_speed_profile(Vmax)
                 #sys.exit(0)
 
                 ###############################################################
@@ -197,5 +196,4 @@ class DeformationPotentials(Deformation):
                 eta = 10
                 W = Wori + eta*dU
                 self.traj_deformed.new_from_waypoints(W)
-
 
