@@ -135,7 +135,7 @@ class Trajectory():
 
                 for i in range(0,Nsamples):
                         theta = W[3,i]
-                        Fp[0:3,i] = np.dot(Rz(theta).T,F[0:3,i])[0:3].flatten()
+                        Fp[0:3,i] = np.dot(Rz(theta),F[0:3,i])[0:3].flatten()
 
                 ### question (1) : can we produce an acceleration ddW, such that it counteracts F?
                 nearest_ddq = ForceCanBeCounteractedByAccelerationVector(dt, Fp, u1min, u1max, u2min, u2max)
@@ -147,6 +147,10 @@ class Trajectory():
                 for i in range(0,Nsamples):
                         for j in range(0,Ndim):
                                 dF[j,i] = (Fp[j,i] - nearest_ddq[j,i])
+
+                for i in range(0,Nsamples):
+                        theta = W[3,i]
+                        dF[0:3,i] = np.dot(Rz(theta).T,dF[0:3,i])[0:3].flatten()
                 return dF
 
         def get_minimum_feasible_velocity_vector(self, dt, epsilon, W, dW, F):
@@ -254,11 +258,13 @@ class Trajectory():
                 return [pts,dpts]
 
         def get_length(self):
-                dt = 0.05
                 dd = 0.0
-                for t in np.linspace(0.0, 1.0-dt, num=1000):
+                T = np.linspace(0.0, 1.0, num=100)
+                for i in range(0,len(T)-1):
+                        t = T[i]
+                        tdt = T[i+1]
                         [ft,df0] = self.evaluate_at(t)
-                        [ftdt,df0] = self.evaluate_at(t+dt)
+                        [ftdt,df0] = self.evaluate_at(tdt)
                         dd = dd + np.linalg.norm(ft-ftdt)
                 return dd
 

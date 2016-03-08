@@ -5,30 +5,48 @@ import sys
 
 DEBUG = 0
 
-def compute_lambda_1(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_2):
-        dt2 = dt[i]*dt[i]/2
-        A = -dF[:,i]
-        B = W[:,i]-W[:,i+1]+dt2*dF[:,i]+dW[:,i]*dt[i]*(Vmax[i]+sqrt(2*lambda_2[i]*Amax_linear[i]))
-        A2 = np.dot(A.T,A)
-        if A2 < 0.001:
-                lambda_1 = 0.0
-        else:
-                lambda_1 = - np.dot(A.T,B)/A2
-        return lambda_1
+#def compute_lambda_1(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_2):
+#        dt2 = dt[i]*dt[i]/2
+#        A = -dF[:,i]
+#        B = W[:,i]-W[:,i+1]+dt2*dF[:,i]+dW[:,i]*dt[i]*(Vmax[i]+sqrt(2*lambda_2[i]*Amax_linear[i]))
+#        A2 = np.dot(A.T,A)
+#        if A2 < 0.001:
+#                lambda_1 = 0.0
+#        else:
+#                lambda_1 = - np.dot(A.T,B)/A2
+#        return lambda_1
 
 def eval_norm(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_1, lambda_2):
         dt2 = dt[i]*dt[i]/2
         #print dt2,dF[:,i],dW[:,i],dt[i],Vmax[i],Amax_linear[i],lambda_2[i]
         #print Vmax[i]
-        Wst = dt2*dF[:,i]+dW[:,i]*dt[i]*(Vmax[i]+sqrt(2*lambda_2[i]*Amax_linear[i]))+W[:,i]-lambda_1[i]*dF[:,i]
+
+        
+        ### project dF onto dW to obtain dWf. then subtract dWf from dF to
+        ### obtain the component orthogonal to dW
+        dWf = np.dot(dF[:,i].T,dW[:,i])*dW[:,i]
+        dFcomponent = dF[:,i] - dWf
+
+        Wst = dt2*dF[:,i]+dW[:,i]*dt[i]*(Vmax[i]+sqrt(2*lambda_2[i]*Amax_linear[i]))+W[:,i]-lambda_1[i]*dFcomponent
         d = np.linalg.norm(Wst-W[:,i+1])
         return [d,Wst]
 
+def compute_minimum_distance(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_1, lambda_2):
+        dold = 2000.0
+        d = 1000.0
+        dt[i]=0.0
+        tstep = 0.005
+        Wstarr = W[:,i]
+        while d < dold:
+                dold = d
+                dt[i] = dt[i]+tstep
+                [d,Wst] = eval_norm(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_1, lambda_2)
+        return dold
+
 def compute_lambda_updates(W, dW, dF, Vmax, Amax_linear):
         #[lambda_1, lambda_2] = compute_lambda_updates(W, dW, dF, Vmax, Amax_linear)
+        DEBUG = 1
         Ndim = W.shape[0]
-        lstep = 0.01
-        tstep = 0.0001
         if W.ndim <= 1:
                 print "Cannot compute with only one waypoint. Abort"
                 sys.exit(1)
@@ -38,34 +56,30 @@ def compute_lambda_updates(W, dW, dF, Vmax, Amax_linear):
 
         lambda_1 = np.zeros(Nwaypoints)
         lambda_2 = np.zeros(Nwaypoints)
+        lambda_zero = np.zeros(Nwaypoints)
         dt = np.zeros((Nwaypoints))
+
+        lstep = 0.01
         for i in range(0,Nwaypoints-1):
                 print i,"/",Nwaypoints
                 dold_lambda = 2000.0
                 d_lambda = 1000.0
-
-                while d_lambda+0.0001 < dold_lambda:
+                while d_lambda < dold_lambda:
                         dold_lambda = d_lambda
-                        dold = 2000.0
-                        d = 1000.0
-                        dt[i]=0.0
-                        Wstarr = W[:,i]
-                        while d+0.0001 < dold:
-                                dold = d
-                                dt[i] = dt[i]+tstep
-                                #sys.stdout.write(str(np.around(dt[i],decimals=2))+"("+str(np.around(d,decimals=2))+')|')
-                                #print np.around(dt[i],decimals=2),np.around(d,decimals=2),np.around(dold,decimals=2)
-                                [d,Wst] = eval_norm(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_1, lambda_2)
-                                Wstarr = np.vstack((Wstarr,Wst))
+                        d_lambda = compute_minimum_distance(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_1, lambda_zero)
+                        lambda_1[i] += lstep 
 
-                        lambda_1[i]=compute_lambda_1(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_2)
-                        [d_lambda,Wst] = eval_norm(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_1, lambda_2)
-                        if DEBUG:
-                                if d_lambda > dold_lambda:
-                                        plot(Wstarr[:,0],Wstarr[:,1],'-',color=[1,0,1],linewidth=3)
-                                else: 
-                                        plot(Wstarr[:,0],Wstarr[:,1],'-',color=[0,0,1],linewidth=3)
+                dold_lambda = 2000.0
+                d_lambda = 1000.0
+                while d_lambda < dold_lambda:
+                        dold_lambda = d_lambda
+                        d_lambda = compute_minimum_distance(i, W, dW, dF, Vmax, Amax_linear, dt, lambda_zero, lambda_2)
                         lambda_2[i] += lstep 
+        if DEBUG:
+                plot(lambda_1,'-r')
+                plot(lambda_2,'-b')
+                plt.show()
+
 
         return [lambda_1,lambda_2]
 
@@ -94,17 +108,18 @@ class DeformationPotentials(Deformation):
         ## change only traj_deformed here
         def deform_onestep(self):
                 u1min = 0.0
-                u1max = 2.0
-                u2min = -2.0
-                u2max = 2.0
-                dt = 0.1
-                epsilon = 0.001
+                u1max = 20.0
+                u2min = -3.0
+                u2max = 3.0
+                dt = 0.05
+                epsilon = 0.005
 
                 traj = self.traj_deformed
                 L = traj.get_length()
                 Nwaypoints = int(L/dt)
+                print "WAYPOINTS:",Nwaypoints,"LENGTH:",L
 
-                [Wori,dWori] = traj.get_waypoints(N=50)#(self.traj_ori, N = 100)
+                [Wori,dWori] = traj.get_waypoints(N=Nwaypoints)#(self.traj_ori, N = 100)
                 Ndim = Wori.shape[0]
                 Nwaypoints = Wori.shape[1]
 
@@ -121,14 +136,20 @@ class DeformationPotentials(Deformation):
                 ###############################################################
 
                 #Vmax = GetMinimalSpeedToReachEpsilonNeighbordhoodVector(dt, epsilon, Wori, dWori, dF)
-                Vmax = GetMVC(Wori, dWori, u1min, u1max, u2min, u2max, dF)
-                
-                #traj.plot_speed_profile(Vmax)
-                #sys.exit(0)
+                #Vmax = GetMVC(Wori, dWori, u1min, u1max, u2min, u2max, dF)
 
+                #Vmax = GetEpsilonVC(epsilon, Wori, dWori, u1min, u1max, u2min, u2max, dF)
+                Vmax = get_minimal_epsilon_velocity_curve(epsilon, Wori, dWori, dF)
+                #Vmax = get_minimal_epsilon_velocity_curve_analytic(epsilon, Wori, dWori, dF)
+                traj.plot_speed_profile(Vmax)
+                sys.exit(0)
+
+                ### compute orthogonal component of the disturbance force onto
+                ### the direction vector
                 ###############################################################
                 ## for all points where dF = 0, we can say that lambda_1 = lambda_2 = 0
                 ###############################################################
+
 
                 Amax_linear = u1max*np.ones(Nwaypoints)
                 [lambda_1, lambda_2] = compute_lambda_updates(Wori, dWori, dF, Vmax, Amax_linear)

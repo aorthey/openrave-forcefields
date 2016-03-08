@@ -42,9 +42,6 @@ def piecewisePolynomialTrajectoryFromWaypoints(W):
         Nwaypoints = W.shape[1]
         Trajectory.PiecewisePolynomialTrajectory(chunkslist)
 
-
-
-
 def GetMVC(W, dW, u1min, u1max, u2min, u2max, dF):
         Ndim = W.shape[0]
         Nwaypoints = W.shape[1]
@@ -53,8 +50,6 @@ def GetMVC(W, dW, u1min, u1max, u2min, u2max, dF):
         trajectorystring += "\n" + str(Ndim)
         for i in range(Ndim):
                 trajectorystring += "\n" + string.join([str(w) for w in W[i,:]])
-
-        print trajectorystring
 
         ## Trajectory
         #ndof = 5
@@ -76,10 +71,9 @@ def GetMVC(W, dW, u1min, u1max, u2min, u2max, dF):
         traj0 = Trajectory.PiecewisePolynomialTrajectory.FromString(trajectorystring)
 
         # Constraints
-        vmax = 2*ones(Ndim)
-        vmax[2] = 0.0
-        vmax[3] = 0.0
-        amax = 0.1*ones(Ndim)
+        vmax = 200*ones(Ndim)
+        vmax[2] = 0.0 ##z-axis
+        amax = 200*ones(Ndim)
 
         dt = 0.01
         t0 = time.time()
@@ -124,7 +118,7 @@ def GetMVC(W, dW, u1min, u1max, u2min, u2max, dF):
         print "Trajectory duration after TOPP: ", traj1.duration
         t = 0
         P = []
-        tstep = traj1.duration/100
+        tstep = traj1.duration/Nwaypoints
         while t < traj1.duration:
                 P.append(np.linalg.norm(traj1.Evald(t)))
                 t = t + tstep

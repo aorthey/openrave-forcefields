@@ -5,6 +5,7 @@ from cvxpy import SCS, CVXOPT
 from numpy import sqrt,sin,cos,pi
 from pylab import plot,title,xlabel,ylabel,subplot
 import pylab as plt
+import sys
 
 inf = float('inf')
 
@@ -29,6 +30,111 @@ def PlotReachableSetForceDistance(dt, u1min, u1max, u2min, u2max, F, p):
         plot([p[0]],[p[1]],'or',markersize=10)
         plt.fill(X[:,0], X[:,1])
         plt.show()
+
+## dF(q), W(q), W(q+1), dW(q)
+def eval_norm(speed, dt, W, Wnext, dW, dF):
+        dt2 = dt*dt/2
+        Wstep = dt2*dF+speed*dW*dt+W
+        d = np.linalg.norm(Wnext - Wstep)
+        return [d,Wstep]
+
+#dist_curve_wpt = get_minimal_distance_curve_point(speed, W, Wnext, dW, dF)
+def get_minimal_distance_curve_point(speed, W, Wnext, dW, dF):
+        DEBUG_TEST = 0
+
+        dtold = 2000.0
+        dt = 1000.0
+        t = 0.0
+        t_step = 0.005
+
+        if DEBUG_TEST:
+                S = []
+                D = []
+
+        Wstarr = np.zeros((4))
+        while dt < dtold:
+                dtold = dt
+                [dt, Wstep] = eval_norm(speed, t, W, Wnext, dW, dF)
+                t = t+t_step
+                #Wstarr = np.vstack((Wstarr,Wstep))
+                if DEBUG_TEST:
+                        S.append(t)
+                        D.append(dt)
+                        print t,dt,dF
+
+
+        #plot(Wstarr[:,0],Wstarr[:,1],'-',color=[0,0,1],linewidth=3)
+        #plot([0,dF[0]],[0,dF[1]],'-',color=[1,0,0],linewidth=5)
+        #plt.show()
+        #sys.exit(0)
+
+        if DEBUG_TEST:
+                plot(S,D,'-r')
+                plt.show()
+                sys.exit(0)
+
+        return dt
+
+#rho[i] = get_minimal_epsilon_velocity_at_wpt(epsilon, W[:,i], W[:,i+1], dW[:,i], dist_w[i], dF[:,i])
+def get_minimal_epsilon_velocity_at_wpt(epsilon, W, Wnext, dW, dist_next_wpt, dF):
+        DEBUG = 0
+
+        #dW = np.zeros(W.shape)
+        #dW[0] = 1
+        #Wnext = dist_next_wpt*dW
+        dist_next_wpt = np.linalg.norm(W-Wnext)
+
+        dold_speed = 2000.0
+        dist_curve_wpt = 1000.0
+        speed = 0.001
+        speed_step = 0.01
+        print "############"
+        print np.linalg.norm(dF)
+        if DEBUG:
+                S = []
+                D = []
+
+        while dist_curve_wpt > epsilon:#d_speed < dold_speed:
+                dold_speed = dist_curve_wpt
+                Wstarr = W
+
+                dist_curve_wpt = get_minimal_distance_curve_point(speed, W, Wnext, dW, dF)
+
+                        #if DEBUG:
+                                #plot(Wstarr[:,0],Wstarr[:,1],'-',color=[0,0,1],linewidth=3)
+                                #plot([0,dF[0]],[0,dF[1]],'-',color=[1,0,0],linewidth=5)
+                if dist_curve_wpt >= dist_next_wpt:
+                        ### no progress, meaning the disturbance force moved us
+                        ### into a direction opposite to the waypoint => still
+                        ### increase speed to overcome the force
+                        dold_speed = dist_curve_wpt + 1
+
+                speed += speed_step
+                if DEBUG:
+                        S.append(speed)
+                        D.append(dist_curve_wpt)
+
+        if DEBUG:
+                plot(S,D,'-r')
+                plt.show()
+        return speed-speed_step
+
+def get_minimal_epsilon_velocity_curve(epsilon, W, dW, dF):
+        Ndim = W.shape[0]
+        Nsamples = W.shape[1]
+        dist_w = np.zeros((Nsamples-1))
+        rho = np.zeros((Nsamples))
+
+        for i in range(0,Nsamples-1):
+                dist_w[i] = np.linalg.norm(W[:,i]-W[:,i+1])
+
+        for i in range(0,Nsamples-1):
+                rho[i] = get_minimal_epsilon_velocity_at_wpt(epsilon, W[:,i], W[:,i+1], dW[:,i], dist_w[i], dF[:,i])
+
+        rho[Nsamples-1]=0.0
+        return rho
+
+
 
 def GetMinimalSpeedToReachEpsilonNeighbordhoodVector(dt, epsilon, W, dW, dF):
         Ndim = W.shape[0]
