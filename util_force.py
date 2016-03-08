@@ -100,9 +100,6 @@ def get_minimal_epsilon_velocity_at_wpt(epsilon, W, Wnext, dW, dist_next_wpt, dF
 
                 dist_curve_wpt = get_minimal_distance_curve_point(speed, W, Wnext, dW, dF)
 
-                        #if DEBUG:
-                                #plot(Wstarr[:,0],Wstarr[:,1],'-',color=[0,0,1],linewidth=3)
-                                #plot([0,dF[0]],[0,dF[1]],'-',color=[1,0,0],linewidth=5)
                 if dist_curve_wpt >= dist_next_wpt:
                         ### no progress, meaning the disturbance force moved us
                         ### into a direction opposite to the waypoint => still

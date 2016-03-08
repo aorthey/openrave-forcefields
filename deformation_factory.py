@@ -15,6 +15,7 @@ class Deformation():
 
         traj_display = []
         handle = []
+        forcehandle = []
 
 
         def __init__(self, trajectory, environment):
@@ -47,6 +48,21 @@ class Deformation():
                         F[0:3,i] = self.env.GetForceAtX(pt)
                 return F
 
+        def draw_forces_at_waypoints(self, W, F):
+                for i in range(0,W.shape[1]):
+                        df = np.linalg.norm(F[:,i])
+                        if df > 0.3:
+                                nF = 0.3*F[:,i]/df
+                        else:
+                                nF = F[:,i]
+                        W1 = np.array((W[0,i],W[1,i],W[2,i]))
+                        W2 = np.array((W[0,i]+nF[0],W[1,i]+nF[1],W[2,i]+nF[2]))
+                        P = np.array(((W1),(W2)))
+                        ls = self.traj_current.linsize
+                        h=self.env.env.drawlinestrip(points=P,linewidth=ls,colors=np.array(((0.8,0.2,0.2,0.9))))
+                        self.forcehandle.append(h)
+
+
         def GetFirstInfeasibleWaypoint(self, W, dW, F):
                 Nwaypoints = W.shape[1]
                 for i in range(0,Nwaypoints):
@@ -54,7 +70,6 @@ class Deformation():
                         pt = np.array(((W[0,i],W[1,i],0.1)))
                         if d > 0.2:
                                 return i
-
 
         def draw_deformation(self):
                 M = 20
@@ -68,6 +83,7 @@ class Deformation():
                 [W0,dW] = self.traj_display.get_waypoints(N=Nwaypoints) 
                 [W1,dW] = self.traj_current.get_waypoints(N=Nwaypoints) 
 
+                self.forcehandle = []
                 for i in range(0,M):
                         k = float(i)/float(M)
                         Wk = (1-k)*W0 + k*W1
