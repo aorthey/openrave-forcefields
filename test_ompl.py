@@ -108,10 +108,14 @@ if __name__ == "__main__":
         #traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
         traj = TrajectoryBSpline.from_ravetraj(rave_traj)
         traj.info()
+        traj.draw(env)
+        traj.reparametrize(env)
+
         #traj.plot_speed_profile(env)
         #traj.draw(env)
-        theta = 10*np.ones((100))
-        traj.forward_simulate(theta, env)
+        #acc_profile = np.hstack((3*np.ones((100,1)),-3*np.ones((100,1))))
+        #print traj.evaluate_at(0)
+        #traj.forward_simulate(acc_profile, env)
 
         #td = DeformationNaive(traj, env)
         #td = DeformationPotentials(traj, env)

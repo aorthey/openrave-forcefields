@@ -86,6 +86,7 @@ class ForceEnvironment():
                         [xi,yi,zi,ti,dxi,dyi,dzi,dti]=self.RobotGetInitialPosition()
                         [xg,yg,zg,tg,dxg,dyg,dzg,dtg]=self.RobotGetGoalPosition()
                         #self.robot.SetDOFLimits((-10,10),(-5,5),(-1,1))
+                        #self.robot.SetDOFLimits((-10,-8,-0.15,-4*pi),(10,8,0.15,4*pi))
                         self.robot.SetDOFLimits((-10,-8,-0.15,-4*pi),(10,8,0.15,4*pi))
                         self.robot.SetDOFValues((xi,yi,zi,ti))
                         self.robot.SetDOFVelocities((dxi,dyi,dzi,dti))

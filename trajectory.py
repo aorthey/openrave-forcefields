@@ -13,6 +13,7 @@ from pylab import plot,title,xlabel,ylabel,figure
 import pylab as plt
 
 from util_force import *
+from util_mvc import *
 
 class Trajectory():
         __metaclass__ = abc.ABCMeta
@@ -21,11 +22,11 @@ class Trajectory():
         waypoints = []
         handle = []
 
+        ##drawing parameters
         ptsize = 0.03
         linsize = 1.5
         FONT_SIZE = 20
         dVECTOR_LENGTH = 0.5
-
         trajectory_color = np.array((0.7,0.2,0.7,0.9))
 
         def __init__(self, trajectory, waypoints_in = []):
@@ -110,6 +111,41 @@ class Trajectory():
                 plt.show()
 
 
+        def getControlMatrix(self, W):
+                Nwaypoints = W.shape[1]
+                assert(W.shape[0]==4)
+                ndof = 2
+                R = np.zeros((4,ndof,Nwaypoints))
+                for i in range(0,Nwaypoints):
+                        t = W[3,i]
+                        R[0,:,i] = np.array((cos(t),0.0))
+                        R[1,:,i] = np.array((sin(t),0.0))
+                        R[2,:,i] = np.array((0.0,0.0))
+                        R[3,:,i] = np.array((0.0,1.0))
+                return R
+
+        def reparametrize(self, env):
+                L = self.get_length()
+                dt = 0.05
+                Nwaypoints = int(L/dt)
+
+                print "WAYPOINTS:",Nwaypoints
+                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+                F = self.get_forces_at_waypoints(W, env)
+
+                ### acceleration limits
+
+                amin = np.array((-5,-5))
+                amax = np.array((5,5))
+                R = self.getControlMatrix(W)
+
+                S = getSpeedProfile(F,R,amin,amax,W,dW,ddW)
+                if S is None:
+                        print "No parametrization solution -- sorry :-((("
+
+
+
+
         def speed_profile_MVC(self, ravetraj):
                 poly_traj = TOPPopenravepy.FromRaveTraj(self.robot, ravetraj)
 
@@ -119,9 +155,7 @@ class Trajectory():
                 vel_lim=self.robot.GetDOFVelocityLimits()
                 #robot.SetDOFLimits(-10*ones(ndof),10*ones(ndof)) # Overrides robot joint limits for TOPP computations
                 #robot.SetDOFVelocityLimits(100*vel_lim) # Override robot velocity limits for TOPP computations
-
-
-
+                
                 ret = traj.RunComputeProfiles(0,0)
                 if(ret == 1):
                         traj.ReparameterizeTrajectory()
@@ -251,16 +285,22 @@ class Trajectory():
                 W = np.array(W).T
                 return cls.from_waypoints(W)
 
-        def get_waypoints(self, N = 100):
+        def get_waypoints_second_order(self, N = 100):
                 K = self.get_dimension()
                 pts = np.zeros((K,N))
                 dpts = np.zeros((K,N))
+                ddpts = np.zeros((K,N))
                 ctr = 0
                 for t in np.linspace(0.0, 1.0, num=N):
-                        [f0,df0] = self.evaluate_at(t)
+                        [f0,df0,ddf0] = self.evaluate_at(t,der=2)
                         pts[:,ctr] = f0
                         dpts[:,ctr] = df0
+                        ddpts[:,ctr] = ddf0
                         ctr = ctr+1
+                return [pts,dpts,ddpts]
+
+        def get_waypoints(self, N = 100):
+                [pts,dpts,ddpts]=self.get_waypoints_second_order(N)
                 return [pts,dpts]
 
         def get_length(self):
@@ -274,9 +314,24 @@ class Trajectory():
                         dd = dd + np.linalg.norm(ft-ftdt)
                 return dd
 
-        def forward_simulate(self, theta, env):
+        def forward_simulate_one_step(self, dt, oldspeed, W, dW, F, A):
+                dt2=dt*dt/2.0
+                x = W[0]
+                y = W[1]
+                z = W[2]
+                theta = W[3]
+
+                speedinc = A[0]*np.array((cos(theta),sin(theta),0,0)) + A[1]*np.array((0,0,0,1))
+                Wcur = W + dW*oldspeed*dt + speedinc*dt2 + F*dt2
+                dWcur = oldspeed*dW + F*dt + speedinc*dt
+                speed = np.linalg.norm(dWcur)
+                dWcur = dWcur/speed
+
+                return [Wcur,dWcur,speed]
+
+        def forward_simulate(self, acc_profile, env):
                 Ndim = self.get_dimension()
-                Nwaypoints=theta.shape[0]
+                Nwaypoints=acc_profile.shape[0]
                 W = np.zeros((Ndim,Nwaypoints))
                 dW = np.zeros((Ndim,Nwaypoints))
 
@@ -284,19 +339,20 @@ class Trajectory():
                 W[:,0] = f0
                 dW[:,0] = df0
                 dt = 0.01
-                dt2 = dt*dt/2.0
 
-                T = np.linspace(0.0,1.0,num=Nwaypoints)
+                S = np.linspace(0.0,1.0,num=Nwaypoints)
+                oldspeed = 0.0
+
                 for i in range(0,Nwaypoints-1):
-                        t = T[i]
+                        scur = S[i]
                         F = self.waypoint_to_force(env, W[:,i])
-                        W[:,i+1] = W[:,i] + dW[:,i]*theta[i]*dt + F*dt2
-                        dW[:,i+1] = dW[:,i] + F*dt
-                        print W[:,i+1],dt,dW[:,i]
+                        A = acc_profile[i,:]
+                        [W[:,i+1],dW[:,i+1],oldspeed]=self.forward_simulate_one_step(dt, oldspeed, W[:,i], dW[:,i], F, A)
+                        #print W[:,i+1],dt,dW[:,i]
 
                 self.handle = self.get_handle_draw_waypoints(env, W, dW)
 
-        def get_handle_draw_waypoints(self, env, W, dW):
+        def get_handle_draw_waypoints(self, env, W, dW, ddW):
                 Ndims = W.shape[0]
                 Nwaypoints = W.shape[1]
                 tmp_handle = []
@@ -307,18 +363,26 @@ class Trajectory():
                                            colors=self.trajectory_color,
                                            drawstyle=1))
                         dpt = np.array(((dW[0,i],dW[1,i],dW[2,i])))
+                        ddpt = np.array(((ddW[0,i],ddW[1,i],ddW[2,i])))
                         dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
+                        ddpt = self.dVECTOR_LENGTH*ddpt/np.linalg.norm(ddpt)
 
                         P = np.array(((pt[0],pt[1],pt[2]),
                                 (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
                         h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=np.array(((0.2,0.9,0.2,0.9))))
                         tmp_handle.append(h)
+
+                        P = np.array(((pt[0],pt[1],pt[2]),
+                                (pt[0]+ddpt[0],pt[1]+ddpt[1],pt[2]+ddpt[2])))
+                        h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=np.array(((0.9,0.9,0.9,0.9))))
+                        tmp_handle.append(h)
+
                 return tmp_handle
 
         def draw(self, env, keep_handle=True):
                 Nwaypoints=200
-                [W,dW] = self.get_waypoints(N=Nwaypoints)
-                tmp_handle = self.get_handle_draw_waypoints(env, W, dW)
+                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+                tmp_handle = self.get_handle_draw_waypoints(env, W, dW, ddW)
 
                 if keep_handle:
                         self.handle = tmp_handle
