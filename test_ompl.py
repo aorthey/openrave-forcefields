@@ -110,12 +110,7 @@ if __name__ == "__main__":
         traj.info()
         traj.draw(env)
         traj.reparametrize(env)
-
-        #traj.plot_speed_profile(env)
-        #traj.draw(env)
-        #acc_profile = np.hstack((3*np.ones((100,1)),-3*np.ones((100,1))))
-        #print traj.evaluate_at(0)
-        #traj.forward_simulate(acc_profile, env)
+        traj.plotReachableSet(0.5,env)
 
         #td = DeformationNaive(traj, env)
         #td = DeformationPotentials(traj, env)

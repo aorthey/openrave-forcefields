@@ -35,23 +35,26 @@ class TrajectoryBSpline(Trajectory):
                 df = splev(t,self.traj,der=1)
                 f = np.array(f)
                 df = np.array(df)
+                df[2]=0.0
 
-                ndf = np.linalg.norm(df)
-                df=df/ndf
+                #ndf = np.linalg.norm(df)
+                #df=df/ndf
 
                 from util import Rz
                 if der>1:
                         ddf = splev(t,self.traj,der=2)
+                        ddf = np.array(ddf)
+                        ddf[2]=0.0
                         #ddf = np.array(ddf0)
                         #ddf = np.zeros((f.shape))
                         #ddf[0] = df[1]
                         #ddf[1] = -df[0]
                         ### remove component along df0 from ddf0
-                        ddf[2]=0.0
-                        a = np.dot(ddf,df)
-                        ddf = ddf - a*df
+                        #ddf[2]=0.0
+                        #a = np.dot(ddf,df)
+                        #ddf = ddf - a*df
 
-                        nddf = np.linalg.norm(ddf)
-                        ddf=ddf/nddf
+                        #nddf = np.linalg.norm(ddf)
+                        #ddf=ddf/nddf
                         return [f,df,ddf]
                 return [f,df]

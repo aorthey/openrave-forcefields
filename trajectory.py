@@ -14,10 +14,12 @@ import pylab as plt
 
 from util_force import *
 from util_mvc import *
+from util_mvc_approx import *
 
 class Trajectory():
         __metaclass__ = abc.ABCMeta
 
+        rave_traj = []
         traj = []
         waypoints = []
         handle = []
@@ -59,11 +61,17 @@ class Trajectory():
                 return F
 
         def get_forces_at_waypoints(self, W, env):
-                Ndims = W.shape[0]
-                Nwaypoints = W.shape[1]
-                F = np.zeros((Ndims,Nwaypoints))
-                for i in range(0,Nwaypoints):
-                        F[:,i] = self.waypoint_to_force(env, W[:,i])
+                Ndim = W.shape[0]
+                if W.ndim>1:
+                        Nwaypoints = W.shape[1]
+                else:
+                        Nwaypoints = 1
+                F = np.zeros((Ndim,Nwaypoints))
+                if Nwaypoints>1:
+                        for i in range(0,Nwaypoints):
+                                F[:,i] = self.waypoint_to_force(env, W[:,i])
+                else:
+                        F[:,0] = self.waypoint_to_force(env,W)
                 return F
 
         def normalize_velocity_vector(self, dW):
@@ -112,39 +120,54 @@ class Trajectory():
 
 
         def getControlMatrix(self, W):
-                Nwaypoints = W.shape[1]
-                assert(W.shape[0]==4)
-                ndof = 2
-                R = np.zeros((4,ndof,Nwaypoints))
+                Ndim = W.shape[0]
+                if W.ndim>1:
+                        Nwaypoints = W.shape[1]
+                else:
+                        Nwaypoints = 1
+                assert(Ndim==4)
+                Kdim = 3
+                R = np.zeros((Ndim,Kdim,Nwaypoints))
                 for i in range(0,Nwaypoints):
-                        t = W[3,i]
-                        R[0,:,i] = np.array((cos(t),0.0))
-                        R[1,:,i] = np.array((sin(t),0.0))
-                        R[2,:,i] = np.array((0.0,0.0))
-                        R[3,:,i] = np.array((0.0,1.0))
-                return R
+                        if Nwaypoints>1:
+                                t = W[3,i]
+                        else:
+                                t = W[3]
+                        R[0,:,i] = np.array((cos(t),-sin(t),0.0))
+                        R[1,:,i] = np.array((sin(t),cos(t),0.0))
+                        R[2,:,i] = np.array((0.0,0.0,0.0))
+                        R[3,:,i] = np.array((0.0,0.0,1.0))
+
+                amin = np.array((-5,-5,-5))
+                amax = np.array((5,5,5))
+                return [R,amin,amax]
+
+        def plotReachableSet(self, t, env):
+                [f,df,dff]=self.evaluate_at(t, der=2)
+                F = self.get_forces_at_waypoints(f, env)
+                [R,amin,amax] = self.getControlMatrix(f)
+                
+        def computeDeltaProfile(self):
+                pass
 
         def reparametrize(self, env):
                 L = self.get_length()
                 dt = 0.05
                 Nwaypoints = int(L/dt)
 
-                print "WAYPOINTS:",Nwaypoints
                 [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
                 F = self.get_forces_at_waypoints(W, env)
 
                 ### acceleration limits
+                [R,amin,amax] = self.getControlMatrix(W)
 
-                amin = np.array((-5,-5))
-                amax = np.array((5,5))
-                R = self.getControlMatrix(W)
-
-                S = getSpeedProfile(F,R,amin,amax,W,dW,ddW)
+                print F
+                S = getSpeedProfileRManifold(F,R,amin,amax,W,dW,ddW)
                 if S is None:
+                        self.speed_profile = S
                         print "No parametrization solution -- sorry :-((("
-
-
-
+                        return False
+                return True
 
         def speed_profile_MVC(self, ravetraj):
                 poly_traj = TOPPopenravepy.FromRaveTraj(self.robot, ravetraj)
@@ -277,6 +300,7 @@ class Trajectory():
 
         @classmethod
         def from_ravetraj(cls, ravetraj):
+                rave_traj = ravetraj
                 N = ravetraj.GetNumWaypoints()
                 W=[]
                 for i in range(0,N):
