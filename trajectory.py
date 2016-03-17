@@ -1,6 +1,6 @@
 import cvxpy as cvx
 from cvxpy import Variable, Problem, Minimize, norm, SCS, OPTIMAL
-from cvxpy import SCS, CVXOPT
+from cvxpy import norm
 from numpy import sqrt,sin,cos,pi
 
 import abc
@@ -142,10 +142,60 @@ class Trajectory():
                 amax = np.array((5,5,5))
                 return [R,amin,amax]
 
-        def plotReachableSet(self, t, env):
-                [f,df,dff]=self.evaluate_at(t, der=2)
-                F = self.get_forces_at_waypoints(f, env)
-                [R,amin,amax] = self.getControlMatrix(f)
+        def getWaypointDim(self, W):
+                Ndim = W.shape[0]
+                if W.ndim>1:
+                        Nwaypoints = W.shape[1]
+                else:
+                        Nwaypoints = 1
+                return [Ndim, Nwaypoints]
+
+        def computeReachableSets(self, dt, env):
+                L = self.get_length()
+                Nwaypoints = int(L/0.01)
+                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+
+                F = self.get_forces_at_waypoints(W, env)
+                [R,amin,amax] = self.getControlMatrix(W)
+
+                Rmin = np.zeros((Nwaypoints, Ndim))
+                Rmax = np.zeros((Nwaypoints, Ndim))
+                for i in range(0,Nwaypoints):
+                        Rmin[i,:] = np.minimum(np.dot(R[:,:,i],amax),np.dot(R[:,:,i],amin))
+                        Rmax[i,:] = np.maximum(np.dot(R[:,:,i],amax),np.dot(R[:,:,i],amin))
+
+                dt2 = dt*dt*0.5
+                Qoff = W[:,i] + dt*dW[:,i] + dt2*F[:,i]
+
+                Lmin = Qoff + Rmin
+                delta = np.zeros((Nwaypoints))
+                #xvar = Variable(Ndim,Nwaypoints)
+                #yvar = Variable(Ndim,Nwaypoints)
+                constraints = []
+                objfunc = 0.0
+                for i in range(0,Nwaypoints-1):
+                        xvar = Variable(Ndim)
+                        yvar = Variable(Ndim)
+                        #constraints.append( Qoff + Rmin[i,:] <= xvar )
+                        #constraints.append( xvar <= Qoff + Rmax[i,:] ) ## Q
+                        #constraints.append( W[:,i] + eta[i]*dW[:,i] == y[:,i] ) ## L
+                        #constraints.append( yvar >= 0)
+                        objfunc += norm(xvar)
+
+                objective = Minimize(objfunc)
+                prob = Problem(objective, constraints)
+
+                print "solve minimal speed"
+                result = prob.solve(solver=SCS)
+                for i in range(0,Nwaypoints):
+                        delta[i] = np.linalg.norm(x[:,i]-y[:,i])
+                print delta
+                plot(delta,'-r')
+                plt.show()
+
+
                 
         def computeDeltaProfile(self):
                 pass
@@ -154,7 +204,6 @@ class Trajectory():
                 L = self.get_length()
                 dt = 0.05
                 Nwaypoints = int(L/dt)
-
                 [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
                 F = self.get_forces_at_waypoints(W, env)
 

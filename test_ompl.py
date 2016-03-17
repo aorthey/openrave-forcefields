@@ -110,7 +110,7 @@ if __name__ == "__main__":
         traj.info()
         traj.draw(env)
         traj.reparametrize(env)
-        traj.plotReachableSet(0.5,env)
+        traj.computeReachableSets(0.01,env)
 
         #td = DeformationNaive(traj, env)
         #td = DeformationPotentials(traj, env)
