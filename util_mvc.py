@@ -1,6 +1,4 @@
 import string,time
-from pylab import *
-from numpy import *
 from openravepy import *
 import TOPP
 from TOPP import Utilities

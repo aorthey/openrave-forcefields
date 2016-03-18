@@ -1,6 +1,6 @@
 import string,time
 from pylab import *
-from numpy import *
+import numpy as np
 from openravepy import *
 import TOPP
 from TOPP import Utilities
@@ -36,7 +36,50 @@ def GetTrajectoryString(W, dW, ddW):
 
         return [trajectorystring, durationVector]
 
-def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW ):
+def customPlotTrajectory(traj0):
+        dt = 0.001
+        tvect = arange(0, traj0.duration + dt, dt)
+        qvect = np.array([traj0.Eval(t) for t in tvect])
+        qdvect = np.array([traj0.Evald(t) for t in tvect])
+        qddvect = np.array([traj0.Evaldd(t) for t in tvect])
+
+        lw = 3
+        fs = 22
+        lloc = 'lower right'
+        
+        subplot(3,1,1)
+        print qvect.shape
+        print tvect.shape
+        plot(tvect, qvect[:,0], linewidth = lw, label = "$x$")
+        plot(tvect, qvect[:,1], linewidth = lw, label = "$y$")
+        plot(tvect, qvect[:,2], linewidth = lw, label = "$z$")
+        plot(tvect, qvect[:,3], linewidth = lw, label = "$\\theta$")
+        #plot(tvect, qdvect, f, linewidth=2)
+        #plot(tvect, qddvect, f, linewidth=2)
+        title('Position/Velocity/Acceleration Path', fontsize=fs)
+        ylabel('Position', fontsize=fs)
+        legend = plt.legend(loc=lloc, shadow=True, fontsize=fs)
+
+        subplot(3,1,2)
+        ylabel('Velocity', fontsize=fs)
+        plot(tvect, qdvect[:,0], linewidth = lw, label = "$\dot x$")
+        plot(tvect, qdvect[:,1], linewidth = lw, label = "$\dot y$")
+        plot(tvect, qdvect[:,2], linewidth = lw, label = "$\dot z$")
+        plot(tvect, qdvect[:,3], linewidth = lw, label = "$\dot \\theta$")
+        legend = plt.legend(loc=lloc, shadow=True, fontsize=fs)
+
+        subplot(3,1,3)
+        ylabel('Acceleration', fontsize=fs)
+        plot(tvect, qddvect[:,0], linewidth = lw, label = "$\ddot{x}$")
+        plot(tvect, qddvect[:,1], linewidth = lw, label = "$\ddot{y}$")
+        plot(tvect, qddvect[:,2], linewidth = lw, label = "$\ddot{z}$")
+        plot(tvect, qddvect[:,3], linewidth = lw, label = "$\ddot{\\theta}$")
+        xlabel('Time $t$',fontsize=fs)
+        legend = plt.legend(loc=lloc, shadow=True, fontsize=fs)
+
+        plt.show()
+
+def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
         DEBUG = 0
 
         Ndim = W.shape[0]
@@ -48,10 +91,14 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW ):
 
         traj0 = Trajectory.PiecewisePolynomialTrajectory.FromString(trajstr)
 
-        if DEBUG:
+        dendpoint = np.linalg.norm(traj0.Eval(L)-W[:,-1])
+
+        if dendpoint > 0.001:
+                print "###############"
                 print "FINAL POINT on piecewise C^2 traj:",traj0.Eval(L)
                 print "FINAL WAYPOINT                   :",W[:,-1]
                 print "###############"
+                sys.exit(1)
 
         ### compute a,b,c
         qs = np.zeros((Ndim,Nwaypoints))
@@ -62,14 +109,9 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW ):
                 qss[:,i] = traj0.Evaldd(duration)
                 print duration,traj0.Eval(duration),qs[:,i],qss[:,i]
 
-        if DEBUG:
-                subplot(3,1,1)
-                traj0.Plot(0.001)
-                subplot(3,1,2)
-                traj0.Plotd(0.001)
-                subplot(3,1,3)
-                traj0.Plotdd(0.001)
-                plt.show()
+        if ploting:
+                customPlotTrajectory(traj0)
+
 
         I = np.identity(Ndim)
         G = np.vstack((I,-I))
@@ -112,21 +154,17 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW ):
 
         if(ret == 1):
                 x.ReparameterizeTrajectory()
-                ion()
+                #ion()
                 x.WriteResultTrajectory()
 
                 traj1 = Trajectory.PiecewisePolynomialTrajectory.FromString(x.restrajectorystring)
 
                 print "Trajectory duration before TOPP: ", traj0.duration
                 print "Trajectory duration after TOPP: ", traj1.duration
-                if DEBUG:
-                        subplot(3,1,1)
-                        traj1.Plot(0.01)
-                        subplot(3,1,2)
-                        traj1.Plotd(0.01)
-                        subplot(3,1,3)
-                        traj1.Plotdd(0.01)
-                        plt.show()
+
+                if ploting:
+                        print "PLOTTING"
+                        customPlotTrajectory(traj1)
 
                 t = 0
                 tstep = traj1.duration/Nwaypoints

@@ -109,8 +109,9 @@ if __name__ == "__main__":
         traj = TrajectoryBSpline.from_ravetraj(rave_traj)
         traj.info()
         traj.draw(env)
-        traj.reparametrize(env)
-        traj.computeReachableSets(0.01,env)
+        traj.reparametrize(env,ploting=False)
+        #traj.computeReachableSets(0.2,env)
+        traj.visualizeReachableSetsAtT(env, 0.5, dt=0.3)
 
         #td = DeformationNaive(traj, env)
         #td = DeformationPotentials(traj, env)

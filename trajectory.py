@@ -1,6 +1,4 @@
 import cvxpy as cvx
-from cvxpy import Variable, Problem, Minimize, norm, SCS, OPTIMAL
-from cvxpy import norm
 from numpy import sqrt,sin,cos,pi
 
 import abc
@@ -10,6 +8,7 @@ from util import Rz
 from scipy.interpolate import interp1d,splev,splrep,splprep
 from scipy.misc import derivative
 from pylab import plot,title,xlabel,ylabel,figure
+from matplotlib.collections import LineCollection
 import pylab as plt
 
 from util_force import *
@@ -150,6 +149,70 @@ class Trajectory():
                         Nwaypoints = 1
                 return [Ndim, Nwaypoints]
 
+        def visualizeReachableSetsAtT(self, env, t0, dt = 0.1):
+                dt2 = dt*dt*0.5
+                [W,dW,ddW] = self.evaluate_at(t0,der=2)
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                F = self.get_forces_at_waypoints(W, env)
+                #F = np.zeros((F.shape))
+                [R,amin,amax] = self.getControlMatrix(W)
+                Rmin = np.zeros((Ndim))
+                Rmax = np.zeros((Ndim))
+                Rmin = np.minimum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
+                Rmax = np.maximum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
+
+                delta = 0.0
+                eta = cvx.Variable(1)
+                xvar = cvx.Variable(Ndim)
+                yvar = cvx.Variable(Ndim)
+
+                Qoff = W + dt*dW + dt2*F.flatten()
+
+                constraints = []
+                constraints.append( Qoff + Rmin <= xvar )
+                constraints.append( xvar <= Qoff + Rmax ) ## Q
+                constraints.append( W + eta*dW == yvar ) ## L
+                constraints.append( eta >= 0)
+                objfunc = cvx.norm(xvar-yvar)
+
+                objective = cvx.Minimize(objfunc)
+                prob = cvx.Problem(objective, constraints)
+                result = prob.solve(solver=cvx.SCS)
+
+                delta = np.linalg.norm(xvar.value-yvar.value)
+                plot([W[0],W[0]+5*dt*dW[0]],[W[1],W[1]+5*dt*dW[1]],'-k',linewidth=3)
+                plot(W[0],W[1],'or',markersize=10)
+
+                N = 1000
+
+                import itertools
+                ctr = 0
+                Adim = amin.shape[0]
+                Mf = 2**Adim
+                Qt = np.zeros((Mf,Ndim))
+                for val in itertools.product([0,1], repeat=Adim):
+                        ## if 0, then choose amin, if 1, then choose amax
+                        a = val*amax + abs(1-np.array(val))*amin
+                        Qt[ctr,:] = W + dt*dW + dt2*F.flatten() + dt2*np.dot(R[:,:,0],a) 
+                        ctr=ctr+1
+
+                        #Qt=np.array(Qt)
+                        #points = np.array([Qt[:,0], Qt[:,1]]).T.reshape(-1, 1, 2)
+                        #segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                        #lc = LineCollection(segments,
+                        #                cmap=plt.get_cmap('copper'),
+                        #                norm=plt.Normalize(0, 10))
+                        #lc.set_array(np.linspace(0,10,M))
+                        #lc.set_linewidth(3)
+                        #plt.gca().add_collection(lc)
+                        #plot(Qt[:,0],Qt[:,1],'-b',linewidth=2)
+
+                #plt.fill_betweenx(Qt[:,0], Qt[:,1])
+                plot(Qt[:,0],Qt[:,1],'ob',markersize=5)
+                plt.show()
+
+
+
         def computeReachableSets(self, dt, env):
                 L = self.get_length()
                 Nwaypoints = int(L/0.01)
@@ -167,40 +230,47 @@ class Trajectory():
                         Rmax[i,:] = np.maximum(np.dot(R[:,:,i],amax),np.dot(R[:,:,i],amin))
 
                 dt2 = dt*dt*0.5
-                Qoff = W[:,i] + dt*dW[:,i] + dt2*F[:,i]
 
-                Lmin = Qoff + Rmin
                 delta = np.zeros((Nwaypoints))
-                #xvar = Variable(Ndim,Nwaypoints)
-                #yvar = Variable(Ndim,Nwaypoints)
+                eta = cvx.Variable(Nwaypoints)
+                xvar = cvx.Variable(Ndim,Nwaypoints)
+                yvar = cvx.Variable(Ndim,Nwaypoints)
                 constraints = []
                 objfunc = 0.0
-                for i in range(0,Nwaypoints-1):
-                        xvar = Variable(Ndim)
-                        yvar = Variable(Ndim)
-                        #constraints.append( Qoff + Rmin[i,:] <= xvar )
-                        #constraints.append( xvar <= Qoff + Rmax[i,:] ) ## Q
-                        #constraints.append( W[:,i] + eta[i]*dW[:,i] == y[:,i] ) ## L
-                        #constraints.append( yvar >= 0)
-                        objfunc += norm(xvar)
+                for i in range(0,Nwaypoints):
+                        Qoff = W[:,i] + dt*dW[:,i] + dt2*F[:,i]
+                        constraints.append( Qoff + Rmin[i,:] <= xvar[:,i] )
+                        constraints.append( xvar[:,i] <= Qoff + Rmax[i,:] ) ## Q
+                        constraints.append( W[:,i] + eta[i]*dW[:,i] == yvar[:,i] ) ## L
+                        constraints.append( eta[i] >= 0)
+                        objfunc += cvx.norm(xvar[:,i]-yvar[:,i])
 
-                objective = Minimize(objfunc)
-                prob = Problem(objective, constraints)
+                objective = cvx.Minimize(objfunc)
+                prob = cvx.Problem(objective, constraints)
 
                 print "solve minimal speed"
-                result = prob.solve(solver=SCS)
+                result = prob.solve(solver=cvx.SCS)
                 for i in range(0,Nwaypoints):
-                        delta[i] = np.linalg.norm(x[:,i]-y[:,i])
-                print delta
-                plot(delta,'-r')
+                        delta[i] = np.linalg.norm(xvar[:,i].value-yvar[:,i].value)
+
+                plt.clf()
+                T = np.linspace(0,1.0,Nwaypoints)
+                subplot(2,1,1)
+                title('Delta and Force Profiles', fontsize=self.FONT_SIZE)
+                plot(T,delta,'-r',linewidth=4)
+                ylabel('Delta $\delta$', fontsize=self.FONT_SIZE)
+                subplot(2,1,2)
+                plot(T,F[0,:],'-b',linewidth=4,label="$F_x$")
+                plot(T,F[1,:],'-g',linewidth=4,label="$F_y$")
+                xlabel('Path parameter $s$',fontsize=self.FONT_SIZE)
+                ylabel('Force $F$', fontsize=self.FONT_SIZE)
+                legend = plt.legend(loc='upper center', shadow=True, fontsize=self.FONT_SIZE)
                 plt.show()
 
-
-                
         def computeDeltaProfile(self):
                 pass
 
-        def reparametrize(self, env):
+        def reparametrize(self, env, ploting=False):
                 L = self.get_length()
                 dt = 0.05
                 Nwaypoints = int(L/dt)
@@ -211,7 +281,7 @@ class Trajectory():
                 [R,amin,amax] = self.getControlMatrix(W)
 
                 print F
-                S = getSpeedProfileRManifold(F,R,amin,amax,W,dW,ddW)
+                S = getSpeedProfileRManifold(-F,R,amin,amax,W,dW,ddW,ploting)
                 if S is None:
                         self.speed_profile = S
                         print "No parametrization solution -- sorry :-((("
