@@ -109,9 +109,8 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
                 qss[:,i] = traj0.Evaldd(duration)
                 print duration,traj0.Eval(duration),qs[:,i],qss[:,i]
 
-        if ploting:
-                customPlotTrajectory(traj0)
-
+        #if ploting:
+                #customPlotTrajectory(traj0)
 
         I = np.identity(Ndim)
         G = np.vstack((I,-I))

@@ -150,6 +150,7 @@ class Trajectory():
                 return [Ndim, Nwaypoints]
 
         def visualizeReachableSetsAtT(self, env, t0, dt = 0.1):
+                speed = 0.0
                 dt2 = dt*dt*0.5
                 [W,dW,ddW] = self.evaluate_at(t0,der=2)
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
@@ -158,30 +159,47 @@ class Trajectory():
                 [R,amin,amax] = self.getControlMatrix(W)
                 Rmin = np.zeros((Ndim))
                 Rmax = np.zeros((Ndim))
-                Rmin = np.minimum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
-                Rmax = np.maximum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
+                Rmin = dt2*np.minimum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
+                Rmax = dt2*np.maximum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
+                Qoff = W + speed*dt*dW + dt2*F.flatten()
 
                 delta = 0.0
                 eta = cvx.Variable(1)
                 xvar = cvx.Variable(Ndim)
                 yvar = cvx.Variable(Ndim)
 
-                Qoff = W + dt*dW + dt2*F.flatten()
+
 
                 constraints = []
                 constraints.append( Qoff + Rmin <= xvar )
                 constraints.append( xvar <= Qoff + Rmax ) ## Q
                 constraints.append( W + eta*dW == yvar ) ## L
-                constraints.append( eta >= 0)
+                constraints.append( eta > 0)
                 objfunc = cvx.norm(xvar-yvar)
 
                 objective = cvx.Minimize(objfunc)
                 prob = cvx.Problem(objective, constraints)
-                result = prob.solve(solver=cvx.SCS)
+                result = prob.solve(solver=cvx.SCS, eps=1e-5)
+                #result = prob.solve(solver=SCS, use_indirect=True, eps=1e-2, verbose=True)
+                #prob.solve(verbose=True, abstol_inacc=1e-2,reltol_inacc=1e-2,max_iters= 300, reltol=1e-2)
 
                 delta = np.linalg.norm(xvar.value-yvar.value)
-                plot([W[0],W[0]+5*dt*dW[0]],[W[1],W[1]+5*dt*dW[1]],'-k',linewidth=3)
+                Lnearest = np.array(xvar.value)
+                Qnearest = np.array(yvar.value)
+
+                witv = dt
+                plot([W[0],W[0]+witv*dW[0]],[W[1],W[1]+witv*dW[1]],'-k',linewidth=3)
+                plot([W[0]+witv*dW[0],W[0]+(witv+witv/3)*dW[0]],[W[1]+witv*dW[1],W[1]+(witv+witv/3)*dW[1]],'--k',linewidth=3)
                 plot(W[0],W[1],'or',markersize=10)
+                plot([Lnearest[0],Qnearest[0]],[Lnearest[1],Qnearest[1]],'--og',markersize=10,linewidth=4)
+                plot([Lnearest[0]],[Lnearest[1]],'ok',markersize=20)
+                Mlq = Lnearest+0.5*(Qnearest-Lnearest)
+                print Mlq
+                print Lnearest
+                print Qnearest
+
+                strdelta = ' $\\delta$='+str(np.around(delta,decimals=2))
+                plt.text(Mlq[0], Mlq[1], strdelta, fontsize=22)
 
                 N = 1000
 
@@ -193,22 +211,16 @@ class Trajectory():
                 for val in itertools.product([0,1], repeat=Adim):
                         ## if 0, then choose amin, if 1, then choose amax
                         a = val*amax + abs(1-np.array(val))*amin
-                        Qt[ctr,:] = W + dt*dW + dt2*F.flatten() + dt2*np.dot(R[:,:,0],a) 
-                        ctr=ctr+1
+                        #Qt[ctr,:] = W + dt*dW + dt2*F.flatten() + dt2*np.dot(R[:,:,0],a) 
+                        Qt[ctr,:] = W + speed*dt*dW + dt2*F.flatten() + dt2*np.dot(R[:,:,0],a) 
 
-                        #Qt=np.array(Qt)
-                        #points = np.array([Qt[:,0], Qt[:,1]]).T.reshape(-1, 1, 2)
-                        #segments = np.concatenate([points[:-1], points[1:]], axis=1)
-                        #lc = LineCollection(segments,
-                        #                cmap=plt.get_cmap('copper'),
-                        #                norm=plt.Normalize(0, 10))
-                        #lc.set_array(np.linspace(0,10,M))
-                        #lc.set_linewidth(3)
-                        #plt.gca().add_collection(lc)
-                        #plot(Qt[:,0],Qt[:,1],'-b',linewidth=2)
+                        ctr=ctr+1
 
                 #plt.fill_betweenx(Qt[:,0], Qt[:,1])
                 plot(Qt[:,0],Qt[:,1],'ob',markersize=5)
+                from scipy.spatial import ConvexHull
+                hull = ConvexHull(Qt[:,0:2])
+                plt.fill(Qt[hull.vertices,0], Qt[hull.vertices,1], facecolor='blue', alpha=0.2, lw=2)
                 plt.show()
 
 
@@ -272,7 +284,7 @@ class Trajectory():
 
         def reparametrize(self, env, ploting=False):
                 L = self.get_length()
-                dt = 0.05
+                dt = 0.005
                 Nwaypoints = int(L/dt)
                 [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
                 F = self.get_forces_at_waypoints(W, env)
