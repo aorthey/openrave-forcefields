@@ -107,7 +107,7 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
                 duration = np.sum(durationVector[0:i])
                 qs[:,i] = traj0.Evald(duration)
                 qss[:,i] = traj0.Evaldd(duration)
-                print duration,traj0.Eval(duration),qs[:,i],qss[:,i]
+                #print duration,traj0.Eval(duration),qs[:,i],qss[:,i]
 
         #if ploting:
                 #customPlotTrajectory(traj0)
@@ -145,14 +145,14 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
         #x.extrareps = 10
 
         ret = x.RunComputeProfiles(0,0)
-        x.ReparameterizeTrajectory()
-
         print "TOPP Output:",ret
         if(ret == 4):
                 print ret," [ERROR TOPP: MVC hit zero]"
 
         if(ret == 1):
                 x.ReparameterizeTrajectory()
+
+                [semin,semax] = topp_inst.AVP(0, 0)
                 #ion()
                 x.WriteResultTrajectory()
 
@@ -160,6 +160,7 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
 
                 print "Trajectory duration before TOPP: ", traj0.duration
                 print "Trajectory duration after TOPP: ", traj1.duration
+                print "Velocity profile at end point:",semin,semax
 
                 if ploting:
                         print "PLOTTING"
@@ -171,7 +172,8 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
                 while t < traj1.duration:
                         P.append(np.linalg.norm(traj1.Evald(t)))
                         t = t + tstep
-                return np.array(P)
+                #return np.array(P)
+                return traj1
         return None
 
 def testMVCgetControlMatrix(W):

@@ -109,15 +109,19 @@ if __name__ == "__main__":
         traj = TrajectoryBSpline.from_ravetraj(rave_traj)
         traj.info()
         traj.draw(env)
-        traj.reparametrize(env,ploting=True)
+        t1 = traj.reparametrize(env,ploting=False)
+
+        #traj.IsReparametrizable(env)
         #traj.computeReachableSets(0.2,env)
-        #traj.visualizeReachableSetsAtT(env, 0.5, dt=0.1)
+        #traj.visualizeReachableSetsAtT(env, 1.0, dt=0.2)
 
         #td = DeformationNaive(traj, env)
         #td = DeformationPotentials(traj, env)
+        #td = DeformationReidemeister(traj, env)
+
         #for i in range(10):
         #        td.deform()
-        #        td.draw_deformation()
+        #        td.draw_deformation() 
 
         #td.traj_current.plot_speed_profile(env)
 

@@ -118,7 +118,11 @@ class Trajectory():
                 plt.show()
 
 
+        ### SYSTEM DYNAMICS
         def getControlMatrix(self, W):
+                amin = np.array((-5,-5,-5))
+                amax = np.array((5,5,5))
+
                 Ndim = W.shape[0]
                 if W.ndim>1:
                         Nwaypoints = W.shape[1]
@@ -137,8 +141,6 @@ class Trajectory():
                         R[2,:,i] = np.array((0.0,0.0,0.0))
                         R[3,:,i] = np.array((0.0,0.0,1.0))
 
-                amin = np.array((-5,-5,-5))
-                amax = np.array((5,5,5))
                 return [R,amin,amax]
 
         def getWaypointDim(self, W):
@@ -149,26 +151,11 @@ class Trajectory():
                         Nwaypoints = 1
                 return [Ndim, Nwaypoints]
 
-        def visualizeReachableSetsAtT(self, env, t0, dt = 0.1):
-                speed = 0.0
-                dt2 = dt*dt*0.5
-                [W,dW,ddW] = self.evaluate_at(t0,der=2)
-                [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                F = self.get_forces_at_waypoints(W, env)
-                #F = np.zeros((F.shape))
-                [R,amin,amax] = self.getControlMatrix(W)
-                Rmin = np.zeros((Ndim))
-                Rmax = np.zeros((Ndim))
-                Rmin = dt2*np.minimum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
-                Rmax = dt2*np.maximum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
-                Qoff = W + speed*dt*dW + dt2*F.flatten()
-
-                delta = 0.0
+        def computeDelta(self, W, dW, Qoff, Rmin, Rmax):
+                Ndim = Rmin.shape[0]
                 eta = cvx.Variable(1)
                 xvar = cvx.Variable(Ndim)
                 yvar = cvx.Variable(Ndim)
-
-
 
                 constraints = []
                 constraints.append( Qoff + Rmin <= xvar )
@@ -184,26 +171,41 @@ class Trajectory():
                 #prob.solve(verbose=True, abstol_inacc=1e-2,reltol_inacc=1e-2,max_iters= 300, reltol=1e-2)
 
                 delta = np.linalg.norm(xvar.value-yvar.value)
-                Lnearest = np.array(xvar.value)
-                Qnearest = np.array(yvar.value)
+
+                Qnearest = np.array(xvar.value).flatten()
+                Lnearest = np.array(yvar.value).flatten()
+
+                dL = dW/np.linalg.norm(dW)
+                dQ = (Qnearest-W)/np.linalg.norm(Qnearest-W)
+                angle = acos(np.dot(dL,dQ))
+
+                return [delta, angle, Lnearest, Qnearest]
+
+        def drawReachableSet(self, env, dt, speed, W, dW, amin, amax, Lnearest, Qnearest, R, F, angle, delta):
+                dt2 = dt*dt*0.5
+                from scipy.spatial import ConvexHull
+                import itertools
+                Ndim = W.shape[0]
 
                 witv = dt
                 plot([W[0],W[0]+witv*dW[0]],[W[1],W[1]+witv*dW[1]],'-k',linewidth=3)
-                plot([W[0]+witv*dW[0],W[0]+(witv+witv/3)*dW[0]],[W[1]+witv*dW[1],W[1]+(witv+witv/3)*dW[1]],'--k',linewidth=3)
+                plot([W[0]+witv*dW[0],W[0]+(witv+witv/3.0)*dW[0]],[W[1]+witv*dW[1],W[1]+(witv+witv/3.0)*dW[1]],'--k',linewidth=3)
                 plot(W[0],W[1],'or',markersize=10)
                 plot([Lnearest[0],Qnearest[0]],[Lnearest[1],Qnearest[1]],'--og',markersize=10,linewidth=4)
                 plot([Lnearest[0]],[Lnearest[1]],'ok',markersize=20)
                 Mlq = Lnearest+0.5*(Qnearest-Lnearest)
-                print Mlq
-                print Lnearest
-                print Qnearest
-
                 strdelta = ' $\\delta$='+str(np.around(delta,decimals=2))
                 plt.text(Mlq[0], Mlq[1], strdelta, fontsize=22)
+                #print Mlq
+                #print Lnearest
+                #print Qnearest
+                dQ = Qnearest-W
+                plot([W[0],W[0]+dQ[0]],[W[1],W[1]+dQ[1]],'--g',linewidth=3)
+                Mlq = W+0.2*(Qnearest-W)
+                strangle = ' $\\theta$='+str(np.around(angle,decimals=2))
+                plt.text(Mlq[0], Mlq[1], strangle, fontsize=22)
 
-                N = 1000
 
-                import itertools
                 ctr = 0
                 Adim = amin.shape[0]
                 Mf = 2**Adim
@@ -211,19 +213,77 @@ class Trajectory():
                 for val in itertools.product([0,1], repeat=Adim):
                         ## if 0, then choose amin, if 1, then choose amax
                         a = val*amax + abs(1-np.array(val))*amin
-                        #Qt[ctr,:] = W + dt*dW + dt2*F.flatten() + dt2*np.dot(R[:,:,0],a) 
-                        Qt[ctr,:] = W + speed*dt*dW + dt2*F.flatten() + dt2*np.dot(R[:,:,0],a) 
+                        Qt[ctr,:] = W + speed*dt*dW + dt2*F.flatten() + dt2*np.dot(R,a) 
 
                         ctr=ctr+1
 
                 #plt.fill_betweenx(Qt[:,0], Qt[:,1])
                 plot(Qt[:,0],Qt[:,1],'ob',markersize=5)
-                from scipy.spatial import ConvexHull
                 hull = ConvexHull(Qt[:,0:2])
                 plt.fill(Qt[hull.vertices,0], Qt[hull.vertices,1], facecolor='blue', alpha=0.2, lw=2)
                 plt.show()
 
+        def visualizeReachableSetsAtT(self, env, t0, dt = 0.1):
+                speed = 0.0
+                dt2 = dt*dt*0.5
+                [W,dW,ddW] = self.evaluate_at(t0,der=2)
+                print "REACHABLE SET AT POSITION:",W
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                F = self.get_forces_at_waypoints(W, env)
+                #F = np.zeros((F.shape))
+                [R,amin,amax] = self.getControlMatrix(W)
+                Rmin = np.zeros((Ndim))
+                Rmax = np.zeros((Ndim))
+                Rmin = dt2*np.minimum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
+                Rmax = dt2*np.maximum(np.dot(R[:,:,0],amax),np.dot(R[:,:,0],amin))
 
+                Qoff = W + speed*dt*dW + dt2*F.flatten()
+                [delta0, angle0, Lnearest, Qnearest] = self.computeDelta(W, dW, Qoff, Rmin, Rmax)
+                self.drawReachableSet(env, dt, speed, W, dW, amin, amax, Lnearest, Qnearest, R[:,:,0], F, angle0, delta0)
+                
+                M = 50
+                lambda1 = np.linspace(-0.02,0.02,M)
+                lambda2 = np.linspace(0.0,1,M)
+
+                delta = np.zeros((M,M))
+                angle = np.zeros((M,M))
+                ctri = 0
+                for l1 in lambda1:
+                        ctrj = 0
+                        for l2 in lambda2:
+                                speed = sqrt(l2*amax[0]*2)
+                                trajNormal = np.array((-W[1],W[0],0.0,0.0))
+                                trajNormal = trajNormal/np.linalg.norm(trajNormal)
+
+                                Fproj = np.dot(F.flatten().T, trajNormal)
+                                Qoff = W + speed*dt*dW + dt2*F.flatten() - l1*Fproj*trajNormal
+                                [delta[ctri,ctrj], angle[ctri,ctrj], Lnearest, Qnearest] = self.computeDelta(W, dW, Qoff, Rmin, Rmax)
+                                ctrj = ctrj+1
+                        ctri = ctri+1
+
+                from mpl_toolkits.mplot3d import Axes3D
+                from matplotlib import cm
+                from matplotlib.ticker import LinearLocator, FormatStrFormatter
+                import matplotlib.pyplot as plt
+
+                fig = plt.figure()
+                ax = fig.gca(projection='3d')
+                X, Y = np.meshgrid(lambda2, lambda1)
+                surf = ax.plot_surface(X, Y, angle, rstride=1, cstride=1, cmap=cm.coolwarm,
+                                       linewidth=0, antialiased=False)
+
+                ax.set_xlabel('$\\lambda_2$',fontsize=22)
+                ax.set_ylabel('$\\lambda_1$',fontsize=22)
+                ax.set_zlabel('$\\theta$',fontsize=22)
+
+                dmax = np.amax(delta)
+                ax.plot([0],[0],[angle0],'ob',markersize=10)
+                #ax.set_zlim(-1.01, 1.01)
+
+                #fig.colorbar(surf, shrink=0.5, aspect=5)
+
+                plt.show()
+                print delta
 
         def computeReachableSets(self, dt, env):
                 L = self.get_length()
@@ -279,8 +339,12 @@ class Trajectory():
                 legend = plt.legend(loc='upper center', shadow=True, fontsize=self.FONT_SIZE)
                 plt.show()
 
-        def computeDeltaProfile(self):
-                pass
+        def IsReparametrizable(self, env):
+                S = self.reparametrize(env, ploting=False)
+                if S is None:
+                        return False
+                else:
+                        return True
 
         def reparametrize(self, env, ploting=False):
                 L = self.get_length()
@@ -292,30 +356,29 @@ class Trajectory():
                 ### acceleration limits
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                print F
                 S = getSpeedProfileRManifold(-F,R,amin,amax,W,dW,ddW,ploting)
-                if S is None:
-                        self.speed_profile = S
-                        print "No parametrization solution -- sorry :-((("
-                        return False
-                return True
+                #if S is None:
+                        #self.speed_profile = S
+                        #print "No parametrization solution -- sorry :-((("
+                        #return False
+                return S
 
-        def speed_profile_MVC(self, ravetraj):
-                poly_traj = TOPPopenravepy.FromRaveTraj(self.robot, ravetraj)
+        #def speed_profile_MVC(self, ravetraj):
+        #        poly_traj = TOPPopenravepy.FromRaveTraj(self.robot, ravetraj)
 
-                grav=[0,0,-9.8]
-                ndof=self.robot.GetDOF()
-                dof_lim=self.robot.GetDOFLimits()
-                vel_lim=self.robot.GetDOFVelocityLimits()
-                #robot.SetDOFLimits(-10*ones(ndof),10*ones(ndof)) # Overrides robot joint limits for TOPP computations
-                #robot.SetDOFVelocityLimits(100*vel_lim) # Override robot velocity limits for TOPP computations
-                
-                ret = traj.RunComputeProfiles(0,0)
-                if(ret == 1):
-                        traj.ReparameterizeTrajectory()
-                        return traj
-                else:
-                        print "Trajectory is not time-parameterizable"
+        #        grav=[0,0,-9.8]
+        #        ndof=self.robot.GetDOF()
+        #        dof_lim=self.robot.GetDOFLimits()
+        #        vel_lim=self.robot.GetDOFVelocityLimits()
+        #        #robot.SetDOFLimits(-10*ones(ndof),10*ones(ndof)) # Overrides robot joint limits for TOPP computations
+        #        #robot.SetDOFVelocityLimits(100*vel_lim) # Override robot velocity limits for TOPP computations
+        #        
+        #        ret = traj.RunComputeProfiles(0,0)
+        #        if(ret == 1):
+        #                traj.ReparameterizeTrajectory()
+        #                return traj
+        #        else:
+        #                print "Trajectory is not time-parameterizable"
 
         from util import Rz
 
