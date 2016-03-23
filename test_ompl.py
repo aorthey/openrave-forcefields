@@ -15,6 +15,7 @@ from environment_periodic_force_crossroad_stream import *
 
 from deformation_naive import *
 from deformation_potentials import *
+from deformation_stretchpull import *
 from trajectory_bspline import *
 import numpy as np
 import statsmodels.api as sm
@@ -108,8 +109,10 @@ if __name__ == "__main__":
         #traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
         traj = TrajectoryBSpline.from_ravetraj(rave_traj)
         traj.info()
-        traj.draw(env)
-        t1 = traj.reparametrize(env,ploting=False)
+        #traj.draw(env)
+
+        #t1 = traj.reparametrize(env,ploting=False)
+        #traj.getCriticalPoint(env)
 
         #traj.IsReparametrizable(env)
         #traj.computeReachableSets(0.2,env)
@@ -117,11 +120,12 @@ if __name__ == "__main__":
 
         #td = DeformationNaive(traj, env)
         #td = DeformationPotentials(traj, env)
-        #td = DeformationReidemeister(traj, env)
 
-        #for i in range(10):
-        #        td.deform()
-        #        td.draw_deformation() 
+        td = DeformationStretchPull(traj, env)
+
+        for i in range(10):
+                td.deform(N_iter=1)
+                td.draw_deformation() 
 
         #td.traj_current.plot_speed_profile(env)
 

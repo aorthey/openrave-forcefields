@@ -2,8 +2,8 @@ import abc
 import sys
 import time
 import numpy as np
-from copy import copy
 from trajectory import *
+import copy
 
 class Deformation():
         __metaclass__ = abc.ABCMeta
@@ -26,9 +26,9 @@ class Deformation():
                 ## traj_deformed : the working copy of current for the next iteration
                 ## traj_display : the trajectory which we display at the moment
                 self.traj_ori = trajectory 
-                self.traj_current = copy(trajectory)
-                self.traj_deformed = copy(trajectory)
-                self.traj_display = copy(trajectory)
+                self.traj_current = copy.copy(trajectory)
+                self.traj_deformed = copy.copy(trajectory)
+                self.traj_display = copy.copy(trajectory)
 
         @abc.abstractmethod 
         def deform_onestep(self):
@@ -37,7 +37,7 @@ class Deformation():
         def deform(self, N_iter = 1):
                 for i in range(0,N_iter):
                         self.deform_onestep()
-                        self.traj_current = copy(self.traj_deformed)
+                        self.traj_current = copy.copy(self.traj_deformed)
 
         def GetForcesAtWaypoints(self, W):
                 Ndim = W.shape[0]
@@ -93,7 +93,7 @@ class Deformation():
                                 raw_input('Press <ENTER> to draw deformation.')
                         time.sleep(0.1)
 
-                self.traj_display = copy(self.traj_current)
+                self.traj_display = copy.copy(self.traj_current)
 
 
         def draw_trajectory_original(self):

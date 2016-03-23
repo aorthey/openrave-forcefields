@@ -79,9 +79,7 @@ def customPlotTrajectory(traj0):
 
         plt.show()
 
-def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
-        DEBUG = 0
-
+def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
         Ndim = W.shape[0]
         Nwaypoints = W.shape[1]
 
@@ -93,7 +91,8 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
 
         dendpoint = np.linalg.norm(traj0.Eval(L)-W[:,-1])
 
-        if dendpoint > 0.001:
+        if dendpoint > 0.01:
+                print L
                 print "###############"
                 print "FINAL POINT on piecewise C^2 traj:",traj0.Eval(L)
                 print "FINAL WAYPOINT                   :",W[:,-1]
@@ -107,10 +106,6 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
                 duration = np.sum(durationVector[0:i])
                 qs[:,i] = traj0.Evald(duration)
                 qss[:,i] = traj0.Evaldd(duration)
-                #print duration,traj0.Eval(duration),qs[:,i],qss[:,i]
-
-        #if ploting:
-                #customPlotTrajectory(traj0)
 
         I = np.identity(Ndim)
         G = np.vstack((I,-I))
@@ -144,12 +139,27 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
         #x.reparamtimestep = 0.001
         #x.extrareps = 10
 
-        ret = x.RunComputeProfiles(0,0)
-        print "TOPP Output:",ret
-        if(ret == 4):
-                print ret," [ERROR TOPP: MVC hit zero]"
+        try:
+                ret = topp_inst.solver.RunComputeProfiles(0,0)
+        except Exception as e:
+                print e
+                print W,dW,ddW
+                print duration
+                print durationVector
+                print traj0.duration
+                sys.exit(0)
+                #return -1
 
-        if(ret == 1):
+        if ret == 1:
+                return topp_inst
+        else:
+                return None
+
+def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
+        topp_inst = computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW)
+
+        if topp_inst is not None:
+                x = topp_inst.solver
                 x.ReparameterizeTrajectory()
 
                 [semin,semax] = topp_inst.AVP(0, 0)
@@ -175,6 +185,9 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
                 #return np.array(P)
                 return traj1
         return None
+
+
+
 
 def testMVCgetControlMatrix(W):
         Ndim = W.shape[0]

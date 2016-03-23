@@ -4,7 +4,7 @@ DEBUG=1
 
 
 class TrajectoryBSpline(Trajectory):
-        SMOOTH_CONSTANT=0.2
+        SMOOTH_CONSTANT=0.0
         @classmethod
         def from_waypoints(cls, W):
                 Nwaypoints = W.shape[1]

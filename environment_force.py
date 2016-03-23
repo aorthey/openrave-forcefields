@@ -123,6 +123,7 @@ class ForceEnvironment():
                         h=self.env.drawlinestrip(points=P,linewidth=5.0,colors=array(((1,1,1,0.5))))
                         handle.append(h)
                         return handle
+
         def GetZeroForce(self):
                 return np.zeros(self.forces[0].shape)
 
