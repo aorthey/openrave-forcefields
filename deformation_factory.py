@@ -63,35 +63,37 @@ class Deformation():
                         self.forcehandle.append(h)
 
 
-        def GetFirstInfeasibleWaypoint(self, W, dW, F):
-                Nwaypoints = W.shape[1]
-                for i in range(0,Nwaypoints):
-                        d = np.linalg.norm(F[:,i])
-                        pt = np.array(((W[0,i],W[1,i],0.1)))
-                        if d > 0.2:
-                                return i
-
         def draw_deformation(self):
                 M = 20
                 L = self.traj_current.get_length()
                 dt = 0.05
                 Nwaypoints = int(L/dt)
 
-                print self.traj_display.info()
-                print self.traj_current.info()
 
                 [W0,dW] = self.traj_display.get_waypoints(N=Nwaypoints) 
                 [W1,dW] = self.traj_current.get_waypoints(N=Nwaypoints) 
 
                 self.forcehandle = []
+                if np.linalg.norm(W0-W1)<0.001:
+                        print "No deformation"
+                        self.handle = self.traj_current.draw(self.env, keep_handle=False)
+                        return
+
+                print self.traj_display.info()
+                print self.traj_current.info()
+
                 for i in range(0,M):
                         k = float(i)/float(M)
                         Wk = (1-k)*W0 + k*W1
-                        self.traj_current.new_from_waypoints(Wk)
-                        self.handle = self.traj_current.draw(self.env, keep_handle=False)
-                        if i == 0:
-                                raw_input('Press <ENTER> to draw deformation.')
-                        time.sleep(0.1)
+                        if self.traj_current.IsInCollision(self.env, Wk):
+                                break
+                        else:
+                                self.traj_current.new_from_waypoints(Wk)
+                                #self.handle = self.traj_current.draw_nocritical(self.env, keep_handle=False)
+                                self.handle = self.traj_current.draw(self.env, keep_handle=False)
+                                if i == 0:
+                                        raw_input('Press <ENTER> to draw deformation.')
+                                time.sleep(0.001)
 
                 self.traj_display = copy.copy(self.traj_current)
 

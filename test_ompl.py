@@ -99,8 +99,12 @@ if __name__ == "__main__":
         planner.InitPlan(env.robot, params)
 
         rave_traj = RaveCreateTrajectory(env.env,'')
+
+        t1=time.time()
         result = planner.PlanPath(rave_traj)
+        t2=time.time()
         assert result == PlannerStatus.HasSolution
+        print "Planner time:",t2-t1
 
         #from util import draw_waypoints, draw_ravetraj
         #handle = draw_ravetraj(rave_traj, env)
@@ -109,23 +113,26 @@ if __name__ == "__main__":
         #traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
         traj = TrajectoryBSpline.from_ravetraj(rave_traj)
         traj.info()
-        #traj.draw(env)
+        traj.draw(env)
 
         #t1 = traj.reparametrize(env,ploting=False)
         #traj.getCriticalPoint(env)
-
         #traj.IsReparametrizable(env)
         #traj.computeReachableSets(0.2,env)
-        #traj.visualizeReachableSetsAtT(env, 1.0, dt=0.2)
+        #traj.visualizeReachableSetsAtT(env, 0.5, dt=0.2)
 
         #td = DeformationNaive(traj, env)
         #td = DeformationPotentials(traj, env)
+        traj.draw_delete()
 
         td = DeformationStretchPull(traj, env)
 
         for i in range(10):
+                print "DEFORMATION:",i,"/",10
                 td.deform(N_iter=1)
                 td.draw_deformation() 
+
+        print "DONE"
 
         #td.traj_current.plot_speed_profile(env)
 

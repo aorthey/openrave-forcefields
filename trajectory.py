@@ -68,6 +68,15 @@ class Trajectory():
                 F = np.zeros((Ndims))
                 F[0:3] = env.GetForceAtX(pt)
                 return F
+        
+        def IsInCollision(self, env, W):
+                [Ndim,Nwaypoints] = self.getWaypointDim(W)
+
+                for i in range(0,Nwaypoints):
+                        if env.CheckCollisionAtX(W[:,i]):
+                                return True
+                return False
+
 
         def get_forces_at_waypoints(self, W, env):
                 Ndim = W.shape[0]
@@ -202,9 +211,6 @@ class Trajectory():
                 Mlq = Lnearest+0.5*(Qnearest-Lnearest)
                 strdelta = ' $\\delta$='+str(np.around(delta,decimals=2))
                 plt.text(Mlq[0], Mlq[1], strdelta, fontsize=22)
-                #print Mlq
-                #print Lnearest
-                #print Qnearest
                 dQ = Qnearest-W
                 plot([W[0],W[0]+dQ[0]],[W[1],W[1]+dQ[1]],'--g',linewidth=3)
                 Mlq = W+0.2*(Qnearest-W)
@@ -289,7 +295,7 @@ class Trajectory():
                 #fig.colorbar(surf, shrink=0.5, aspect=5)
 
                 plt.show()
-                print delta
+                #print delta
 
         def computeReachableSets(self, dt, env):
                 L = self.get_length()
@@ -352,15 +358,16 @@ class Trajectory():
                 else:
                         return True
 
-        def getCriticalPointFromWaypoints(self, env, startN, W, dW, ddW):
+        def getCriticalPointFromWaypoints(self, env, W, dW, ddW):
 
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                assert(startN>=3)
+                startN = 10
                 N = startN
                 while N < Nwaypoints:
+                        #print N,"/",Nwaypoints
                         N0 = N-startN
                         Ft = F[:,N0:N]
                         Rt = R[:,:,N0:N]
@@ -385,8 +392,7 @@ class Trajectory():
                 Nwaypoints = int(L/dt)
                 [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
 
-                startN = 3
-                N = self.getCriticalPointFromWaypoints(env, startN, W, dW, ddW)
+                N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
                 if N is not None:
                         print "CRITICAL POINT:",N,"/",Nwaypoints
                         print W[:,N]
@@ -621,25 +627,26 @@ class Trajectory():
                 Ndims = W.shape[0]
                 Nwaypoints = W.shape[1]
                 tmp_handle = []
-                for i in range(0,Nwaypoints):
-                        pt = np.array(((W[0,i],W[1,i],W[2,i])))
-                        tmp_handle.append(env.env.plot3(points=pt,
-                                           pointsize=self.ptsize,
-                                           colors=self.trajectory_color,
-                                           drawstyle=1))
-                        dpt = np.array(((dW[0,i],dW[1,i],dW[2,i])))
-                        ddpt = np.array(((ddW[0,i],ddW[1,i],ddW[2,i])))
-                        dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
-                        ddpt = self.dVECTOR_LENGTH*ddpt/np.linalg.norm(ddpt)
+                with env.env:
+                        for i in range(0,Nwaypoints):
+                                pt = np.array(((W[0,i],W[1,i],W[2,i])))
+                                tmp_handle.append(env.env.plot3(points=pt,
+                                                   pointsize=self.ptsize,
+                                                   colors=self.trajectory_color,
+                                                   drawstyle=1))
+                                dpt = np.array(((dW[0,i],dW[1,i],dW[2,i])))
+                                ddpt = np.array(((ddW[0,i],ddW[1,i],ddW[2,i])))
+                                dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
+                                ddpt = self.dVECTOR_LENGTH*ddpt/np.linalg.norm(ddpt)
 
-                        P = np.array(((pt[0],pt[1],pt[2]),
-                                (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
-                        h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=self.trajectory_tangent_color)
-                        tmp_handle.append(h)
-                        #P = np.array(((pt[0],pt[1],pt[2]),
-                        #        (pt[0]+ddpt[0],pt[1]+ddpt[1],pt[2]+ddpt[2])))
-                        #h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=np.array(((0.9,0.9,0.9,0.9))))
-                        #tmp_handle.append(h)
+                                P = np.array(((pt[0],pt[1],pt[2]),
+                                        (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
+                                h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=self.trajectory_tangent_color)
+                                tmp_handle.append(h)
+                                #P = np.array(((pt[0],pt[1],pt[2]),
+                                #        (pt[0]+ddpt[0],pt[1]+ddpt[1],pt[2]+ddpt[2])))
+                                #h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=np.array(((0.9,0.9,0.9,0.9))))
+                                #tmp_handle.append(h)
 
                 return tmp_handle
 
@@ -656,11 +663,23 @@ class Trajectory():
         #        else:
         #                return tmp_handle
 
+        def draw_nocritical(self, env, keep_handle=True):
+                Nwaypoints=200
+                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+                tmp_handle = []
+
+                self.trajectory_color = self.trajectory_color_infeasible
+                tmp_handle.append(self.get_handle_draw_waypoints(env, W, dW, ddW))
+
+                if keep_handle:
+                        self.handle = tmp_handle
+                else:
+                        return tmp_handle
+
         def draw(self, env, keep_handle=True):
                 Nwaypoints=200
                 [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
-                startN = 3
-                N = self.getCriticalPointFromWaypoints(env, startN, W, dW, ddW)
+                N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
                 tmp_handle = []
 
                 self.trajectory_color = self.trajectory_color_feasible
@@ -673,5 +692,5 @@ class Trajectory():
                 else:
                         return tmp_handle
 
-        def draw_delete(self, env):
+        def draw_delete(self):
                 self.handle = []

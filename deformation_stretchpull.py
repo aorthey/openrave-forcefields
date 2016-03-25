@@ -103,12 +103,12 @@ class DeformationStretchPull(Deformation):
                 F = traj.get_forces_at_waypoints(Wori, self.env)
                 [R,amin,amax] = traj.getControlMatrix(Wori)
 
-                startN = 3
                 ### FORWARD PASS UNTIL CRITICAL POINT IS HIT
-                Nc = traj.getCriticalPointFromWaypoints(self.env, startN, Wori, dWori, ddWori)
+                Nc = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori)
 
                 if Nc >= Nwaypoints:
                         ## no critical points => trajectory is dynamically
+                        print "No deformation necessary=>Trajectory dynamically feasible"
                         ## feasible
                         return
 
@@ -147,8 +147,10 @@ class DeformationStretchPull(Deformation):
                         dU[:,i] += A2[i]*(- lambda_2 * dWori[:,Nc])
 
                 #print dU
-                print lambda_1,lambda_2
+                #print lambda_1,lambda_2
                 eta = 1.0
+                print Wori[0:2,0]
                 Wnext = Wori + eta*dU
+                print Wori[0:2,0]
                 self.traj_deformed.new_from_waypoints(Wnext)
 

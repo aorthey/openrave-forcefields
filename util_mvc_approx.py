@@ -91,7 +91,7 @@ def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
 
         dendpoint = np.linalg.norm(traj0.Eval(L)-W[:,-1])
 
-        if dendpoint > 0.01:
+        if dendpoint > 0.2:
                 print L
                 print "###############"
                 print "FINAL POINT on piecewise C^2 traj:",traj0.Eval(L)
@@ -142,8 +142,8 @@ def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
         try:
                 ret = topp_inst.solver.RunComputeProfiles(0,0)
         except Exception as e:
-                print e
-                print W,dW,ddW
+                print "TOPP cannot compute profile",e
+                print W
                 print duration
                 print durationVector
                 print traj0.duration

@@ -57,10 +57,11 @@ class ForceEnvironment():
                         self.env.Add(self.env.ReadRobotXMLFile(self.robot_xml))
                         self.env.Load(self.env_xml)
 
-        def GetCellsAll(self):
+        def GetCellsAll(self, verbose=True):
                 with self.env:
                         B = self.env.GetBodies()[1]
-                        print B.GetLinks()
+                        if verbose:
+                                print B.GetLinks()
                         return B.GetLinks()
 
         @abc.abstractmethod
@@ -87,10 +88,11 @@ class ForceEnvironment():
                         [xg,yg,zg,tg,dxg,dyg,dzg,dtg]=self.RobotGetGoalPosition()
                         #self.robot.SetDOFLimits((-10,10),(-5,5),(-1,1))
                         #self.robot.SetDOFLimits((-10,-8,-0.15,-4*pi),(10,8,0.15,4*pi))
-                        self.robot.SetDOFLimits((-10,-8,-0.15,-4*pi),(10,8,0.15,4*pi))
+                        self.robot.SetDOFLimits((-10,-8,-0.15,-2*pi),(10,8,0.15,2*pi))
                         self.robot.SetDOFValues((xi,yi,zi,ti))
                         self.robot.SetDOFVelocities((dxi,dyi,dzi,dti))
-                        self.robot.SetDOFVelocityLimits([5.0,5.0,0.0,5.0])
+                        self.robot.SetDOFVelocityLimits([10.0,10.0,0.0,5.0])
+                        self.robot.SetDOFAccelerationLimits([5.0,5.0,0.0,5.0])
 
 
                         self.handles.append(self.env.plot3(points=array(((xg,yg,zg))),
@@ -126,6 +128,19 @@ class ForceEnvironment():
 
         def GetZeroForce(self):
                 return np.zeros(self.forces[0].shape)
+
+        def CheckCollisionAtX(self, X):
+                self.robot.SetDOFValues(X)
+
+                floorDim = len(self.cells)
+                outercells = self.GetCellsAll(verbose=False)[floorDim:]
+
+                for i in range(0,len(outercells)):
+                        robotIsInCollision = self.env.CheckCollision(self.robot, outercells[i])
+                        if robotIsInCollision:
+                                print "COLLISION:",X[0:2],outercells[i]
+                                return True
+                return False
 
         def GetForceAtX(self, X):
                 self.robot.SetDOFValues(X)
