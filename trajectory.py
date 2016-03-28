@@ -367,7 +367,7 @@ class Trajectory():
                 startN = 10
                 N = startN
                 while N < Nwaypoints:
-                        #print N,"/",Nwaypoints
+                        print N,"/",Nwaypoints
                         N0 = N-startN
                         Ft = F[:,N0:N]
                         Rt = R[:,:,N0:N]

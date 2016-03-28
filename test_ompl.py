@@ -115,6 +115,9 @@ if __name__ == "__main__":
         traj.info()
         traj.draw(env)
 
+        from TOPP import TOPPopenravepy
+        TOPPopenravepy.FromRaveTraj(robot, rave_traj)
+
         #t1 = traj.reparametrize(env,ploting=False)
         #traj.getCriticalPoint(env)
         #traj.IsReparametrizable(env)
@@ -130,7 +133,7 @@ if __name__ == "__main__":
         for i in range(10):
                 print "DEFORMATION:",i,"/",10
                 td.deform(N_iter=1)
-                td.draw_deformation() 
+                #td.draw_deformation() 
 
         print "DONE"
 

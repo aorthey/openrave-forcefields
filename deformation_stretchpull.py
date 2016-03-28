@@ -95,9 +95,9 @@ class DeformationStretchPull(Deformation):
                 traj = self.traj_deformed
                 L = traj.get_length()
                 #Nwaypoints = int(L/dt)
-                #print "WAYPOINTS:",Nwaypoints,"LENGTH:",L
                 dt = 0.05
                 Nwaypoints = int(L/dt)
+                print "WAYPOINTS:",Nwaypoints,"LENGTH:",L
                 [Wori,dWori,ddWori] = traj.get_waypoints_second_order(N=Nwaypoints)
                 [Ndim, Nwaypoints] = traj.getWaypointDim(Wori)
                 F = traj.get_forces_at_waypoints(Wori, self.env)

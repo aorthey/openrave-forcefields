@@ -93,7 +93,7 @@ class Deformation():
                                 self.handle = self.traj_current.draw(self.env, keep_handle=False)
                                 if i == 0:
                                         raw_input('Press <ENTER> to draw deformation.')
-                                time.sleep(0.001)
+                                #time.sleep(0.001)
 
                 self.traj_display = copy.copy(self.traj_current)
 
