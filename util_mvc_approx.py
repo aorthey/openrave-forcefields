@@ -15,12 +15,12 @@ def GetTrajectoryString(W, dW, ddW):
         Nwaypoints = W.shape[1]
         durationVector = np.zeros((Nwaypoints-1))
 
-        duration = 1
+        #duration = 0.1
         for i in range(0,Nwaypoints-1):
                 ds = np.linalg.norm(W[:,i+1]-W[:,i])
                 dv = np.linalg.norm(dW[:,i])
                 #duration = ds/dv
-                #duration = 0.001
+                duration = 0.001
                 durationVector[i] = duration
                 if i==0:
                         trajectorystring = str(duration)
@@ -41,65 +41,103 @@ def GetTrajectoryString(W, dW, ddW):
                 #P'(1) = B + 2C + 3D + 4E + 5F
                 #P''(1) = 2C + 6D + 12E + 20F
 
-                A = W[:,i]
-                B = dW[:,i]
-                C = 0.5*ddW[:,i]
+                p0 = W[:,i]
+                p1 = W[:,i+1]
+                if i>=(Nwaypoints-2):
+                        p2 = p1+(p1-p0)
+                else:
+                        p2 = W[:,i+2]
+                if i>=(Nwaypoints-3):
+                        p3 = p2+(p1-p0)
+                else:
+                        p3 = W[:,i+3]
 
-                ## solve LE
-                ## D + E +F = W[:,i+1]-A-B-C = P1
-                ## 3D + 4E + 5F = dW[:,i+1]-B-2C = P2
-                ## 6D + 12E + 20F = ddW[:,i+1]-2C = P3
+                A = np.zeros(Ndim)
+                B = np.zeros(Ndim)
+                C = np.zeros(Ndim)
+                D = np.zeros(Ndim)
+                E = np.zeros(Ndim)
+                F = np.zeros(Ndim)
 
-                P1 = W[:,i+1]-A-B-C
-                P2 = dW[:,i+1]-B-(2*C)
-                P3 = ddW[:,i+1]-(2*C)
+                #########################################################
+                ###### A,B,C,D,E
+                #########################################################
+                #A = p0
+                #B = p1-p0
+                #C = 0.5*((p2-p1)-(p1-p0))
+                #Z1 = p1-A-B-C
+                #Z2 = (p2-p1)-B-2*C
+                #Zleft = np.array([[1,1],[3,4]])
+                #Zright = np.array([Z1,Z2])
+                #x = np.linalg.solve(Zleft,Zright)
+                #D = x[0,:]
+                #E = x[1,:]
+                
+                #########################################################
+                ###### A,B,C,D
+                #########################################################
+                #A = p0
+                #B = (p1-p0)/duration
+                #C = ((p2-p1)-(p1-p0))/(2*duration*duration)
+                A=W[:,i]
+                B=dW[:,i]
+                C=0.5*ddW[:,i]
 
-                ## solve Zleft*x = Zright
-                Zleft = np.array([[1,1,1],[3,4,5],[6,12,20]])
-                Zright = np.array([P1,P2,P3])
-
-                x = np.linalg.solve(Zleft,Zright)
-                D = x[0,:]
-                E = x[1,:]
-                F = x[2,:]
+                #########################################################
+                ###### A,B,C,D,E,F
+                #########################################################
+                #A = p0
+                #B = p1-p0
+                #C = 0.5*((p2-p1)-(p1-p0))
+                #Z1 = p1 - A - B - C
+                #Z2 = p2 - p1 - B - 2*C
+                #Z3 = (p3-p2)-(p2-p1)-2*C
+                #Zleft = np.array([[1,1,1],[3,4,5],[6,12,20]])
+                #Zright = np.array([Z1,Z2,Z3])
+                #x = np.linalg.solve(Zleft,Zright)
+                #D = x[0,:]
+                #E = x[1,:]
+                #F = x[2,:]
 
                 ### DEBUGGING
                 try:
-                        def g(A,B,C,D,E,F,t):
-                                t1 = t
-                                t2 = t*t
-                                t3 = t*t*t
-                                t4 = t*t*t*t
-                                t5 = t*t*t*t*t
-                                return (A + t1*B + t2*C + t3*D + t4*E + t5*F)
+                        #def g(A,B,C,D,E,F,t):
+                        #        t1 = t
+                        #        t2 = t*t
+                        #        t3 = t*t*t
+                        #        t4 = t*t*t*t
+                        #        t5 = t*t*t*t*t
+                        #        return (A + t1*B + t2*C + t3*D + t4*E + t5*F)
 
-                        def dg(A,B,C,D,E,F,t):
-                                t1 = t
-                                t2 = t*t
-                                t3 = t*t*t
-                                t4 = t*t*t*t
-                                t5 = t*t*t*t*t
-                                return (B + 2*C*t1 + 3*D*t2 + 4*E*t3 + 5*F*t4)
+                        #def dg(A,B,C,D,E,F,t):
+                        #        t1 = t
+                        #        t2 = t*t
+                        #        t3 = t*t*t
+                        #        t4 = t*t*t*t
+                        #        t5 = t*t*t*t*t
+                        #        return (B + 2*C*t1 + 3*D*t2 + 4*E*t3 + 5*F*t4)
 
-                        def ddg(A,B,C,D,E,F,t):
-                                t1 = t
-                                t2 = t*t
-                                t3 = t*t*t
-                                t4 = t*t*t*t
-                                t5 = t*t*t*t*t
-                                return (20*F*t3 + 6*D*t1 + 12*E*t2 + 2*C)
+                        #def ddg(A,B,C,D,E,F,t):
+                        #        t1 = t
+                        #        t2 = t*t
+                        #        t3 = t*t*t
+                        #        t4 = t*t*t*t
+                        #        t5 = t*t*t*t*t
+                        #        return (20*F*t3 + 6*D*t1 + 12*E*t2 + 2*C)
 
-                        if not np.allclose(np.dot(Zleft, x), Zright):
-                                print "6d polynomial not approximable"
-                                sys.exit(0)
+                        #
+                        ##if not np.allclose(np.dot(Zleft, x), Zright):
+                        #        #print "6d polynomial not approximable"
+                        #        #sys.exit(0)
+                        #
+                        #West = g(A,B,C,D,E,F,duration)
+                        #dWest = dg(A,B,C,D,E,F,duration)
+                        #ddWest = ddg(A,B,C,D,E,F,duration)
                         
-                        West = g(A,B,C,D,E,F,duration)
-                        dWest = dg(A,B,C,D,E,F,duration)
-                        ddWest = ddg(A,B,C,D,E,F,duration)
+                        West = A + duration*B + duration*duration*C + duration*duration*duration*D
+                        dWest = B + duration*C + duration*duration*D 
 
-                        assert( np.linalg.norm(West - W[:,i+1]) < 1e-10)
-                        assert( np.linalg.norm(dWest - dW[:,i+1]) < 1e-10)
-                        assert( np.linalg.norm(ddWest - ddW[:,i+1]) < 1e-10)
+                        #assert( np.linalg.norm(West - W[:,i+1]) < 1e-10)
 
                 except AssertionError as e:
                         
@@ -108,13 +146,13 @@ def GetTrajectoryString(W, dW, ddW):
                         print "West :",West
                         print "dWnext:",dW[:,i+1]
                         print "dWest :",dWest
-                        print "ddWnext:",ddW[:,i+1]
-                        print "ddWest :",ddWest
 
                         raise
 
                 for j in range(Ndim):
                         trajectorystring += "\n"
+                        #trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j]),str(D[j])])
+                        #trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j]),str(D[j]),str(E[j])])
                         #trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j])])
                         trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j]),str(D[j]),str(E[j]),str(F[j])])
 
@@ -175,7 +213,7 @@ def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
 
         dendpoint = np.linalg.norm(traj0.Eval(L)-W[:,-1])
 
-        if dendpoint > 1e-10:
+        if dendpoint > 0.1:
                 print L
                 print "###############"
                 print "FINAL POINT on piecewise C^2 traj:",traj0.Eval(L)
@@ -218,13 +256,13 @@ def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
                 b[i,:] = np.dot(G,qss[:,i]).flatten()
 
         vmax = 1000*np.ones(Ndim)
-        durationQ = traj0.duration/Nwaypoints
+        durationQ = traj0.duration/(Nwaypoints-1)
         #durationQ = 1e-1
         #topp_inst = TOPP.QuadraticConstraints(traj0, durationVector[0], vmax, list(a), list(b), list(c))
         topp_inst = TOPP.QuadraticConstraints(traj0, durationQ, vmax, list(a), list(b), list(c))
         x = topp_inst.solver
 
-        customPlotTrajectory(traj0)
+        #customPlotTrajectory(traj0)
         #x.integrationtimestep = 0.001
         #x.reparamtimestep = 0.001
         #x.extrareps = 10
@@ -235,24 +273,23 @@ def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
 
 
         try:
-                print "W=",repr(W[0:2,:])
-                print "q=",repr(q[0:2,:])
-                print "dW=",repr(dW[0:2,:])
-                print "qs=",repr(qs[0:2,:])
-                print "ddW=",repr(ddW[0:2,:])
-                print "qss=",repr(qss[0:2,:])
-                print "a=",repr(np.around(a,decimals=2))
-                print "b=",repr(np.around(b,decimals=2))
-                print "c=",repr(np.around(c,decimals=2))
-                print "d=",repr(durationVector)
-                print durationQ*Nwaypoints,"(",durationQ,") VS. ",traj0.duration
-                print trajstr
+                #print "W=",repr(W[0:2,:])
+                #print "q=",repr(q[0:2,:])
+                #print "dW=",repr(dW[0:2,:])
+                #print "qs=",repr(qs[0:2,:])
+                #print "ddW=",repr(ddW[0:2,:])
+                #print "qss=",repr(qss[0:2,:])
+                #print "a=",repr(np.around(a,decimals=2))
+                #print "b=",repr(np.around(b,decimals=2))
+                #print "c=",repr(np.around(c,decimals=2))
+                #print "d=",repr(durationVector)
+                #print durationQ*Nwaypoints,"(",durationQ,") VS. ",traj0.duration
+                #print trajstr
                 if np.linalg.norm(q[0,:]-qproblematic[0,:]) < 0.001:
                         print traj0.duration
                         topp_inst.PlotAlphaBeta()
                         print "PROBLEMATIC Q found"
                 ret = topp_inst.solver.RunComputeProfiles(0,0)
-                print "DONE"
 
         except Exception as e:
                 print "TOPP EXCEPTION: ",e

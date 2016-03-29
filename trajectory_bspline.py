@@ -4,16 +4,22 @@ DEBUG=1
 
 
 class TrajectoryBSpline(Trajectory):
-        SMOOTH_CONSTANT=0.01
+        SMOOTH_CONSTANT=0.0
         @classmethod
         def from_waypoints(cls, W):
                 Nwaypoints = W.shape[1]
                 if Nwaypoints<=4:
                         degree=2
                 else:
-                        degree=5
+                        degree=3
                 print Nwaypoints,degree
                 trajectory,tmp = splprep(W,k=degree,s=cls.SMOOTH_CONSTANT)
+                #print tmp
+                #print trajectory
+                #print splev(0,trajectory,der=0)
+                #print splev(0,trajectory,der=1)
+                #print splev(0,trajectory,der=2)
+                #sys.exit(0)
                 return cls(trajectory)
 
         def new_from_waypoints(self, W):
