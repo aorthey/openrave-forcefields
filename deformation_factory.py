@@ -36,8 +36,11 @@ class Deformation():
 
         def deform(self, N_iter = 1):
                 for i in range(0,N_iter):
-                        self.deform_onestep()
-                        self.traj_current = copy.copy(self.traj_deformed)
+                        if self.deform_onestep():
+                                self.traj_current = copy.copy(self.traj_deformed)
+                        else:
+                                return False
+                return True
 
         def GetForcesAtWaypoints(self, W):
                 Ndim = W.shape[0]

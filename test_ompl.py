@@ -18,13 +18,13 @@ from deformation_potentials import *
 from deformation_stretchpull import *
 from trajectory_bspline import *
 import numpy as np
-import statsmodels.api as sm
+#import statsmodels.api as sm
 
 if __name__ == "__main__":
 
-        #env = EnvironmentTheRay()
+        env = EnvironmentTheRay()
         #env = EnvironmentTheCounterStream()
-        env = EnvironmentTheStream()
+        #env = EnvironmentTheStream()
 
         robot = env.GetRobot()
         env.DisplayForces()
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         traj.info()
         traj.draw(env)
 
-        sys.exit(0)
+        #sys.exit(0)
 
         #t1 = traj.reparametrize(env,ploting=False)
         #traj.getCriticalPoint(env)
@@ -128,12 +128,16 @@ if __name__ == "__main__":
 
         td = DeformationStretchPull(traj, env)
 
-        Nd = 20
+        Nd = 25
         raw_input('Press <ENTER> to start.')
         for i in range(Nd):
                 print "DEFORMATION:",i,"/",Nd
-                td.deform(N_iter=1)
-                td.draw_deformation() 
+                if td.deform(N_iter=1):
+                        td.draw_deformation() 
+                else:
+                        break
+
+        td.traj_current.PlotParametrization(env)
 
         #print "DONE"
 

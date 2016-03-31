@@ -92,7 +92,7 @@ def A3matrix(traj, Ncritical, W):
         assert(Ncritical<Nwaypoints)
 
         #M = 100
-        i = Nwaypoints-2
+        i = Nwaypoints-1
         while i > 0:
                 #if abs(i-Ncritical)<M and i<Nwaypoints:
                 if i>Ncritical:
@@ -112,9 +112,31 @@ def A4matrix(traj, W):
                 i -= 1
         return A4
 
+def A5matrix(traj, W):
+        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
+        A5 = np.zeros(Nwaypoints)
+
+        #M = 100
+        i = Nwaypoints-1
+        while i > 0:
+                A5[i] = avalue(0, i, 20.0)
+                i -= 1
+        return A5
+
 DEBUG=0
 
 class DeformationStretchPull(Deformation):
+
+        def getForceNormalComponent(self, F, Wori):
+                Nwaypoints = Wori.shape[1]
+                FN = np.zeros((F.shape))
+                for i in range(0,Nwaypoints):
+                        q = Wori[:,i]
+                        trajNormal = np.array((-q[1],q[0],0.0,0.0))
+                        trajNormal = trajNormal/np.linalg.norm(trajNormal)
+                        FN[:,i] = np.dot(F[:,i].flatten().T, trajNormal)
+                return FN
+
 
         ## change only traj_deformed here
         def deform_onestep(self):
@@ -140,14 +162,7 @@ class DeformationStretchPull(Deformation):
                         ## no critical points => trajectory is dynamically
                         print "No deformation necessary=>Trajectory dynamically feasible"
                         ## feasible
-                        return
-
-                ### compute new waypoints
-                #W = Wori[:,0:Nc+1]
-                #dW = dWori[:,0:Nc+1]
-                #ddW = ddWori[:,0:Nc+1]
-                #F = traj.get_forces_at_waypoints(W, self.env)
-                #[R,amin,amax] = traj.getControlMatrix(W)
+                        return False
 
                 ###############################################################
                 ## for all points where dF = 0, we can say that lambda_1 = lambda_2 = 0
@@ -162,34 +177,76 @@ class DeformationStretchPull(Deformation):
                 q = Wori[:,Nc]
                 trajNormal = np.array((-q[1],q[0],0.0,0.0))
                 trajNormal = trajNormal/np.linalg.norm(trajNormal)
-                Fproj = np.dot(F[:,Nc].flatten().T, trajNormal)
+                FN_critical = np.dot(F[:,Nc].flatten().T, trajNormal)
+
+                FN = self.getForceNormalComponent(F, Wori)
                 A1 = A1matrix(traj,Nc,Wori)
                 A2 = A2matrix(traj,Nc,Wori)
 
                 dU = np.zeros((Ndim,Nwaypoints))
-                #map(lambda a: a*(-lambda_1*Fproj*trajNormal)
-                #print np.around(A1,decimals=2)
-                #print np.around(A2,decimals=2)
-                #print A1[Nc],A2[Nc]
-                lambda_1 = 0.01
-                lambda_2 = 0.00
+                lambda_1 = 0.005
+                lambda_2 = 0.0
                 lambda_3 = 0.00005
-                for i in range(0,Nwaypoints):
-                        dU[:,i] = A1[i]*(-lambda_1 * Fproj * trajNormal)
-                        dU[:,i] += A2[i]*(- lambda_2 * dWori[:,Nc])
-                        A3 = A3matrix(traj,i,Wori)
-                        dU[:,i] += np.dot(A3,( lambda_3 * F.T ))
+                eta = 1.0
+                print "## LAMBDAS: ",lambda_1,lambda_2,lambda_3
 
+                #################################################################
+                ## lambda 1 update
+                #################################################################
+                dUtmp = np.zeros((Ndim,Nwaypoints))
+                for i in range(0,Nwaypoints):
+                        dUtmp[:,i] = A1[i]*(-lambda_1 * FN_critical * trajNormal)
+
+                Wnext = Wori + eta*dUtmp
+                if not self.traj_deformed.IsInCollision(self.env, Wnext):
+                        dU += dUtmp
+                else:
+                        print "## $> lambda1 collision"
+                        
+                #################################################################
+                ## lambda 2 update
+                #################################################################
+                dUtmp = np.zeros((Ndim,Nwaypoints))
+                for i in range(0,Nwaypoints):
+                        dUtmp[:,i] += A2[i]*(- lambda_2 * dWori[:,Nc])
+                                
+                Wnext = Wori + eta*dUtmp
+                if not self.traj_deformed.IsInCollision(self.env, Wnext):
+                        dU += dUtmp
+                else:
+                        print "## $> lambda2 collision"
+
+                #################################################################
+                ## lambda 3 update
+                #################################################################
+                dUtmp = np.zeros((Ndim,Nwaypoints))
+                for i in range(0,Nwaypoints):
+                        A3 = A3matrix(traj,i,Wori)
+                        dUtmp[:,i] += np.dot(A3,( lambda_3 * F.T))
+
+                Wnext = Wori + eta*dUtmp
+                if not self.traj_deformed.IsInCollision(self.env, Wnext):
+                        dU += dUtmp
+                else:
+                        print "## $> lambda3 collision"
+
+                #################################################################
+                ## lambda 4/5 update
+                #################################################################
                 dEnd = dU[:,-1]
+                dStart = dU[:,0]
                 A4 = A4matrix(traj, Wori)
+                A5 = A5matrix(traj, Wori)
                 for i in range(0,Nwaypoints):
                         dU[:,i] += -A4[i]*dEnd
+                        dU[:,i] += -A5[i]*dStart
 
-                #print dU
-                print "LAMBDAS: ",lambda_1,lambda_2
-                eta = 1.0
                 Wnext = Wori + eta*dU
 
                 if self.traj_deformed.IsInCollision(self.env, Wnext):
-                        print "collision"
-                self.traj_deformed.new_from_waypoints(Wnext)
+                        print "no deformation possible -> collision"
+                        return False
+                else:
+                        self.traj_deformed.new_from_waypoints(Wnext)
+
+                return True

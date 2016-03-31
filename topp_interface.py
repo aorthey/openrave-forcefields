@@ -10,7 +10,9 @@ from TOPP import Trajectory
 from TOPP import TOPPopenravepy
 
 class TOPPInterface():
-        DURATION_DISCRETIZATION = 0.00001
+        #DURATION_DISCRETIZATION = 0.0001
+        #DURATION_DISCRETIZATION = 1
+        DURATION_DISCRETIZATION = 0.01
         traj0 = []
         trajstr = []
         durationVector = []
@@ -18,6 +20,7 @@ class TOPPInterface():
         Ndim = -1
         Nwaypoints = -1
         critical_point = -1
+        critical_point_value = -1.0
         topp_inst = []
         semin = -1
         semax = -1
@@ -89,19 +92,24 @@ class TOPPInterface():
                         #print "d=",repr(durationVector)
                         #print durationQ*Nwaypoints,"(",durationQ,") VS. ",traj0.duration
                         #print trajstr
-                        ret = x.RunComputeProfiles(0,0)
+                        ret = x.RunComputeProfiles(0.0,0.0)
                         if ret == 4:
                                 #[semin,semax] = topp_inst.AVP(0, 0)
                                 #print "TOPP critical pt:",semin,semax
-                                self.critical_point = x.GetMVCCriticalPoint()
+                                self.critical_point = x.GetCriticalPoint()
+                                self.critical_point_value = x.GetCriticalPointValue()
+                                #print "TOPP critical pt:",self.critical_point,self.critical_point_value
                                 return self.critical_point
                         if ret == 1:
                                 #print "TOPP: success"
                                 return self.critical_point
                         if ret== 0:
                                 print "TOPP: unspecified error"
+                                #self.critical_point = x.GetCriticalPoint()
+                                #self.critical_point_value = x.GetCriticalPointValue()
+                                #print "TOPP critical pt:",self.critical_point,self.critical_point_value
                                 return self.critical_point
-                                #sys.exit(0)
+                                sys.exit(0)
                         else:
                                 print "TOPP: ",ret
                                 sys.exit(0)
@@ -123,6 +131,7 @@ class TOPPInterface():
                         q[:,i] = self.traj0.Eval(duration)
                         qs[:,i] = self.traj0.Evald(duration)
                         qss[:,i] = self.traj0.Evaldd(duration)
+                        qs[:,i]=qs[:,i]/np.linalg.norm(qs[:,i])
 
                 I = np.identity(self.Ndim)
                 G = np.vstack((I,-I))
@@ -132,8 +141,8 @@ class TOPPInterface():
                 c = np.zeros((self.Nwaypoints, 2*self.Ndim))
 
                 for i in range(0,self.Nwaypoints):
-                        Rmax = np.maximum(np.dot(R[:,:,i],amax),np.dot(R[:,:,i],amin))
-                        Rmin = np.minimum(np.dot(R[:,:,i],amax),np.dot(R[:,:,i],amin))
+                        Rmax = np.maximum(np.dot(R[:,:,i],amin),np.dot(R[:,:,i],amax))
+                        Rmin = np.minimum(np.dot(R[:,:,i],amin),np.dot(R[:,:,i],amax))
                         H1 = F[:,i] - Rmax
                         H2 = -F[:,i] + Rmin
                         for j in range(self.Ndim):
@@ -172,13 +181,24 @@ class TOPPInterface():
                         B = np.zeros(Ndim)
                         C = np.zeros(Ndim)
 
-                        A=W[:,i]
-                        B=dW[:,i]
-                        C=0.5*ddW[:,i]
+                        #A=W[:,i]
+                        #B=dW[:,i]
+                        #C=0.5*ddW[:,i]
+
+    #a=((qd1-qd0)*T-2*(q1-q0-qd0*T))/T**3
+    #b=(3*(q1-q0-qd0*T)-(qd1-qd0)*T)/T**2
+    #c=qd0
+    #d=q0
+                        A = W[:,i]
+                        B = dW[:,i]
+                        C = (3*(W[:,i+1]-W[:,i]-dW[:,i]*duration)-(dW[:,i+1]-dW[:,i])*duration)/(duration*duration)
+                        D = ( (dW[:,i+1]-dW[:,i])*duration - 2*(W[:,i+1]-W[:,i]-dW[:,i]*duration))/(duration*duration*duration)
+                        
 
                         for j in range(Ndim):
                                 trajectorystring += "\n"
-                                trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j])])
+                                #trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j])])
+                                trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j]),str(D[j])])
 
                 return [trajectorystring, durationVector]
 

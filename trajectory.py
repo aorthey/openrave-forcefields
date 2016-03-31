@@ -359,6 +359,17 @@ class Trajectory():
                 else:
                         return True
 
+        def PlotParametrization(self, env):
+                Nwaypoints=200
+                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                F = self.get_forces_at_waypoints(W, env)
+                [R,amin,amax] = self.getControlMatrix(W)
+
+                topp = TOPPInterface(-F,R,amin,amax,W,dW,ddW)
+                topp.PlotTrajectory()
+
         def getCriticalPointFromWaypoints(self, env, W, dW, ddW):
 
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
@@ -643,7 +654,7 @@ class Trajectory():
                                 dpt = np.array(((dW[0,i],dW[1,i],dW[2,i])))
                                 ddpt = np.array(((ddW[0,i],ddW[1,i],ddW[2,i])))
                                 dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
-                                ddpt = self.dVECTOR_LENGTH*ddpt/np.linalg.norm(ddpt)
+                                #ddpt = self.dVECTOR_LENGTH*ddpt/np.linalg.norm(ddpt)
 
                                 P = np.array(((pt[0],pt[1],pt[2]),
                                         (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
