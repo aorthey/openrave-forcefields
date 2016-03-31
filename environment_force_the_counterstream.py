@@ -1,4 +1,5 @@
 from environment_force import *
+import numpy as np
 import openravepy
 
 class EnvironmentTheCounterStream(ForceEnvironment):
@@ -16,12 +17,11 @@ class EnvironmentTheCounterStream(ForceEnvironment):
 
         def GetForces(self):
                 ##
-                self.forces=[]
-                self.forces.append(numpy.array((0.0,0.0,0.0)))
-                self.forces.append(numpy.array((0.0,0.0,0.0)))
-                self.forces.append(numpy.array((0.5,0.0,0.0)))
-                self.forces.append(numpy.array((-0.5,0.0,0.0)))
-                self.forces.append(numpy.array((0.0,0.0,0.0)))
+                self.forces = np.array((0.0,0.0,0.0))
+                self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
+                self.forces = np.vstack([self.forces,(5.0,0.0,0.0)])
+                self.forces = np.vstack([self.forces,(-5.0,0.0,0.0)])
+                self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
                 return self.forces
 
         def RobotGetInitialPosition(self):

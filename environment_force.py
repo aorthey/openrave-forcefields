@@ -178,8 +178,8 @@ class ForceEnvironment():
                 minlx = -maxlx
                 maxly = dyspacing-dyspacing/4
                 minly = -maxly
-                lx = Fx
-                ly = Fy
+                lx = (Fx/10.0)*maxlx
+                ly = (Fy/10.0)*maxly
 
                 if lx > maxlx:
                         lx = maxlx

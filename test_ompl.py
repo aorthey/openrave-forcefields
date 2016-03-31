@@ -91,10 +91,6 @@ if __name__ == "__main__":
                 print "###############################################################"
                 sys.exit(0)
 
-        print "###############################################################"
-        print "EXECUTING PLANNER:",P
-        print "###############################################################"
-
         #######################################################################
         planner.InitPlan(env.robot, params)
 
@@ -103,17 +99,21 @@ if __name__ == "__main__":
         t1=time.time()
         result = planner.PlanPath(rave_traj)
         t2=time.time()
-        assert result == PlannerStatus.HasSolution
+        if result != PlannerStatus.HasSolution:
+                print "Could not find geometrical path"
+                print "Planner:",P
+                print "Status :",result
+                sys.exit(0)
         print "Planner time:",t2-t1
 
         #from util import draw_waypoints, draw_ravetraj
         #handle = draw_ravetraj(rave_traj, env)
-        from trajectory_polynomial import *
 
         #traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
         traj = TrajectoryBSpline.from_ravetraj(rave_traj)
         traj.info()
         traj.draw(env)
+        sys.exit(0)
 
         #t1 = traj.reparametrize(env,ploting=False)
         #traj.getCriticalPoint(env)
@@ -127,8 +127,10 @@ if __name__ == "__main__":
 
         td = DeformationStretchPull(traj, env)
 
-        for i in range(10):
-                print "DEFORMATION:",i,"/",10
+        Nd = 20
+        raw_input('Press <ENTER> to start.')
+        for i in range(Nd):
+                print "DEFORMATION:",i,"/",Nd
                 td.deform(N_iter=1)
                 td.draw_deformation() 
 

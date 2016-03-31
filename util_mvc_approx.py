@@ -9,6 +9,7 @@ from TOPP import TOPPpy
 from TOPP import Trajectory
 from TOPP import TOPPopenravepy
 
+
 def GetTrajectoryString(W, dW, ddW):
         ### get trajectory string for any R subspaces
         Ndim = W.shape[0]
@@ -213,7 +214,7 @@ def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
 
         dendpoint = np.linalg.norm(traj0.Eval(L)-W[:,-1])
 
-        if dendpoint > 0.1:
+        if dendpoint > 0.01:
                 print L
                 print "###############"
                 print "FINAL POINT on piecewise C^2 traj:",traj0.Eval(L)
@@ -266,11 +267,6 @@ def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
         #x.integrationtimestep = 0.001
         #x.reparamtimestep = 0.001
         #x.extrareps = 10
-        qproblematic= np.array([[-1.04377849, -1.02977873, -1.01911143, -1.01499959, -1.01643708,
-        -1.02325269, -1.03688057, -1.05309118, -1.07583686, -1.10578633],
-       [ 0.29385664,  0.30651985,  0.32203638,  0.33676218,  0.35198637,
-         0.36711786,  0.38396792,  0.39809829,  0.41358129,  0.43002112]])
-
 
         try:
                 #print "W=",repr(W[0:2,:])
@@ -285,11 +281,22 @@ def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
                 #print "d=",repr(durationVector)
                 #print durationQ*Nwaypoints,"(",durationQ,") VS. ",traj0.duration
                 #print trajstr
-                if np.linalg.norm(q[0,:]-qproblematic[0,:]) < 0.001:
-                        print traj0.duration
-                        topp_inst.PlotAlphaBeta()
-                        print "PROBLEMATIC Q found"
                 ret = topp_inst.solver.RunComputeProfiles(0,0)
+                if ret == 4:
+                        #[semin,semax] = topp_inst.AVP(0, 0)
+                        #print "TOPP critical pt:",semin,semax
+                        Nc = topp_inst.solver.GetMVCCriticalPoint()
+                        return Nc
+                if ret == 1:
+                        print "TOPP: success"
+                        return Nwaypoints
+                if ret== 0:
+                        print "TOPP: unspecified error"
+                        sys.exit(0)
+                else:
+                        print "TOPP: ",ret
+                        sys.exit(0)
+                return None
 
         except Exception as e:
                 print "TOPP EXCEPTION: ",e
@@ -300,8 +307,13 @@ def computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW):
                 sys.exit(0)
                 #return -1
 
-        if ret == 1:
-                return topp_inst
+def getSpeedInterval( F, R, amin, amax, W, dW, ddW):
+        topp_inst = computeReparametrizationTrajectory(F, R, amin, amax, W, dW, ddW)
+        if topp_inst is not None:
+                x = topp_inst.solver
+                x.ReparameterizeTrajectory()
+                [semin,semax] = topp_inst.AVP(0, 0)
+                return [semin,semax]
         else:
                 return None
 
@@ -335,9 +347,6 @@ def getSpeedProfileRManifold( F, R, amin, amax, W, dW, ddW, ploting=False):
                 #return np.array(P)
                 return traj1
         return None
-
-
-
 
 def testMVCgetControlMatrix(W):
         Ndim = W.shape[0]

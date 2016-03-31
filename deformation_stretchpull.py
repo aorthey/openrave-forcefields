@@ -55,8 +55,7 @@ def compute_lambda_updates(q,dq,ddq,F,amax,dt):
         return [epsilon*cos(thetaBest),epsilon*sin(thetaBest)]
 
 
-def avalue(Ncritical, i):
-        c = 5.0
+def avalue(Ncritical, i, c=20.0):
         return np.exp(-((Ncritical-i)*(Ncritical-i))/(2*c*c))
 
 def A1matrix(traj, Ncritical, W):
@@ -65,10 +64,11 @@ def A1matrix(traj, Ncritical, W):
 
         assert(Ncritical<Nwaypoints)
 
-        M = 20
+        #M = 100
         i = Nwaypoints
         while i > 0:
-                if abs(i-Ncritical)<M and i<Nwaypoints:
+                #if abs(i-Ncritical)<M and i<Nwaypoints:
+                if i<Nwaypoints-1:
                         A1[i] = avalue(Ncritical, i)
                 i -= 1
         return A1
@@ -76,16 +76,43 @@ def A1matrix(traj, Ncritical, W):
 def A2matrix(traj, Ncritical, W):
         [Ndim, Nwaypoints] = traj.getWaypointDim(W)
         A2 = np.zeros(Nwaypoints)
+        assert(Ncritical<Nwaypoints)
+
+        #M = 100
+        i = Ncritical-1
+        while i > 0:
+                A2[i] = avalue(Ncritical, i)
+                i -= 1
+        return A2
+
+def A3matrix(traj, Ncritical, W):
+        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
+        A3 = np.zeros(Nwaypoints)
 
         assert(Ncritical<Nwaypoints)
 
-        M = 20
-        i = Ncritical-1
+        #M = 100
+        i = Nwaypoints-2
         while i > 0:
-                if abs(i-Ncritical-1)<M:
-                        A2[i] = avalue(Ncritical, i)
+                #if abs(i-Ncritical)<M and i<Nwaypoints:
+                if i>Ncritical:
+                        A3[i] = avalue(Ncritical, i, 10.0)
+                else:
+                        A3[i] = 1.0
                 i -= 1
-        return A2
+        return A3
+def A4matrix(traj, W):
+        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
+        A4 = np.zeros(Nwaypoints)
+
+        #M = 100
+        i = Nwaypoints-1
+        while i > 0:
+                A4[i] = avalue(Nwaypoints-1, i, 20.0)
+                i -= 1
+        return A4
+
+DEBUG=0
 
 class DeformationStretchPull(Deformation):
 
@@ -94,10 +121,13 @@ class DeformationStretchPull(Deformation):
                 #dt = 0.01
                 traj = self.traj_deformed
                 L = traj.get_length()
-                #Nwaypoints = int(L/dt)
-                dt = 0.05
+
+                dt = 0.01
                 Nwaypoints = int(L/dt)
-                print "WAYPOINTS:",Nwaypoints,"LENGTH:",L
+
+                if DEBUG:
+                        print "WAYPOINTS:",Nwaypoints,"LENGTH:",L
+
                 [Wori,dWori,ddWori] = traj.get_waypoints_second_order(N=Nwaypoints)
                 [Ndim, Nwaypoints] = traj.getWaypointDim(Wori)
                 F = traj.get_forces_at_waypoints(Wori, self.env)
@@ -123,9 +153,8 @@ class DeformationStretchPull(Deformation):
                 ## for all points where dF = 0, we can say that lambda_1 = lambda_2 = 0
                 ###############################################################
 
-                dt = 0.1
+                dt = 0.01
                 [lambda_1, lambda_2] = compute_lambda_updates(Wori[:,Nc], dWori[:,Nc], ddWori[:,Nc], F[:,Nc], amax, dt)
-                lambda_2=1
 
                 ###############################################################
                 ## update trajectory into lambda directions
@@ -142,15 +171,25 @@ class DeformationStretchPull(Deformation):
                 #print np.around(A1,decimals=2)
                 #print np.around(A2,decimals=2)
                 #print A1[Nc],A2[Nc]
+                lambda_1 = 0.01
+                lambda_2 = 0.00
+                lambda_3 = 0.00005
                 for i in range(0,Nwaypoints):
                         dU[:,i] = A1[i]*(-lambda_1 * Fproj * trajNormal)
                         dU[:,i] += A2[i]*(- lambda_2 * dWori[:,Nc])
+                        A3 = A3matrix(traj,i,Wori)
+                        dU[:,i] += np.dot(A3,( lambda_3 * F.T ))
+
+                dEnd = dU[:,-1]
+                A4 = A4matrix(traj, Wori)
+                for i in range(0,Nwaypoints):
+                        dU[:,i] += -A4[i]*dEnd
 
                 #print dU
-                #print lambda_1,lambda_2
+                print "LAMBDAS: ",lambda_1,lambda_2
                 eta = 1.0
-                print Wori[0:2,0]
                 Wnext = Wori + eta*dU
-                print Wori[0:2,0]
-                self.traj_deformed.new_from_waypoints(Wnext)
 
+                if self.traj_deformed.IsInCollision(self.env, Wnext):
+                        print "collision"
+                self.traj_deformed.new_from_waypoints(Wnext)

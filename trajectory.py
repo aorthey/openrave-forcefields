@@ -14,6 +14,7 @@ import pylab as plt
 from util_force import *
 from util_mvc import *
 from util_mvc_approx import *
+from topp_interface import TOPPInterface
 
 class Trajectory():
         __metaclass__ = abc.ABCMeta
@@ -364,26 +365,31 @@ class Trajectory():
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                startN = 10
-                N = startN
-                while N < Nwaypoints:
-                        print N,"/",Nwaypoints
-                        N0 = N-startN
-                        Ft = F[:,N0:N]
-                        Rt = R[:,:,N0:N]
-                        amint = amin
-                        amaxt = amax
-                        Wt = W[:,N0:N]
-                        dWt = dW[:,N0:N]
-                        ddWt = ddW[:,N0:N]
-                        S = computeReparametrizationTrajectory(-Ft,Rt,amint,amaxt,Wt,dWt,ddWt)
-                        if S is None:
-                                #self.handle.append(env.env.plot3(points=W[0:3,N],
-                                #                   pointsize=self.critical_pt_size,
-                                #                   colors=self.critical_pt_color,
-                                #                   drawstyle=1))
-                                return N
-                        N = N+1
+                topp = TOPPInterface(-F,R,amin,amax,W,dW,ddW)
+                Nc = topp.getCriticalPoint()
+                #[semin,semax] = topp.getSpeedIntervalAtCriticalPoint(Nc)
+                #print semin,semax,Nc
+                return Nc
+
+                #startN = 10
+                #N = startN
+                #while N < Nwaypoints:
+                #        N0 = N-startN
+                #        Ft = F[:,N0:N]
+                #        Rt = R[:,:,N0:N]
+                #        amint = amin
+                #        amaxt = amax
+                #        Wt = W[:,N0:N]
+                #        dWt = dW[:,N0:N]
+                #        ddWt = ddW[:,N0:N]
+                #        S = computeReparametrizationTrajectory(-Ft,Rt,amint,amaxt,Wt,dWt,ddWt)
+                #        if S is None:
+                #                #self.handle.append(env.env.plot3(points=W[0:3,N],
+                #                #                   pointsize=self.critical_pt_size,
+                #                #                   colors=self.critical_pt_color,
+                #                #                   drawstyle=1))
+                #                return N
+                #        N = N+1
                 return Nwaypoints
 
         def getCriticalPoint(self, env):

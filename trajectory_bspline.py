@@ -1,36 +1,53 @@
 from trajectory import *
+import sys
 
 DEBUG=1
 
-
 class TrajectoryBSpline(Trajectory):
         SMOOTH_CONSTANT=0.0
+        POLYNOMIAL_DEGREE=3
+        MIN_NUMBER_WAYPOINTS = 5
+
+        @classmethod
+        def addMinimalWaypoints(cls, W):
+                Nwaypoints = W.shape[1]
+                if Nwaypoints >= cls.MIN_NUMBER_WAYPOINTS:
+                        return W
+
+                Wtmp = W
+                for i in range(0,Nwaypoints-1):
+                        Wnew = W[:,i]+0.5*(W[:,i+1]-W[:,i])
+                        Wtmp = np.insert(Wtmp, 2*i+1, values=Wnew, axis=1)
+                W = Wtmp
+                return cls.addMinimalWaypoints(W)
+
+        @classmethod
+        def prettify(cls, W):
+                Nwaypoints = W.shape[1]
+                if Nwaypoints <= 1:
+                        print "cannot create trajectory with only one waypoint"
+                        sys.exit(1)
+                if Nwaypoints <= 3:
+                        W = cls.addMinimalWaypoints(W)
+                        Nwaypoints = W.shape[1]
+                return W
+
+
         @classmethod
         def from_waypoints(cls, W):
-                Nwaypoints = W.shape[1]
-                if Nwaypoints<=4:
-                        degree=2
-                else:
-                        degree=3
-                print Nwaypoints,degree
-                trajectory,tmp = splprep(W,k=degree,s=cls.SMOOTH_CONSTANT)
-                #print tmp
-                #print trajectory
-                #print splev(0,trajectory,der=0)
-                #print splev(0,trajectory,der=1)
-                #print splev(0,trajectory,der=2)
-                #sys.exit(0)
+                print W
+                W = cls.prettify(W)
+                print W
+                trajectory,tmp = splprep(W,k=cls.POLYNOMIAL_DEGREE,s=cls.SMOOTH_CONSTANT)
                 return cls(trajectory)
 
         def new_from_waypoints(self, W):
-                #print "BEFORE WAYPOINTS:"
-                #print np.around(W[:,0],decimals=2), np.around(W[:,-1],decimals=2)
-                Nwaypoints = W.shape[1]
-                if Nwaypoints<=4:
-                        degree=2
-                else:
-                        degree=5
-                self.traj,tmp = splprep(W,k=degree,s=self.SMOOTH_CONSTANT)
+                if W.shape[1]<5:
+                        print "number of waypoints diminished below",self.MIN_NUMBER_WAYPOINTS
+                        print "wpts:",W.shape[1]
+                        print W
+                        sys.exit(1)
+                self.traj,tmp = splprep(W,k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
                 [W0, tmp] = self.evaluate_at(0)
                 [W1, tmp] = self.evaluate_at(1)
                 #print "AFTER WAYPOINTS:"
