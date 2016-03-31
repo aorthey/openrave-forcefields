@@ -22,9 +22,9 @@ import statsmodels.api as sm
 
 if __name__ == "__main__":
 
-        env = EnvironmentTheRay()
+        #env = EnvironmentTheRay()
         #env = EnvironmentTheCounterStream()
-        #env = EnvironmentTheStream()
+        env = EnvironmentTheStream()
 
         robot = env.GetRobot()
         env.DisplayForces()
@@ -113,6 +113,7 @@ if __name__ == "__main__":
         traj = TrajectoryBSpline.from_ravetraj(rave_traj)
         traj.info()
         traj.draw(env)
+
         sys.exit(0)
 
         #t1 = traj.reparametrize(env,ploting=False)

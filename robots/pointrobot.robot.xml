@@ -59,7 +59,7 @@
         <Body>originZ</Body>
         <Body>rotat0r</Body>
         <Axis>0 0 1</Axis>
-        <limits>-1 1</limits>
+        <limits>-0.15 0.15</limits>
     </Joint>
     <Joint circular="true" name="rot" type="hinge" enable="true">
         <Body>rotat0r</Body>

@@ -22,13 +22,11 @@ class EnvironmentTheRay(ForceEnvironment):
                 return self.forces
 
         def RobotGetInitialPosition(self):
-                return [-2.5,0.0,0.15,-pi,0,0,0,0]
+                #return [-2.5,0.0,0.15,-pi,0,0,0,0]
+                return [0.5,0.0,0.15,-pi,0,0,0,0]
 
         def RobotGetGoalPosition(self):
                 return [-4.5,-0.0,0.15,-pi,0,0,0,0]
-
-
-
 
 if __name__ == "__main__":
         env = EnvironmentTheRay()
