@@ -11,8 +11,8 @@ from TOPP import TOPPopenravepy
 
 class TOPPInterface():
         #DURATION_DISCRETIZATION = 0.0001
-        #DURATION_DISCRETIZATION = 1
-        DURATION_DISCRETIZATION = 0.01
+        #DURATION_DISCRETIZATION = 0.5
+        DURATION_DISCRETIZATION = 1
         traj0 = []
         trajstr = []
         durationVector = []
@@ -35,7 +35,7 @@ class TOPPInterface():
 
                 dendpoint = np.linalg.norm(self.traj0.Eval(self.length)-W[:,-1])
 
-                if dendpoint > 0.1:
+                if dendpoint > 0.001:
                         print self.length
                         print "###############"
                         print "FINAL POINT on piecewise C^2 traj:",self.traj0.Eval(self.length)
@@ -70,6 +70,52 @@ class TOPPInterface():
                 x = self.topp_inst.solver
                 [self.semin,self.semax] = self.topp_inst.AVP(0, 0)
                 return [self.semin,self.semax]
+
+        def PlotTrajectory(self):
+                dt = 0.001
+                tvect = arange(0, self.traj0.duration + dt, dt)
+                qvect = np.array([self.traj0.Eval(t) for t in tvect])
+                qdvect = np.array([self.traj0.Evald(t) for t in tvect])
+                qddvect = np.array([self.traj0.Evaldd(t) for t in tvect])
+
+                lw = 3
+                fs = 22
+                lloc = 'lower right'
+                ANCHOR = (0.5,1)
+                
+                subplot(3,1,1)
+                print qvect.shape
+                print tvect.shape
+                plot(tvect, qvect[:,0], linewidth = lw, label = "$x$")
+                plot(tvect, qvect[:,1], linewidth = lw, label = "$y$")
+                plot(tvect, qvect[:,2], linewidth = lw, label = "$z$")
+                plot(tvect, qvect[:,3], linewidth = lw, label = "$\\theta$")
+                #plot(tvect, qdvect, f, linewidth=2)
+                #plot(tvect, qddvect, f, linewidth=2)
+                title('Position/Velocity/Acceleration Path', fontsize=fs)
+                ylabel('Position', fontsize=fs)
+                legend = plt.legend(loc=lloc, shadow=True, fontsize=fs)
+
+                subplot(3,1,2)
+                ylabel('Velocity', fontsize=fs)
+                plot(tvect, qdvect[:,0], linewidth = lw, label = "$\dot x$")
+                plot(tvect, qdvect[:,1], linewidth = lw, label = "$\dot y$")
+                plot(tvect, qdvect[:,2], linewidth = lw, label = "$\dot z$")
+                plot(tvect, qdvect[:,3], linewidth = lw, label = "$\dot \\theta$")
+                legend = plt.legend(loc=lloc, shadow=True, fontsize=fs)
+
+                subplot(3,1,3)
+                ylabel('Acceleration', fontsize=fs)
+                plot(tvect, qddvect[:,0], linewidth = lw, label = "$\ddot{x}$")
+                plot(tvect, qddvect[:,1], linewidth = lw, label = "$\ddot{y}$")
+                plot(tvect, qddvect[:,2], linewidth = lw, label = "$\ddot{z}$")
+                plot(tvect, qddvect[:,3], linewidth = lw, label = "$\ddot{\\theta}$")
+                xlabel('Time $t$',fontsize=fs)
+                #box = ax.get_position()
+                #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+                #legend = plt.legend(loc=lloc, shadow=True, fontsize=fs, bbox_to_anchor=ANCHOR)
+
+                plt.show()
 
 
         def getCriticalPoint(self):
@@ -131,7 +177,7 @@ class TOPPInterface():
                         q[:,i] = self.traj0.Eval(duration)
                         qs[:,i] = self.traj0.Evald(duration)
                         qss[:,i] = self.traj0.Evaldd(duration)
-                        qs[:,i]=qs[:,i]/np.linalg.norm(qs[:,i])
+                        #qs[:,i]=qs[:,i]/np.linalg.norm(qs[:,i])
 
                 I = np.identity(self.Ndim)
                 G = np.vstack((I,-I))
@@ -180,67 +226,68 @@ class TOPPInterface():
                         A = np.zeros(Ndim)
                         B = np.zeros(Ndim)
                         C = np.zeros(Ndim)
+                        D = np.zeros(Ndim)
+                        E = np.zeros(Ndim)
+                        F = np.zeros(Ndim)
 
-                        #A=W[:,i]
-                        #B=dW[:,i]
-                        #C=0.5*ddW[:,i]
+                        T = duration
+                        TT = duration*duration
+                        TTT = duration*duration*duration
 
-    #a=((qd1-qd0)*T-2*(q1-q0-qd0*T))/T**3
-    #b=(3*(q1-q0-qd0*T)-(qd1-qd0)*T)/T**2
-    #c=qd0
-    #d=q0
-                        A = W[:,i]
-                        B = dW[:,i]
-                        C = (3*(W[:,i+1]-W[:,i]-dW[:,i]*duration)-(dW[:,i+1]-dW[:,i])*duration)/(duration*duration)
-                        D = ( (dW[:,i+1]-dW[:,i])*duration - 2*(W[:,i+1]-W[:,i]-dW[:,i]*duration))/(duration*duration*duration)
-                        
+                        p0 = W[:,i]
+                        dp0 = dW[:,i]
+                        ddp0 = ddW[:,i]
+                        p1 = W[:,i+1]
+                        dp1 = dW[:,i+1]
+                        ddp1 = ddW[:,i+1]
 
+                        A=p0
+                        B=dp0
+                        C=0.5*ddp0
+
+                        U1 = (p1-p0-dp0*T-0.5*ddp0*TT)/TTT
+                        U2 = (dp1-dp0-ddp0*T)/TT
+                        U3 = (ddp1-ddp0)/T
+
+                        D = (10*U1 - 4*U2 + 0.5*U3)
+                        E = (-15*U1 + 7*U2 - U3)/T
+                        F = (5*U1 - 2*U2 + 0.5*U3)/TT
+
+                        #a=((qd1-qd0)*T-2*(q1-q0-qd0*T))/T**3
+                        #b=(3*(q1-q0-qd0*T)-(qd1-qd0)*T)/T**2
+                        #c=qd0
+                        #d=q0
+
+                        #A = W[:,i]
+                        #B = dW[:,i]
+                        #C = (3*(W[:,i+1]-W[:,i]-dW[:,i]*duration)-(dW[:,i+1]-dW[:,i])*duration)/(duration*duration)
+                        #D = ( (dW[:,i+1]-dW[:,i])*duration - 2*(W[:,i+1]-W[:,i]-dW[:,i]*duration))/(duration*duration*duration)
+
+                        def g(dt,A,B,C,D,E,F):
+                                return A + B*dt + C*dt**2 + D*dt**3 + E*dt**4 + F*dt**5
+                        def dg(dt,A,B,C,D,E,F):
+                                return B + 2*C*dt + 3*D*dt**2 + 4*E*dt**3 + 5*F*dt**4
+                        def ddg(dt,A,B,C,D,E,F):
+                                return 2*C + 6*D*dt + 12*E*dt**2 + 20*F*dt**3
+
+                        np.set_printoptions(precision=4)
+                        print "##############################"
+                        #print W[:,i],g(0,A,B,C,D,E,F)
+                        print W[:,i+1]
+                        print g(duration,A,B,C,D,E,F)
+                        print "##############################"
+                        #print dW[:,i],dg(0,A,B,C,D,E,F)
+                        print dW[:,i+1]
+                        print dg(duration,A,B,C,D,E,F)
+                        print "##############################"
+                        #print ddW[:,i],ddg(0,A,B,C,D,E,F)
+                        print ddW[:,i+1]
+                        print ddg(duration,A,B,C,D,E,F)
+                        sys.exit(0)
                         for j in range(Ndim):
                                 trajectorystring += "\n"
-                                #trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j])])
-                                trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j]),str(D[j])])
+                                trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j])])
+                                #trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j]),str(D[j])])
 
                 return [trajectorystring, durationVector]
 
-        def PlotTrajectory(self):
-                dt = 0.001
-                tvect = arange(0, self.traj0.duration + dt, dt)
-                qvect = np.array([self.traj0.Eval(t) for t in tvect])
-                qdvect = np.array([self.traj0.Evald(t) for t in tvect])
-                qddvect = np.array([self.traj0.Evaldd(t) for t in tvect])
-
-                lw = 3
-                fs = 22
-                lloc = 'lower right'
-                
-                subplot(3,1,1)
-                print qvect.shape
-                print tvect.shape
-                plot(tvect, qvect[:,0], linewidth = lw, label = "$x$")
-                plot(tvect, qvect[:,1], linewidth = lw, label = "$y$")
-                plot(tvect, qvect[:,2], linewidth = lw, label = "$z$")
-                plot(tvect, qvect[:,3], linewidth = lw, label = "$\\theta$")
-                #plot(tvect, qdvect, f, linewidth=2)
-                #plot(tvect, qddvect, f, linewidth=2)
-                title('Position/Velocity/Acceleration Path', fontsize=fs)
-                ylabel('Position', fontsize=fs)
-                legend = plt.legend(loc=lloc, shadow=True, fontsize=fs)
-
-                subplot(3,1,2)
-                ylabel('Velocity', fontsize=fs)
-                plot(tvect, qdvect[:,0], linewidth = lw, label = "$\dot x$")
-                plot(tvect, qdvect[:,1], linewidth = lw, label = "$\dot y$")
-                plot(tvect, qdvect[:,2], linewidth = lw, label = "$\dot z$")
-                plot(tvect, qdvect[:,3], linewidth = lw, label = "$\dot \\theta$")
-                legend = plt.legend(loc=lloc, shadow=True, fontsize=fs)
-
-                subplot(3,1,3)
-                ylabel('Acceleration', fontsize=fs)
-                plot(tvect, qddvect[:,0], linewidth = lw, label = "$\ddot{x}$")
-                plot(tvect, qddvect[:,1], linewidth = lw, label = "$\ddot{y}$")
-                plot(tvect, qddvect[:,2], linewidth = lw, label = "$\ddot{z}$")
-                plot(tvect, qddvect[:,3], linewidth = lw, label = "$\ddot{\\theta}$")
-                xlabel('Time $t$',fontsize=fs)
-                legend = plt.legend(loc=lloc, shadow=True, fontsize=fs)
-
-                plt.show()

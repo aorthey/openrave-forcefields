@@ -129,7 +129,7 @@ if __name__ == "__main__":
         td = DeformationStretchPull(traj, env)
 
         Nd = 25
-        raw_input('Press <ENTER> to start.')
+        #raw_input('Press <ENTER> to start.')
         for i in range(Nd):
                 print "DEFORMATION:",i,"/",Nd
                 if td.deform(N_iter=1):

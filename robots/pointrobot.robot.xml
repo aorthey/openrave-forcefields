@@ -26,8 +26,8 @@
       <translation>0.0  0.0  0.1</translation>
       <mass type="cylinder">
         <total>5</total>
-        <radius>0.1</radius>
-        <height>0.1</height>
+        <radius>0.01</radius>
+        <height>0.01</height>
       </mass>
       <geom type="cylinder">
         <rotationaxis>1 0 0 90</rotationaxis>
