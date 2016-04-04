@@ -67,7 +67,7 @@ class Deformation():
 
 
         def draw_deformation(self):
-                M = 10
+                DEFORMATION_STEPS = 10
                 L = self.traj_current.get_length()
                 dt = 0.05
                 Nwaypoints = int(L/dt)
@@ -84,8 +84,8 @@ class Deformation():
                 #print self.traj_display.info()
                 #print self.traj_current.info()
 
-                for i in range(0,M):
-                        k = float(i)/float(M)
+                for i in range(0,DEFORMATION_STEPS):
+                        k = float(i)/float(DEFORMATION_STEPS)
                         Wk = (1-k)*W0 + k*W1
                         if self.traj_current.IsInCollision(self.env, Wk):
                                 break

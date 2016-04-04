@@ -4,7 +4,7 @@ import sys
 DEBUG=1
 
 class TrajectoryBSpline(Trajectory):
-        SMOOTH_CONSTANT=0.0
+        SMOOTH_CONSTANT=0.001
         POLYNOMIAL_DEGREE=3
         MIN_NUMBER_WAYPOINTS = 5
 
