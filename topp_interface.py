@@ -11,8 +11,8 @@ from TOPP import TOPPopenravepy
 
 class TOPPInterface():
         #DURATION_DISCRETIZATION = 0.0001
-        #DURATION_DISCRETIZATION = 0.5
-        DURATION_DISCRETIZATION = 1
+        #DURATION_DISCRETIZATION = 1
+        DURATION_DISCRETIZATION = 0.001
         traj0 = []
         trajstr = []
         durationVector = []
@@ -35,7 +35,7 @@ class TOPPInterface():
 
                 dendpoint = np.linalg.norm(self.traj0.Eval(self.length)-W[:,-1])
 
-                if dendpoint > 0.001:
+                if dendpoint > 1e-5:
                         print self.length
                         print "###############"
                         print "FINAL POINT on piecewise C^2 traj:",self.traj0.Eval(self.length)
@@ -209,6 +209,12 @@ class TOPPInterface():
                 Nwaypoints = W.shape[1]
                 durationVector = np.zeros((Nwaypoints-1))
 
+                DEBUG = 0
+                if DEBUG:
+                        M = 5
+                        G = np.zeros((Ndim,M*(Nwaypoints-1)))
+                        dG = np.zeros((Ndim,M*(Nwaypoints-1)))
+                        ddG = np.zeros((Ndim,M*(Nwaypoints-1)))
                 #duration = 0.1
                 for i in range(0,Nwaypoints-1):
                         ds = np.linalg.norm(W[:,i+1]-W[:,i])
@@ -251,7 +257,7 @@ class TOPPInterface():
 
                         D = (10*U1 - 4*U2 + 0.5*U3)
                         E = (-15*U1 + 7*U2 - U3)/T
-                        F = (5*U1 - 2*U2 + 0.5*U3)/TT
+                        F = (6*U1 - 3*U2 + 0.5*U3)/TT
 
                         #a=((qd1-qd0)*T-2*(q1-q0-qd0*T))/T**3
                         #b=(3*(q1-q0-qd0*T)-(qd1-qd0)*T)/T**2
@@ -270,24 +276,39 @@ class TOPPInterface():
                         def ddg(dt,A,B,C,D,E,F):
                                 return 2*C + 6*D*dt + 12*E*dt**2 + 20*F*dt**3
 
-                        np.set_printoptions(precision=4)
-                        print "##############################"
-                        #print W[:,i],g(0,A,B,C,D,E,F)
-                        print W[:,i+1]
-                        print g(duration,A,B,C,D,E,F)
-                        print "##############################"
-                        #print dW[:,i],dg(0,A,B,C,D,E,F)
-                        print dW[:,i+1]
-                        print dg(duration,A,B,C,D,E,F)
-                        print "##############################"
-                        #print ddW[:,i],ddg(0,A,B,C,D,E,F)
-                        print ddW[:,i+1]
-                        print ddg(duration,A,B,C,D,E,F)
-                        sys.exit(0)
+                        dd = np.linalg.norm(W[:,i+1]-g(duration,A,B,C,D,E,F))
+                        if dd > 0.0001:
+                                np.set_printoptions(precision=4)
+                                print "##############################"
+                                #print W[:,i],g(0,A,B,C,D,E,F)
+                                print W[:,i+1]
+                                print g(duration,A,B,C,D,E,F)
+                                print "##############################"
+                                #print dW[:,i],dg(0,A,B,C,D,E,F)
+                                print dW[:,i+1]
+                                print dg(duration,A,B,C,D,E,F)
+                                print "##############################"
+                                #print ddW[:,i],ddg(0,A,B,C,D,E,F)
+                                print ddW[:,i+1]
+                                print ddg(duration,A,B,C,D,E,F)
+                                sys.exit(0)
                         for j in range(Ndim):
                                 trajectorystring += "\n"
-                                trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j])])
-                                #trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j]),str(D[j])])
+                                trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j]),str(D[j]),str(E[j]),str(F[j])])
+                        if DEBUG:
+                                j=0
+                                while j < M:
+                                        G[:,M*i+j]=g((j/M)*duration,A,B,C,D,E,F)
+                                        dG[:,M*i+j]=dg((j/M)*duration,A,B,C,D,E,F)
+                                        ddG[:,M*i+j]=ddg((j/M)*duration,A,B,C,D,E,F)
+                                        j=j+1
+                                print "i=",i,"j=",j," M*i+j=",M*i+j
+
+                if DEBUG:
+                        plot(G[0,:],G[1,:],'-r',linewidth=3)
+                        plot(W[0,:],W[1,:],'-b',linewidth=1)
+                        plt.show()
+                
 
                 return [trajectorystring, durationVector]
 

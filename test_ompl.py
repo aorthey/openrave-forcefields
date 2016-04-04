@@ -139,8 +139,6 @@ if __name__ == "__main__":
 
         td.traj_current.PlotParametrization(env)
 
-        #print "DONE"
-
         #td.traj_current.plot_speed_profile(env)
         #ravetraj = td.traj_current.to_ravetraj()
         #result = planningutils.RetimeTrajectory(ravetraj,False,0.15)
