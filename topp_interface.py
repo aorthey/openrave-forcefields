@@ -12,9 +12,9 @@ from TOPP import TOPPopenravepy
 class TOPPInterface():
         #DURATION_DISCRETIZATION = 0.0001
         #DURATION_DISCRETIZATION = 1
-        DURATION_DISCRETIZATION = 0.1
+        DURATION_DISCRETIZATION = 0.01
 
-        TRAJECTORY_ACCURACY_REQUIRED = 1e-1
+        TRAJECTORY_ACCURACY_REQUIRED = 1e-5
         traj0 = []
         trajstr = []
         durationVector = []
@@ -103,7 +103,7 @@ class TOPPInterface():
                 #print self.traj0.Eval(0.19)
                 #print self.traj0.Eval(0.19)
                 #
-                dt = float(self.DURATION_DISCRETIZATION)/2.0
+                dt = float(self.DURATION_DISCRETIZATION)/19.0
                 Npts = int(self.traj0.duration/dt)
                 print Npts
                 tvect = np.linspace(0,self.traj0.duration, Npts)
@@ -121,10 +121,10 @@ class TOPPInterface():
                 
                 subplot(3,1,1)
 
-                plot(twvect, self.W_[0,:], '-k', linewidth = lw)
-                plot(twvect, self.W_[1,:], '-k', linewidth = lw)
-                plot(twvect, self.W_[2,:], '-k', linewidth = lw)
-                plot(twvect, self.W_[3,:], '-k', linewidth = lw)
+                plot(twvect, self.W_[0,:], '-ok', linewidth = lw)
+                plot(twvect, self.W_[1,:], '-ok', linewidth = lw)
+                plot(twvect, self.W_[2,:], '-ok', linewidth = lw)
+                plot(twvect, self.W_[3,:], '-ok', linewidth = lw)
                 plot(tvect, qvect[:,0], linewidth = lw, label = "$x$")
                 plot(tvect, qvect[:,1], linewidth = lw, label = "$y$")
                 plot(tvect, qvect[:,2], linewidth = lw, label = "$z$")
@@ -137,6 +137,10 @@ class TOPPInterface():
 
                 subplot(3,1,2)
                 ylabel('Velocity', fontsize=fs)
+                plot(twvect, self.dW_[0,:], '-ok', linewidth = lw)
+                plot(twvect, self.dW_[1,:], '-ok', linewidth = lw)
+                plot(twvect, self.dW_[2,:], '-ok', linewidth = lw)
+                plot(twvect, self.dW_[3,:], '-ok', linewidth = lw)
                 plot(tvect, qdvect[:,0], linewidth = lw, label = "$\dot x$")
                 plot(tvect, qdvect[:,1], linewidth = lw, label = "$\dot y$")
                 plot(tvect, qdvect[:,2], linewidth = lw, label = "$\dot z$")
@@ -306,21 +310,25 @@ class TOPPInterface():
                         U2 = (dp1-dp0-ddp0*T)/TT
                         U3 = (ddp1-ddp0)/T
 
-                        #A=p0
-                        #B=dp0
-                        #C=0.5*ddp0
-                        #D = (10*U1 - 4*U2 + 0.5*U3)
-                        #E = (-15*U1 + 7*U2 - U3)/T
-                        #F = (6*U1 - 3*U2 + 0.5*U3)/TT
+                        A=p0
+                        B=dp0
+                        C=0.5*ddp0
+                        D = (10*U1 - 4*U2 + 0.5*U3)
+                        E = (-15*U1 + 7*U2 - U3)/T
+                        F = (6*U1 - 3*U2 + 0.5*U3)/TT
 
                         #A = p0
                         #B = dp0
                         #C = (3*(p1-p0-dp0*T)-(dp1-dp0)*T)/TT
                         #D = ( (dp1-dp0)*T - 2*(p1-p0-dp0*T))/TTT
 
-                        A = p0
-                        B = (p1-p0)/T
-                        C = 0.5*(dp1-dp0)/TT
+                        #A = p0
+                        #B = dp0 #(p1-p0)/T
+                        #C = 0.5*(ddp1-ddp0)
+                        #A = p0
+                        #B = dp0 #(p1-p0)/T
+                        #C = 0.5*(ddp1-ddp0)
+                        #D = (1/6)*(ddp1-ddp0)/T
 
                         def g(dt,A,B,C,D,E,F):
                                 return A + B*dt + C*dt**2 + D*dt**3 + E*dt**4 + F*dt**5

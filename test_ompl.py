@@ -114,7 +114,8 @@ if __name__ == "__main__":
         traj.info()
         traj.draw(env)
 
-        #sys.exit(0)
+        traj.PlotParametrization(env)
+        sys.exit(0)
 
         #t1 = traj.reparametrize(env,ploting=False)
         #traj.getCriticalPoint(env)
@@ -139,7 +140,6 @@ if __name__ == "__main__":
 
         td.traj_current.PlotParametrization(env)
 
-        #td.traj_current.plot_speed_profile(env)
         #ravetraj = td.traj_current.to_ravetraj()
         #result = planningutils.RetimeTrajectory(ravetraj,False,0.15)
 

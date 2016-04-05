@@ -515,7 +515,7 @@ class Trajectory():
                         return tmp_handle
 
         def draw(self, env, keep_handle=True):
-                Nwaypoints=200
+                Nwaypoints=10
                 [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
                 N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
                 tmp_handle = []
