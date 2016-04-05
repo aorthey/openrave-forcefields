@@ -110,19 +110,19 @@ if __name__ == "__main__":
         #handle = draw_ravetraj(rave_traj, env)
 
         #traj = TrajectoryPolynomial.from_ravetraj(rave_traj)
-        traj = TrajectoryBSpline.from_ravetraj(rave_traj)
+        #traj = TrajectoryBSpline.from_ravetraj(rave_traj)
+        traj = Trajectory.from_ravetraj(rave_traj)
         traj.info()
         traj.draw(env)
 
         traj.PlotParametrization(env)
-        sys.exit(0)
+        #sys.exit(0)
 
         #t1 = traj.reparametrize(env,ploting=False)
         #traj.getCriticalPoint(env)
         #traj.IsReparametrizable(env)
         #traj.computeReachableSets(0.2,env)
         #traj.visualizeReachableSetsAtT(env, 0.5, dt=0.2)
-
         #td = DeformationNaive(traj, env)
         #td = DeformationPotentials(traj, env)
         traj.draw_delete()

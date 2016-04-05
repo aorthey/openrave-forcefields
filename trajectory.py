@@ -1,5 +1,6 @@
 import cvxpy as cvx
 from numpy import sqrt,sin,cos,pi
+from scipy.interpolate import PPoly
 
 import abc
 import time
@@ -25,6 +26,9 @@ class Trajectory():
         handle = []
 
         #env_ptr = []
+        SMOOTH_CONSTANT=0
+        POLYNOMIAL_DEGREE=3
+        MIN_NUMBER_WAYPOINTS = 5
 
         ##drawing parameters
         ptsize = 0.03
@@ -41,9 +45,144 @@ class Trajectory():
         trajectory_color = np.array((0.9,0.2,0.2,0.9))
         critical_pt_color = np.array((0.9,0.2,0.2,0.9))
 
-        def __init__(self, trajectory, waypoints_in = []):
-                self.traj = trajectory 
-                self.waypoints = waypoints_in
+        bspline = []
+        trajectorystring = []
+        Ndim = 0
+
+        ### waypoints: real matrix of dimensionality Ndim x Nwaypoints
+        def __init__(self, waypoints_in):
+                self.new_from_waypoints(waypoints_in)
+
+        def new_from_waypoints(self, waypoints_in):
+                self.waypoints = self.prettify(waypoints_in)
+                self.Ndim = self.waypoints.shape[0]
+                [B,T,D] = self.computeTrajectoryStringForTOPP(self.waypoints)
+                self.bspline = B
+                self.trajectorystring = T
+                self.durationVector = D
+
+        def evaluate_at(self, t, der=1):
+                f = np.zeros((self.Ndim))
+                df = np.zeros((self.Ndim))
+                if der>1:
+                        ddf = np.zeros((self.Ndim))
+                for i in range(0,self.Ndim):
+                        f[i] = splev(t,self.bspline[i])
+                        df[i] = splev(t,self.bspline[i],der=1)
+                        if der>1:
+                                ddf[i] = splev(t,self.bspline[i],der=2)
+
+                df[2] = 0
+                if der>1:
+                        ddf[2] = 0
+                        return [f,df,ddf]
+                else:
+                        return [f,df]
+
+        def prettify(self, W):
+                if W.ndim <= 1:
+                        print "cannot create trajectory with only one waypoint"
+                        sys.exit(1)
+                Nwaypoints = W.shape[1]
+                if Nwaypoints <= 3:
+                        W = self.addMinimalWaypoints(W)
+                        Nwaypoints = W.shape[1]
+                return W
+
+        def addMinimalWaypoints(self, W):
+                Nwaypoints = W.shape[1]
+                if Nwaypoints >= self.MIN_NUMBER_WAYPOINTS:
+                        return W
+                Wtmp = W
+                for i in range(0,Nwaypoints-1):
+                        Wnew = W[:,i]+0.5*(W[:,i+1]-W[:,i])
+                        Wtmp = np.insert(Wtmp, 2*i+1, values=Wnew, axis=1)
+                W = Wtmp
+                return self.addMinimalWaypoints(W)
+
+        ### SYSTEM DYNAMICS
+        def getControlMatrix(self, W):
+                #amin = np.array((-5,-5,-5))
+                #amax = np.array((5,5,5))
+                AM = 5
+                amin = np.array((-AM,-AM,-AM))
+                amax = np.array((AM,AM,AM))
+                #amin = np.array((-1,-1,-1))
+                #amax = np.array((1,1,1))
+
+                [Ndim,Nwaypoints] = self.getWaypointDim(W)
+                assert(Ndim==4)
+                Kdim = 3
+                R = np.zeros((Ndim,Kdim,Nwaypoints))
+                for i in range(0,Nwaypoints):
+                        if Nwaypoints>1:
+                                t = W[3,i]
+                        else:
+                                t = W[3]
+                        R[0,:,i] = np.array((cos(t),-sin(t),0.0))
+                        R[1,:,i] = np.array((sin(t),cos(t),0.0))
+                        R[2,:,i] = np.array((0.0,0.0,0.0))
+                        R[3,:,i] = np.array((0.0,0.0,1.0))
+
+                return [R,amin,amax]
+
+
+        def computeTrajectoryStringForTOPP(self, W):
+                Ndim = W.shape[0]
+                Nwaypoints = W.shape[1]
+
+                ###############################################################
+                ##### get number of intervals between breakpoints
+                tvec = np.linspace(0,1,W.shape[1])
+                trajectory = splrep(tvec,W[0,:],k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
+                poly= PPoly.from_spline(trajectory)
+                [B,idx]=np.unique(poly.x,return_index=True)
+                Ninterval = B.shape[0]-1
+                ###############################################################
+                P = np.zeros((Ninterval, Ndim, 4))
+
+                durationVector = np.zeros((Ninterval))
+                for j in range(1,B.shape[0]):
+                        d = B[j]-B[j-1]
+                        durationVector[j-1] = d
+                bspline = []
+                for i in range(0,Ndim):
+
+                        tvec = np.linspace(0,1,Nwaypoints)
+                        trajectory = splrep(tvec,W[i,:],k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
+                        bspline.append(trajectory)
+
+                        poly= PPoly.from_spline(trajectory)
+                        dpoly = poly.derivative(1)
+                        ddpoly = poly.derivative(2)
+                        [B,idx]=np.unique(poly.x,return_index=True)
+                        coeff = poly.c[:,idx]
+
+                        P[:,i,0] = coeff[3,:-1]
+                        P[:,i,1] = coeff[2,:-1]
+                        P[:,i,2] = coeff[1,:-1]
+                        P[:,i,3] = coeff[0,:-1]
+
+                        #### TODO: remove z-coordinates for now
+                        if i == 2:
+                                P[:,i,3]=0
+                                P[:,i,2]=0
+                                P[:,i,1]=0
+
+                for i in range(0,durationVector.shape[0]):
+                        duration = durationVector[i]
+                        if i==0:
+                                trajectorystring = str(duration)
+                        else:
+                                trajectorystring += "\n" + str(duration)
+                        trajectorystring += "\n" + str(Ndim)
+
+                        for j in range(Ndim):
+                                trajectorystring += "\n"
+                                trajectorystring += string.join([str(P[i,j,0]),str(P[i,j,1]),str(P[i,j,2]),str(P[i,j,3])])
+
+                return [bspline, trajectorystring, durationVector]
+
 
         def info(self):
                 print "#### TRAJECTORY CLASS ######"
@@ -78,7 +217,6 @@ class Trajectory():
                                 return True
                 return False
 
-
         def get_forces_at_waypoints(self, W, env):
                 Ndim = W.shape[0]
                 if W.ndim>1:
@@ -92,33 +230,6 @@ class Trajectory():
                 else:
                         F[:,0] = self.waypoint_to_force(env,W)
                 return F
-
-
-        ### SYSTEM DYNAMICS
-        def getControlMatrix(self, W):
-                #amin = np.array((-5,-5,-5))
-                #amax = np.array((5,5,5))
-                AM = 5
-                amin = np.array((-AM,-AM,-AM))
-                amax = np.array((AM,AM,AM))
-                #amin = np.array((-1,-1,-1))
-                #amax = np.array((1,1,1))
-
-                [Ndim,Nwaypoints] = self.getWaypointDim(W)
-                assert(Ndim==4)
-                Kdim = 3
-                R = np.zeros((Ndim,Kdim,Nwaypoints))
-                for i in range(0,Nwaypoints):
-                        if Nwaypoints>1:
-                                t = W[3,i]
-                        else:
-                                t = W[3]
-                        R[0,:,i] = np.array((cos(t),-sin(t),0.0))
-                        R[1,:,i] = np.array((sin(t),cos(t),0.0))
-                        R[2,:,i] = np.array((0.0,0.0,0.0))
-                        R[3,:,i] = np.array((0.0,0.0,1.0))
-
-                return [R,amin,amax]
 
         def getWaypointDim(self, W):
                 Ndim = W.shape[0]
@@ -321,14 +432,14 @@ class Trajectory():
                         return True
 
         def PlotParametrization(self, env):
-                Nwaypoints=200
+                Nwaypoints=100
                 [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
 
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                topp = TOPPInterface(-F,R,amin,amax,W,dW,ddW)
+                topp = TOPPInterface(self.durationVector, self.trajectorystring, -F,R,amin,amax,W,dW)
                 if topp.ReparameterizeTrajectory():
                         topp.PlotTrajectory()
                 else:
@@ -340,7 +451,7 @@ class Trajectory():
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                topp = TOPPInterface(-F,R,amin,amax,W,dW,ddW)
+                topp = TOPPInterface(self.durationVector, self.trajectorystring, -F,R,amin,amax,W,dW)
                 Nc = topp.getCriticalPoint()
                 #topp.PlotTrajectory()
                 return Nc
@@ -375,14 +486,6 @@ class Trajectory():
                         #return False
                 return S
 
-        @abc.abstractmethod 
-        def evaluate_at(self, t):
-                pass
-
-        @classmethod
-        def from_waypoints(cls, W):
-                pass
-
         @classmethod
         def from_ravetraj(cls, ravetraj):
                 rave_traj = ravetraj
@@ -392,7 +495,7 @@ class Trajectory():
                         w = np.array((ravetraj.GetWaypoint(i)[0],ravetraj.GetWaypoint(i)[1],ravetraj.GetWaypoint(i)[2],ravetraj.GetWaypoint(i)[3]))
                         W.append((w))
                 W = np.array(W).T
-                return cls.from_waypoints(W)
+                return cls(W)
 
         def get_waypoints_second_order(self, N = 100):
                 K = self.get_dimension()
@@ -488,34 +591,8 @@ class Trajectory():
 
                 return tmp_handle
 
-        #def draw(self, env, keep_handle=True):
-        #        Nwaypoints=200
-        #        [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
-        #        tmp_handle = []
-
-        #        self.trajectory_color = self.trajectory_color_deformation
-        #        tmp_handle.append(self.get_handle_draw_waypoints(env, W, dW, ddW))
-
-        #        if keep_handle:
-        #                self.handle = tmp_handle
-        #        else:
-        #                return tmp_handle
-
-        def draw_nocritical(self, env, keep_handle=True):
-                Nwaypoints=200
-                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
-                tmp_handle = []
-
-                self.trajectory_color = self.trajectory_color_infeasible
-                tmp_handle.append(self.get_handle_draw_waypoints(env, W, dW, ddW))
-
-                if keep_handle:
-                        self.handle = tmp_handle
-                else:
-                        return tmp_handle
-
         def draw(self, env, keep_handle=True):
-                Nwaypoints=10
+                Nwaypoints=200
                 [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
                 N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
                 tmp_handle = []

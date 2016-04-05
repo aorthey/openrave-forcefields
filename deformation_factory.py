@@ -39,6 +39,7 @@ class Deformation():
                         if self.deform_onestep():
                                 self.traj_current = copy.copy(self.traj_deformed)
                         else:
+                                self.traj_current = copy.copy(self.traj_deformed)
                                 return False
                 return True
 
