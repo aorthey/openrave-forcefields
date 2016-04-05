@@ -8,6 +8,10 @@ import copy
 class Deformation():
         __metaclass__ = abc.ABCMeta
 
+        ## number of steps of a linear homotopy deformation between two given
+        ## trajectories
+        DEFORMATION_STEPS = 10
+
         env = []
         traj_ori = []
         traj_deformed = []
@@ -68,13 +72,11 @@ class Deformation():
 
 
         def draw_deformation(self):
-                DEFORMATION_STEPS = 10
-                L = self.traj_current.get_length()
-                dt = 0.05
-                Nwaypoints = int(L/dt)
+                ## visualize linear homotopy between two trajectories
 
-                [W0,dW] = self.traj_display.get_waypoints(N=Nwaypoints) 
-                [W1,dW] = self.traj_current.get_waypoints(N=Nwaypoints) 
+                [W0,dW] = self.traj_display.get_waypoints() 
+                Nwaypoints = W0.shape[1]
+                [W1,dW] = self.traj_current.get_waypoints(Nwaypoints) 
 
                 self.forcehandle = []
                 if np.linalg.norm(W0-W1)<0.001:
@@ -85,8 +87,9 @@ class Deformation():
                 #print self.traj_display.info()
                 #print self.traj_current.info()
 
-                for i in range(0,DEFORMATION_STEPS):
-                        k = float(i)/float(DEFORMATION_STEPS)
+                for i in range(0,self.DEFORMATION_STEPS):
+                        print "DEFORM",i,"/",self.DEFORMATION_STEPS
+                        k = float(i)/float(self.DEFORMATION_STEPS)
                         Wk = (1-k)*W0 + k*W1
                         if self.traj_current.IsInCollision(self.env, Wk):
                                 break

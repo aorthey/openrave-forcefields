@@ -20,6 +20,8 @@ from topp_interface import TOPPInterface
 class Trajectory():
         __metaclass__ = abc.ABCMeta
 
+        DISCRETIZATION_TIME_STEP = 0.005
+
         rave_traj = []
         traj = []
         waypoints = []
@@ -371,9 +373,7 @@ class Trajectory():
                 #print delta
 
         def computeReachableSets(self, dt, env):
-                L = self.get_length()
-                Nwaypoints = int(L/0.01)
-                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+                [W,dW,ddW] = self.get_waypoints_second_order()
 
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
 
@@ -432,48 +432,47 @@ class Trajectory():
                         return True
 
         def PlotParametrization(self, env):
-                Nwaypoints=100
-                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+                [W,dW,ddW] = self.get_waypoints_second_order()
 
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                topp = TOPPInterface(self.durationVector, self.trajectorystring, -F,R,amin,amax,W,dW)
-                if topp.ReparameterizeTrajectory():
-                        topp.PlotTrajectory()
+                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, -F,R,amin,amax,W,dW)
+                if self.topp.ReparameterizeTrajectory():
+                        self.topp.PlotTrajectory(env)
+                        print self.topp
                 else:
                         print "Trajectory has no ReParameterization"
 
-        def getCriticalPointFromWaypoints(self, env, W, dW, ddW):
+        def getCriticalPointFromWaypoints(self, env, W, dW, ddW, oldNc = 0):
 
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                topp = TOPPInterface(self.durationVector, self.trajectorystring, -F,R,amin,amax,W,dW)
-                Nc = topp.getCriticalPoint()
-                #topp.PlotTrajectory()
+                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, -F,R,amin,amax,W,dW)
+                Nc = self.topp.getCriticalPoint()
+                if Nc < 0:
+                        print "return oldNc=",oldNc
+                        return oldNc
                 return Nc
 
         def getCriticalPoint(self, env):
                 L = self.get_length()
                 ds = 0.01
-                Nwaypoints = int(L/ds)
-                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+                [W,dW,ddW] = self.get_waypoints_second_order()
 
                 N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
                 if N is not None:
-                        print "CRITICAL POINT:",N,"/",Nwaypoints
+                        print "CRITICAL POINT:",N,"/",W.shape[1]
                         print W[:,N]
                 else:
                         print "No critical point found"
 
         def reparametrize(self, env, ploting=False):
                 L = self.get_length()
-                dt = 0.005
-                Nwaypoints = int(L/dt)
-                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+                [W,dW,ddW] = self.get_waypoints_second_order()
                 F = self.get_forces_at_waypoints(W, env)
 
                 ### acceleration limits
@@ -497,7 +496,16 @@ class Trajectory():
                 W = np.array(W).T
                 return cls(W)
 
-        def get_waypoints_second_order(self, N = 100):
+        def get_waypoints_second_order(self, N=None):
+                ###############################################################
+                ### obtain waypoints along the trajectory at constant spacing of
+                ### DISCRETIZATION_TIME_STEP
+                ###############################################################
+                if N is None:
+                        dt = self.DISCRETIZATION_TIME_STEP
+                        L = self.get_length()
+                        N = int(L/dt)
+                ###############################################################
                 K = self.get_dimension()
                 pts = np.zeros((K,N))
                 dpts = np.zeros((K,N))
@@ -511,7 +519,7 @@ class Trajectory():
                         ctr = ctr+1
                 return [pts,dpts,ddpts]
 
-        def get_waypoints(self, N = 100):
+        def get_waypoints(self, N = None):
                 [pts,dpts,ddpts]=self.get_waypoints_second_order(N)
                 return [pts,dpts]
 
@@ -592,8 +600,7 @@ class Trajectory():
                 return tmp_handle
 
         def draw(self, env, keep_handle=True):
-                Nwaypoints=200
-                [W,dW,ddW] = self.get_waypoints_second_order(N=Nwaypoints)
+                [W,dW,ddW] = self.get_waypoints_second_order()
                 N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
                 tmp_handle = []
 

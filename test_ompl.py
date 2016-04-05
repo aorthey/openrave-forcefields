@@ -115,9 +115,6 @@ if __name__ == "__main__":
         traj.info()
         traj.draw(env)
 
-        traj.PlotParametrization(env)
-        #sys.exit(0)
-
         #t1 = traj.reparametrize(env,ploting=False)
         #traj.getCriticalPoint(env)
         #traj.IsReparametrizable(env)
@@ -136,9 +133,12 @@ if __name__ == "__main__":
                 if td.deform(N_iter=1):
                         td.draw_deformation() 
                 else:
+                        td.draw_deformation() 
                         break
 
+        print i
         td.traj_current.PlotParametrization(env)
+        xt = td.traj_current.topp.traj0
 
         #ravetraj = td.traj_current.to_ravetraj()
         #result = planningutils.RetimeTrajectory(ravetraj,False,0.15)

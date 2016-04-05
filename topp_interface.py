@@ -33,6 +33,7 @@ class TOPPInterface():
         W_ = []
         dW_ = []
         ddW_ = []
+        trajectoryclass_ = []
 
         def initializeFromSpecifications(self, durationVector_in, trajectorystring, F, R, amin, amax, W, dW):
                 self.Ndim = W.shape[0]
@@ -60,7 +61,8 @@ class TOPPInterface():
                 durationQ = self.traj0.duration/(self.Nwaypoints-1)
                 self.topp_inst = TOPP.QuadraticConstraints(self.traj0, durationQ, vmax, list(a), list(b), list(c))
 
-        def __init__(self, durationVector, trajectorystring, F, R, amin, amax, W, dW):
+        def __init__(self, trajectoryclass, durationVector, trajectorystring, F, R, amin, amax, W, dW):
+                self.trajectoryclass_ = trajectoryclass
                 self.F_ = F
                 self.R_ = R
                 self.amin_ = amin
@@ -86,12 +88,26 @@ class TOPPInterface():
                 ax.set_position([box.x0, box.y0, box.width * 0.9, box.height])
                 ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=fs)
 
-        def PlotVerticalLineOverSubplots(self, x, ax1, ax2, ax3):
+        def PlotVerticalLineOverSubplots(self, x, ax1, ax2, ax3, ax4):
                 ax1.axvline(x=x,ymin=-1.2,ymax=1  ,c="k",ls='--',linewidth=3,zorder=0, clip_on=False)
                 ax2.axvline(x=x,ymin=-1.2,ymax=1  ,c="k",ls='--',linewidth=3,zorder=0, clip_on=False)
-                ax3.axvline(x=x,ymin=-0.2,ymax=1.2,c="k",ls='--',linewidth=3,zorder=0, clip_on=False)
+                ax3.axvline(x=x,ymin=-1.2,ymax=1  ,c="k",ls='--',linewidth=3,zorder=0, clip_on=False)
+                ax4.axvline(x=x,ymin=-0.2,ymax=1.2,c="k",ls='--',linewidth=3,zorder=0, clip_on=False)
 
-        def PlotTrajectory(self):
+        def PlotTrajectory(self, env=None):
+                lw = 4
+                fs = 22
+                limit_ls = ':'
+                limit_lw = 4
+                color_x_coordinate = 'b'
+                color_y_coordinate = 'r'
+                color_fx_coordinate = (0.0,0.0,0.4)
+                color_fy_coordinate = (0.4,0.0,0.0)
+                color_z_coordinate = 'g'
+                color_t_coordinate = 'm'
+                color_a1_coordinate = (1.0,0.0,0.0)
+                color_a2_coordinate = (1.0,0.5,0.0)
+                color_a3_coordinate = (1.0,0.8,0.6)
 
                 #################################
                 dt = float(self.DURATION_DISCRETIZATION)/19.0
@@ -102,18 +118,24 @@ class TOPPInterface():
                 qddvect = np.array([self.traj0.Evaldd(t) for t in tvect])
 
                 #################################
+                path = self.trajectoryclass_
+                Adim = 3
+                a = np.zeros((Adim, Npts))
+                if env is not None:
+                        [R,amin,amax] = path.getControlMatrix(qvect.T)
+                        F = path.get_forces_at_waypoints(qvect.T, env)
+                        for i in range(0,Npts):
+                                Ri = R[:,:,i]
+                                Fi = F[:,i]
+                                qdd = qddvect[i,:]
+                                a[:,i] = np.dot(Ri.T,qdd.T+Fi)
+
+                #################################
                 twvect = np.linspace(0,np.sum(self.durationVector), self.Nwaypoints)
-                lw = 4
-                fs = 22
-                lloc = 'lower right'
-                ANCHOR = (0.5,1)
-                color_x_coordinate = 'b'
-                color_y_coordinate = 'r'
-                color_z_coordinate = 'g'
-                color_t_coordinate = 'm'
+                tavect = np.linspace(0,self.traj0.duration, self.Nwaypoints)
                 
                 fig=figure(facecolor='white')
-                ax1 = subplot(3,1,1)
+                ax1 = subplot(4,1,1)
                 plot(twvect, self.W_[0,:], '--', color = color_x_coordinate, linewidth = lw)
                 plot(twvect, self.W_[1,:], '--', color = color_y_coordinate, linewidth = lw)
                 plot(twvect, self.W_[2,:], '--', color = color_z_coordinate, linewidth = lw)
@@ -124,12 +146,12 @@ class TOPPInterface():
                 plot(tvect, qvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\\theta$")
                 #plot(tvect, qdvect, f, linewidth=2)
                 #plot(tvect, qddvect, f, linewidth=2)
-                title('Position/Velocity/Acceleration Path', fontsize=fs)
+                title('TOPP-Profile Trajectory', fontsize=fs)
                 ylabel('Position', fontsize=fs)
                 ax1.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax1, fs)
 
-                ax2 = subplot(3,1,2)
+                ax2 = subplot(4,1,2)
                 ylabel('Velocity', fontsize=fs)
                 plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
                 plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
@@ -142,22 +164,37 @@ class TOPPInterface():
                 ax2.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax2, fs)
 
-                ax3 = subplot(3,1,3)
+                ax3 = subplot(4,1,3)
                 ylabel('Acceleration', fontsize=fs)
                 plot(tvect, qddvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\ddot{x}$")
                 plot(tvect, qddvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\ddot{y}$")
                 plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
                 plot(tvect, qddvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\ddot{\\theta}$")
-                xlabel('Time $t$',fontsize=fs)
-                #ax.axvline(self.traj0.duration, color='k', linestyle='-', lw=2)
-                x = self.traj0.duration
-                from matplotlib.patches import ConnectionPatch
-                con = ConnectionPatch(xyA=(x, 0), xyB=(x, 1.5), coordsA="data", coordsB="data", axesA=ax3, axesB=ax2, arrowstyle="-", linewidth=4, color="k") 
-                ax3.add_artist(con)
+                plot(tvect, F[0,:], color = color_fx_coordinate, linewidth = lw, label = "$F_{x}$")
+                plot(tvect, F[1,:], color = color_fy_coordinate, linewidth = lw, label = "$F_{y}$")
+                ax3.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax3, fs)
 
-                self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3)
-                self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3)
+                if env is not None:
+                        ax4 = subplot(4,1,4)
+                        ylabel('Control', fontsize=fs)
+                        plot(tvect, a[0,:], color = color_a1_coordinate, linewidth = lw, label = "${a_1}(Thruster)$")
+                        plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
+                        plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")
+
+                        plot(tvect, np.repeat(amin[2],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
+                        plot(tvect, np.repeat(amax[2],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
+                        plot(tvect, np.repeat(amin[1],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a2_coordinate)
+                        plot(tvect, np.repeat(amax[1],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a2_coordinate)
+                        plot(tvect, np.repeat(amin[0],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
+                        plot(tvect, np.repeat(amax[0],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
+                        xlabel('Time $t$',fontsize=fs)
+                        self.PlotPrettifiedAxes(ax4, fs)
+                        self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3, ax4)
+                        self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3, ax4)
+                else:
+                        self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3)
+                        self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3)
 
                 plt.show()
 
@@ -191,7 +228,6 @@ class TOPPInterface():
                         if ret == 1:
                                 #print "TOPP: success"
                                 #x.ReparameterizeTrajectory()
-                        
                                 #ret_param = x.ReparameterizeTrajectory()
                                 #print "reparametrized"
                                 #x.WriteProfilesList()
@@ -206,23 +242,24 @@ class TOPPInterface():
 
                                 return self.Nwaypoints
                         if ret== 0:
-                                M = 10
-                                np.set_printoptions(precision=3)
-                                dt = self.DURATION_DISCRETIZATION/13
-                                tvect = np.linspace(0,self.traj0.duration, self.traj0.duration/dt)
-                                qvect = np.array([self.traj0.Eval(t) for t in tvect])
-                                qdvect = np.array([self.traj0.Evald(t) for t in tvect])
-                                qddvect = np.array([self.traj0.Evaldd(t) for t in tvect])
+                                #M = 10
+                                #np.set_printoptions(precision=3)
+                                #dt = self.DURATION_DISCRETIZATION/13
+                                #tvect = np.linspace(0,self.traj0.duration, self.traj0.duration/dt)
+                                #qvect = np.array([self.traj0.Eval(t) for t in tvect])
+                                #qdvect = np.array([self.traj0.Evald(t) for t in tvect])
+                                #qddvect = np.array([self.traj0.Evaldd(t) for t in tvect])
                                 print "TOPP: unspecified error"
-                                print "W=",repr(self.W_[0:2,0:M])
-                                print "q=",repr(qvect[0:M,0:2].T)
-                                print "dW=",repr(self.dW_[0:2,0:M])
-                                print "dq=",repr(qdvect[0:M,0:2].T)
-                                self.PlotTrajectory()
-                                self.critical_point = x.GetCriticalPoint()
-                                self.critical_point_value = x.GetCriticalPointValue()
-                                print self.critical_point,self.critical_point_value
-                                sys.exit(0)
+                                #print "W=",repr(self.W_[0:2,0:M])
+                                #print "q=",repr(qvect[0:M,0:2].T)
+                                #print "dW=",repr(self.dW_[0:2,0:M])
+                                #print "dq=",repr(qdvect[0:M,0:2].T)
+                                #self.PlotTrajectory()
+                                #self.critical_point = x.GetCriticalPoint()
+                                #self.critical_point_value = x.GetCriticalPointValue()
+                                #print self.critical_point,self.critical_point_value
+                                return -1
+                                #sys.exit(0)
                         else:
                                 print "TOPP: ",ret
                                 sys.exit(0)

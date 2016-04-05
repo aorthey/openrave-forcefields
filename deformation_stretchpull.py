@@ -13,10 +13,22 @@ def computeCostFunction(q, dq, ddq, F, amax, l1, l2, dt):
         Qlambda2 = sqrt(l2*amax[0]*2)*dt*dq
         qt = q + dt2*F.flatten() + Qlambda1 + Qlambda2
 
-        L = dq/np.linalg.norm(dq)
-        Q = (qt-q)/np.linalg.norm(qt-q)
-        dtravel = np.dot((qt-q),L)
-        dangle = acos(np.dot(L,Q))
+        try:
+                L = dq/np.linalg.norm(dq)
+                Q = (qt-q)/np.linalg.norm(qt-q)
+                dtravel = np.dot((qt-q),L)
+                dangle = acos(np.dot(L,Q))
+                        
+        except ValueError as e:
+                print "#######################################"
+                print "ValueError:",e
+                print "#######################################"
+                print "Q    = ",Q
+                print "qt   = ",qt
+                print "q    = ",q
+                print "L    = ", L
+                print "qt-q = ",qt-q
+                sys.exit(1)
 
         d = 1*dangle-0.1*dtravel
         d=dtravel
@@ -139,29 +151,29 @@ class DeformationStretchPull(Deformation):
 
 
         ## change only traj_deformed here
+        cur_Nc = 0
         def deform_onestep(self):
                 #dt = 0.01
                 traj = self.traj_deformed
                 L = traj.get_length()
 
-                dt = 0.01
-                Nwaypoints = int(L/dt)
-
-                if DEBUG:
-                        print "WAYPOINTS:",Nwaypoints,"LENGTH:",L
-
-                [Wori,dWori,ddWori] = traj.get_waypoints_second_order(N=Nwaypoints)
+                [Wori,dWori,ddWori] = traj.get_waypoints_second_order()
                 [Ndim, Nwaypoints] = traj.getWaypointDim(Wori)
                 F = traj.get_forces_at_waypoints(Wori, self.env)
                 [R,amin,amax] = traj.getControlMatrix(Wori)
 
                 ### FORWARD PASS UNTIL CRITICAL POINT IS HIT
-                Nc = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori)
+                Nc = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.cur_Nc)
+                print "###########################################"
+                print "CRITICAL WAYPOINT: ",Nc,"/",Nwaypoints," oldNc=",self.cur_Nc
+                print "###########################################"
+                self.cur_Nc = Nc
 
                 if Nc >= Nwaypoints:
                         ## no critical points => trajectory is dynamically
                         print "No deformation necessary=>Trajectory dynamically feasible"
-                        ## feasible
+                        #traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.cur_Nc)
+                        traj.PlotParametrization(self.env)
                         return False
 
                 ###############################################################
