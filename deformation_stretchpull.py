@@ -76,7 +76,6 @@ def A1matrix(traj, Ncritical, W):
 
         assert(Ncritical<Nwaypoints)
 
-        #M = 100
         i = Nwaypoints
         while i > 0:
                 #if abs(i-Ncritical)<M and i<Nwaypoints:
@@ -90,7 +89,6 @@ def A2matrix(traj, Ncritical, W):
         A2 = np.zeros(Nwaypoints)
         assert(Ncritical<Nwaypoints)
 
-        #M = 100
         i = Ncritical-1
         while i > 0:
                 A2[i] = avalue(Ncritical, i)
@@ -170,9 +168,8 @@ class DeformationStretchPull(Deformation):
                 self.cur_Nc = Nc
 
                 if Nc >= Nwaypoints:
-                        ## no critical points => trajectory is dynamically
-                        print "No deformation necessary=>Trajectory dynamically feasible"
-                        #traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.cur_Nc)
+                        print "No deformation necessary => Trajectory dynamically feasible"
+                        print traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.cur_Nc)
                         traj.PlotParametrization(self.env)
                         return False
 
@@ -197,7 +194,7 @@ class DeformationStretchPull(Deformation):
 
                 dU = np.zeros((Ndim,Nwaypoints))
                 lambda_1 = 0.005
-                lambda_2 = 0.0
+                lambda_2 = 0.00
                 lambda_3 = 0.00005
                 eta = 1.0
                 print "## LAMBDAS: ",lambda_1,lambda_2,lambda_3

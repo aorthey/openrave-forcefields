@@ -16,6 +16,9 @@ class MotionPlanner():
                 self.robot_ = robot
                 self.existing_planners=[
                         'birrt',
+                        'basicrrt',
+                        'explorationrrt',
+                        'kinodynamicrrt',
                         'OMPL_BKPIECE1',
                         'OMPL_EST',
                         'OMPL_KPIECE1',
@@ -34,6 +37,7 @@ class MotionPlanner():
                         'OMPL_SPARStwo',
                         'OMPL_TRRT']
 
+
                 ## not working:
                 #'OMPL_BITstar',
                 #'OMPL_FMT',
@@ -43,6 +47,7 @@ class MotionPlanner():
         @abc.abstractmethod 
         def GetPath(self):
                 pass
+
 
         def PlanPath(self, planner_name):
 

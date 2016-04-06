@@ -24,23 +24,27 @@ from motion_planner_kinodynamic import MotionPlannerKinodynamic
 
 if __name__ == "__main__":
 
+        #######################################################################
         env = EnvironmentTheRay()
         #env = EnvironmentTheCounterStream()
         #env = EnvironmentTheStream()
+        #######################################################################
+
         robot = env.GetRobot()
+        env.MakeRobotInvisible()
         env.DisplayForces()
         time.sleep(0.5)
 
         planner = MotionPlannerGeometrical(robot, env)
-        planner = MotionPlannerKinodynamic(robot, env)
+        #planner = MotionPlannerKinodynamic(robot, env)
+
         rave_path = planner.GetPath()
 
         #trajectory = MotionPlannerDeformation(path, robot, env)
         traj = Trajectory.from_ravetraj(rave_path)
         traj.info()
         traj.draw(env)
-        traj.draw_delete()
-
+        traj.PlotParametrization(env)
         td = DeformationStretchPull(traj, env)
 
         Nd = 25
@@ -48,18 +52,15 @@ if __name__ == "__main__":
         for i in range(Nd):
                 print "DEFORMATION:",i,"/",Nd
                 if td.deform(N_iter=1):
+                        if i==0:
+                                traj.draw_delete()
                         td.draw_deformation() 
                 else:
                         td.draw_deformation() 
                         break
 
-        td.traj_current.PlotParametrization(env)
         xt = td.traj_current.topp.traj0
-
-        #ravetraj = td.traj_current.to_ravetraj()
-        #result = planningutils.RetimeTrajectory(ravetraj,False,0.15)
-        #td.deform()
-        #td.draw_deformation()
+        env.MakeRobotVisible()
 
         #raw_input('Press <ENTER> to execute trajectory.')
         #RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug

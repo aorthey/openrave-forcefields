@@ -79,6 +79,18 @@ class ForceEnvironment():
         @abc.abstractmethod
         def RobotGetGoalPosition(self):
                 pass
+        def MakeRobotInvisible(self):
+                with self.env:
+                        self.robot = self.env.GetRobots()[0]
+                        for link in self.robot.GetLinks():
+                                for geom in link.GetGeometries():
+                                        geom.SetTransparency(1.0) 
+        def MakeRobotVisible(self):
+                with self.env:
+                        self.robot = self.env.GetRobots()[0]
+                        for link in self.robot.GetLinks():
+                                for geom in link.GetGeometries():
+                                        geom.SetTransparency(0.0) 
 
         def GetRobot(self):
                 with self.env:
@@ -88,7 +100,7 @@ class ForceEnvironment():
                         [xg,yg,zg,tg,dxg,dyg,dzg,dtg]=self.RobotGetGoalPosition()
                         #self.robot.SetDOFLimits((-10,10),(-5,5),(-1,1))
                         #self.robot.SetDOFLimits((-10,-8,-0.15,-4*pi),(10,8,0.15,4*pi))
-                        self.robot.SetDOFLimits((-10,-10,-0.2,-2*pi),(10,10,0.2,2*pi))
+                        self.robot.SetDOFLimits((-10,-10,-0.15,-2*pi),(10,10,0.15,2*pi))
                         self.robot.SetDOFValues((xi,yi,zi,ti))
                         self.robot.SetDOFVelocities((dxi,dyi,dzi,dti))
                         self.robot.SetDOFVelocityLimits([10.0,10.0,0.0,5.0])

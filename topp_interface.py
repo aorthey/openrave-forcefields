@@ -14,7 +14,7 @@ class TOPPInterface():
         #DURATION_DISCRETIZATION = 1
         DURATION_DISCRETIZATION = 0.01
 
-        TRAJECTORY_ACCURACY_REQUIRED = 1e-5
+        TRAJECTORY_ACCURACY_REQUIRED = 1e-2
         traj0 = []
         trajstr = []
         durationVector = []
@@ -71,15 +71,32 @@ class TOPPInterface():
                 self.dW_ = dW
                 self.initializeFromSpecifications(durationVector, trajectorystring, F, R, amin, amax, W, dW)
 
-        def getSpeedIntervalAtCriticalPoint(self, N):
-                assert(N > -1)
+        def getSpeedIntervalAtCriticalPoint(self, N, Subtraj_dvec, Subtraj_str):
+                if (N < 0) or (N > self.Nwaypoints):
+                        print "Critical Point",N,"is out of bounds of trajectory"
+                        sys.exit(1)
+                if N == 0:
+                        return [0,0]
+
                 Fc = self.F_[:,0:N]
                 Rc = self.R_[:,:,0:N]
                 Wc = self.W_[:,0:N]
-                self.initializeFromSpecifications(Fc, Rc, self.amin_, self.amax_, Wc)
+                dWc = self.dW_[:,0:N]
+                amin = self.amin_
+                amax = self.amax_
+                self.initializeFromSpecifications(Subtraj_dvec, Subtraj_str, Fc, Rc, amin, amax, Wc, dWc)
                 x = self.topp_inst.solver
-                [self.semin,self.semax] = self.topp_inst.AVP(0, 0)
-                return [self.semin,self.semax]
+                ### AVP(sbmin, sbmax)
+                #[semin,semax] = self.topp_inst.AVP(0.0, 0.0)
+                return_code = x.RunVIP(0.0, 0.0)
+                if return_code != 1:
+                        print "TOPP Error:", return_code
+                        print "waypoint: ",N,"/",self.Nwaypoints
+                        sys.exit(1)
+
+                semin = x.sdendmin
+                semax = x.sdendmax
+                return [semin, semax]
 
         def PlotPrettifiedAxes(self, ax, fs):
                 plt.axvspan(0, 1.0, facecolor='k', alpha=0.1)
@@ -101,8 +118,8 @@ class TOPPInterface():
                 limit_lw = 4
                 color_x_coordinate = 'b'
                 color_y_coordinate = 'r'
-                color_fx_coordinate = (0.0,0.0,0.4)
-                color_fy_coordinate = (0.4,0.0,0.0)
+                color_fx_coordinate = (0.7,0.7,0.9)
+                color_fy_coordinate = (0.9,0.7,0.7)
                 color_z_coordinate = 'g'
                 color_t_coordinate = 'm'
                 color_a1_coordinate = (1.0,0.0,0.0)
@@ -111,7 +128,7 @@ class TOPPInterface():
                 offset_a_coordinate = 0.3
 
                 #################################
-                dt = float(self.DURATION_DISCRETIZATION)/19.0
+                dt = float(self.DURATION_DISCRETIZATION)
                 Npts = int(self.traj0.duration/dt)
                 tvect = np.linspace(0,self.traj0.duration, Npts)
                 qvect = np.array([self.traj0.Eval(t) for t in tvect])
@@ -148,12 +165,12 @@ class TOPPInterface():
                 #plot(tvect, qdvect, f, linewidth=2)
                 #plot(tvect, qddvect, f, linewidth=2)
                 title('TOPP-Profile Trajectory', fontsize=fs)
-                ylabel('Position', fontsize=fs)
+                ylabel('Position $(m)$', fontsize=fs)
                 ax1.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax1, fs)
 
                 ax2 = subplot(4,1,2)
-                ylabel('Velocity', fontsize=fs)
+                ylabel('Velocity $\\left(\\frac{m}{s}\\right)$', fontsize=fs)
                 plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
                 plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
                 plot(twvect, self.dW_[2,:], '--', color = color_z_coordinate, linewidth = lw)
@@ -166,7 +183,7 @@ class TOPPInterface():
                 self.PlotPrettifiedAxes(ax2, fs)
 
                 ax3 = subplot(4,1,3)
-                ylabel('Acceleration', fontsize=fs)
+                ylabel('Acceleration $\\left(\\frac{m}{s^2}\\right)$', fontsize=fs)
                 plot(tvect, qddvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\ddot{x}$")
                 plot(tvect, qddvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\ddot{y}$")
                 plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
@@ -178,7 +195,7 @@ class TOPPInterface():
 
                 if env is not None:
                         ax4 = subplot(4,1,4)
-                        ylabel('Control', fontsize=fs)
+                        ylabel('Control $\\left(\\frac{m}{s^2}\\right)$', fontsize=fs)
                         plot(tvect, a[0,:], color = color_a1_coordinate, linewidth = lw, label = "${a_1}(Thruster)$")
                         plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
                         plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")
@@ -189,7 +206,7 @@ class TOPPInterface():
                         plot(tvect, np.repeat(amax[1]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a2_coordinate)
                         plot(tvect, np.repeat(amin[0]-offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
                         plot(tvect, np.repeat(amax[0]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
-                        xlabel('Time $t$',fontsize=fs)
+                        xlabel('Time ($s$)',fontsize=fs)
                         self.PlotPrettifiedAxes(ax4, fs)
                         self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3, ax4)
                         self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3, ax4)
@@ -220,13 +237,11 @@ class TOPPInterface():
                 try:
                         ret = x.RunComputeProfiles(0.0,0.0)
                         if ret == 4:
-                                #[semin,semax] = topp_inst.AVP(0, 0)
-                                #print "TOPP critical pt:",semin,semax
                                 self.critical_point = x.GetCriticalPoint()
                                 self.critical_point_value = x.GetCriticalPointValue()
-                                #print "TOPP critical pt:",self.critical_point,self.critical_point_value
+                                print "TOPP critical pt:",self.critical_point,self.critical_point_value
                                 return self.critical_point
-                        if ret == 1:
+                        if ret == 1: ##TOPP_OK
                                 #print "TOPP: success"
                                 #x.ReparameterizeTrajectory()
                                 #ret_param = x.ReparameterizeTrajectory()
@@ -240,12 +255,10 @@ class TOPPInterface():
                                 #self.traj0 = Trajectory.PiecewisePolynomialTrajectory.FromString(x.restrajectorystring)
                                 #print "reparametrized"
                                 #TOPPpy.PlotKinematics(self.traj0,traj1)
-
                                 return self.Nwaypoints
                         if ret== 0:
                                 #M = 10
                                 #np.set_printoptions(precision=3)
-                                #dt = self.DURATION_DISCRETIZATION/13
                                 #tvect = np.linspace(0,self.traj0.duration, self.traj0.duration/dt)
                                 #qvect = np.array([self.traj0.Eval(t) for t in tvect])
                                 #qdvect = np.array([self.traj0.Evald(t) for t in tvect])
@@ -255,7 +268,6 @@ class TOPPInterface():
                                 #print "q=",repr(qvect[0:M,0:2].T)
                                 #print "dW=",repr(self.dW_[0:2,0:M])
                                 #print "dq=",repr(qdvect[0:M,0:2].T)
-                                #self.PlotTrajectory()
                                 #self.critical_point = x.GetCriticalPoint()
                                 #self.critical_point_value = x.GetCriticalPointValue()
                                 #print self.critical_point,self.critical_point_value
@@ -306,145 +318,3 @@ class TOPPInterface():
                         a[i,:] = np.dot(G,qs[:,i]).flatten()
                         b[i,:] = np.dot(G,qss[:,i]).flatten()
                 return [a,b,c]
-
-#        def GetTrajectoryString(self, W, dW, ddW):
-#                ### get trajectory string for any R subspaces
-#                Ndim = W.shape[0]
-#                Nwaypoints = W.shape[1]
-#                durationVector = np.zeros((Nwaypoints-1))
-#
-#                DEBUG = 0
-#                for i in range(0,Nwaypoints-1):
-#                        #ds = np.linalg.norm(W[:,i+1]-W[:,i])
-#                        #dv = np.linalg.norm(dW[:,i])
-#                        #duration = ds/dv
-#                        duration = self.DURATION_DISCRETIZATION
-#                        durationVector[i] = duration
-#                        if i==0:
-#                                trajectorystring = str(duration)
-#                        else:
-#                                trajectorystring += "\n" + str(duration)
-#
-#                        trajectorystring += "\n" + str(Ndim)
-#
-#                        A = np.zeros(Ndim)
-#                        B = np.zeros(Ndim)
-#                        C = np.zeros(Ndim)
-#                        D = np.zeros(Ndim)
-#                        E = np.zeros(Ndim)
-#                        F = np.zeros(Ndim)
-#
-#                        T = duration
-#                        TT = duration*duration
-#                        TTT = duration*duration*duration
-#
-#                        p0 = W[:,i]
-#                        dp0 = dW[:,i]
-#                        ddp0 = ddW[:,i]
-#                        p1 = W[:,i+1]
-#                        dp1 = dW[:,i+1]
-#                        ddp1 = ddW[:,i+1]
-#
-#
-#                        U1 = (p1-p0-dp0*T-0.5*ddp0*TT)/TTT
-#                        U2 = (dp1-dp0-ddp0*T)/TT
-#                        U3 = (ddp1-ddp0)/T
-#
-#                        A=p0
-#                        B=dp0
-#                        C=0.5*ddp0
-#                        D = (10*U1 - 4*U2 + 0.5*U3)
-#                        E = (-15*U1 + 7*U2 - U3)/T
-#                        F = (6*U1 - 3*U2 + 0.5*U3)/TT
-#
-#                        #A = p0
-#                        #B = dp0
-#                        #C = (3*(p1-p0-dp0*T)-(dp1-dp0)*T)/TT
-#                        #D = ( (dp1-dp0)*T - 2*(p1-p0-dp0*T))/TTT
-#
-#                        #A = p0
-#                        #B = dp0 #(p1-p0)/T
-#                        #C = 0.5*(ddp1-ddp0)
-#                        #A = p0
-#                        #B = dp0 #(p1-p0)/T
-#                        #C = 0.5*(ddp1-ddp0)
-#                        #D = (1/6)*(ddp1-ddp0)/T
-#
-#                        def g(dt,A,B,C,D,E,F):
-#                                return A + B*dt + C*dt**2 + D*dt**3 + E*dt**4 + F*dt**5
-#                        def dg(dt,A,B,C,D,E,F):
-#                                return B + 2*C*dt + 3*D*dt**2 + 4*E*dt**3 + 5*F*dt**4
-#                        def ddg(dt,A,B,C,D,E,F):
-#                                return 2*C + 6*D*dt + 12*E*dt**2 + 20*F*dt**3
-#
-#                        dd = np.linalg.norm(W[:,i+1]-g(T,A,B,C,D,E,F))
-#                        if dd > self.TRAJECTORY_ACCURACY_REQUIRED:
-#                                np.set_printoptions(precision=4)
-#                                print "##############################"
-#                                print "ERROR: Waypoints and C2-approximation do not match up"
-#                                print "##############################"
-#                                #print W[:,i],g(0,A,B,C,D,E,F)
-#                                print "W    : ",W[:,i+1]
-#                                print "C2   : ",g(duration,A,B,C,D,E,F)
-#                                print "##############################"
-#                                #print dW[:,i],dg(0,A,B,C,D,E,F)
-#                                print "dW   : ",dW[:,i+1]
-#                                print "dC2  : ",dg(duration,A,B,C,D,E,F)
-#                                print "##############################"
-#                                #print ddW[:,i],ddg(0,A,B,C,D,E,F)
-#                                print "ddW  : ",ddW[:,i+1]
-#                                print "ddC2 : ",ddg(duration,A,B,C,D,E,F)
-#                                tvec = np.linspace(0,duration,100)
-#                                G = np.array(map(lambda t: g(t,A,B,C,D,E,F), tvec)).T
-#                                dG = np.array(map(lambda t: dg(t,A,B,C,D,E,F), tvec)).T
-#                                ddG = np.array(map(lambda t: ddg(t,A,B,C,D,E,F), tvec)).T
-#                                subplot(3,1,1)
-#                                print G.shape
-#                                ms = 10
-#                                plot(0,W[0,i],'ok',markersize=ms)
-#                                plot(duration,W[0,i+1],'ok',markersize=ms)
-#                                plot(tvec,G[0,:],'-r',linewidth=2)
-#
-#                                plot(0,W[1,i],'ok',markersize=ms)
-#                                plot(duration,W[1,i+1],'ok',markersize=ms)
-#                                plot(tvec,G[1,:],'-b',linewidth=2)
-#                                subplot(3,1,2)
-#                                plot(0,dW[0,i],'ok',markersize=ms)
-#                                plot(duration,dW[0,i+1],'ok',markersize=ms)
-#                                plot(tvec,dG[0,:],'-r',linewidth=2)
-#                                subplot(3,1,3)
-#                                plot(0,ddW[0,i],'ok',markersize=ms)
-#                                plot(duration,ddW[0,i+1],'ok',markersize=ms)
-#                                plot(tvec,ddG[0,:],'-r',linewidth=2)
-#                                plt.show()
-#                                sys.exit(0)
-#                                sys.exit(0)
-#
-#
-#                        #tvec = np.linspace(0,duration,100)
-#                        #G = np.array(map(lambda t: g(t,A,B,C,D,E,F), tvec)).T
-#                        #dG = np.array(map(lambda t: dg(t,A,B,C,D,E,F), tvec)).T
-#                        #ddG = np.array(map(lambda t: ddg(t,A,B,C,D,E,F), tvec)).T
-#                        #subplot(3,1,1)
-#                        #print G.shape
-#                        #ms = 10
-#                        #plot(0,W[0,i],'ok',markersize=ms)
-#                        #plot(duration,W[0,i+1],'ok',markersize=ms)
-#                        #plot(tvec,G[0,:],'-r',linewidth=2)
-#                        #subplot(3,1,2)
-#                        #plot(0,dW[0,i],'ok',markersize=ms)
-#                        #plot(duration,dW[0,i+1],'ok',markersize=ms)
-#                        #plot(tvec,dG[0,:],'-r',linewidth=2)
-#                        #subplot(3,1,3)
-#                        #plot(0,ddW[0,i],'ok',markersize=ms)
-#                        #plot(duration,ddW[0,i+1],'ok',markersize=ms)
-#                        #plot(tvec,ddG[0,:],'-r',linewidth=2)
-#                        #plt.show()
-#                        #sys.exit(0)
-#
-#                        for j in range(Ndim):
-#                                trajectorystring += "\n"
-#                                trajectorystring += string.join([str(A[j]),str(B[j]),str(C[j]),str(D[j]),str(E[j]),str(F[j])])
-#
-#                return [trajectorystring, durationVector]
-#
