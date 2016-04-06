@@ -87,8 +87,9 @@ class Deformation():
                 #print self.traj_display.info()
                 #print self.traj_current.info()
 
+                sys.stdout.write("## DRAWING LINEAR HOMOTOPY DEFORMATION ...")
+
                 for i in range(0,self.DEFORMATION_STEPS):
-                        print "DEFORM",i,"/",self.DEFORMATION_STEPS
                         k = float(i)/float(self.DEFORMATION_STEPS)
                         Wk = (1-k)*W0 + k*W1
                         if self.traj_current.IsInCollision(self.env, Wk):
@@ -100,6 +101,7 @@ class Deformation():
                                 #if i == 0:
                                         #raw_input('Press <ENTER> to draw deformation.')
                                 #time.sleep(0.001)
+                sys.stdout.write("DONE\n")
 
                 self.traj_display = copy.copy(self.traj_current)
 

@@ -108,6 +108,7 @@ class TOPPInterface():
                 color_a1_coordinate = (1.0,0.0,0.0)
                 color_a2_coordinate = (1.0,0.5,0.0)
                 color_a3_coordinate = (1.0,0.8,0.6)
+                offset_a_coordinate = 0.3
 
                 #################################
                 dt = float(self.DURATION_DISCRETIZATION)/19.0
@@ -128,7 +129,7 @@ class TOPPInterface():
                                 Ri = R[:,:,i]
                                 Fi = F[:,i]
                                 qdd = qddvect[i,:]
-                                a[:,i] = np.dot(Ri.T,qdd.T+Fi)
+                                a[:,i] = np.dot(Ri.T,qdd.T-Fi)
 
                 #################################
                 twvect = np.linspace(0,np.sum(self.durationVector), self.Nwaypoints)
@@ -182,12 +183,12 @@ class TOPPInterface():
                         plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
                         plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")
 
-                        plot(tvect, np.repeat(amin[2],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
-                        plot(tvect, np.repeat(amax[2],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
-                        plot(tvect, np.repeat(amin[1],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a2_coordinate)
-                        plot(tvect, np.repeat(amax[1],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a2_coordinate)
-                        plot(tvect, np.repeat(amin[0],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
-                        plot(tvect, np.repeat(amax[0],tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
+                        plot(tvect, np.repeat(amin[2]-offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
+                        plot(tvect, np.repeat(amax[2]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
+                        plot(tvect, np.repeat(amin[1]-offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a2_coordinate)
+                        plot(tvect, np.repeat(amax[1]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a2_coordinate)
+                        plot(tvect, np.repeat(amin[0]-offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
+                        plot(tvect, np.repeat(amax[0]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
                         xlabel('Time $t$',fontsize=fs)
                         self.PlotPrettifiedAxes(ax4, fs)
                         self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3, ax4)

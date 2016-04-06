@@ -20,7 +20,7 @@ from topp_interface import TOPPInterface
 class Trajectory():
         __metaclass__ = abc.ABCMeta
 
-        DISCRETIZATION_TIME_STEP = 0.005
+        DISCRETIZATION_TIME_STEP = 0.01
 
         rave_traj = []
         traj = []
