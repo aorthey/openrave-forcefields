@@ -11,7 +11,6 @@ class EnvironmentTheCounterStream(ForceEnvironment):
 
         def GetCells(self):
                 C = self.GetCellsAll()
-                ## do not use the first link, because it is a background
                 self.cells = C[0:5]
                 return self.cells
 
@@ -28,7 +27,7 @@ class EnvironmentTheCounterStream(ForceEnvironment):
                 return [-2.0,1.0,0.15,0,0,0,0,0]
 
         def RobotGetGoalPosition(self):
-                return [5.0,-3.0,0.15,0,0,0,0,0]
+                return [5.0,-3.0,0.15,-pi/2,0,0,0,0]
 
 
 

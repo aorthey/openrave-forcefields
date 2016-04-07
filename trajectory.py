@@ -19,8 +19,9 @@ from topp_interface import TOPPInterface
 
 class Trajectory():
         __metaclass__ = abc.ABCMeta
+        DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.01
+        DISCRETIZATION_TIME_STEP = 0.02
 
         rave_traj = []
         traj = []
@@ -35,7 +36,8 @@ class Trajectory():
         ##drawing parameters
         ptsize = 0.03
         critical_pt_size = 0.07
-        linsize = 1.5
+        lw_path = 5
+        lw_tangent = 3
         FONT_SIZE = 20
         dVECTOR_LENGTH = 0.5
         trajectory_tangent_color = np.array((0.9,0.2,0.9,0.9))
@@ -85,10 +87,30 @@ class Trajectory():
                 if W.ndim <= 1:
                         print "cannot create trajectory with only one waypoint"
                         sys.exit(1)
+                W = self.removeDuplicateWaypoints(W)
                 Nwaypoints = W.shape[1]
                 if Nwaypoints <= 3:
                         W = self.addMinimalWaypoints(W)
                         Nwaypoints = W.shape[1]
+                return W
+        def removeDuplicateWaypoints(self, W):
+                ACCURACY_DUPLICATE = 1e-5
+                Nwaypoints = W.shape[1]
+                if Nwaypoints == 1:
+                        print "cannot create trajectory with only one waypoint"
+                        sys.exit(1)
+                if Nwaypoints == 2:
+                        if np.linalg.norm(W[:,0]-W[:,1])<ACCURACY_DUPLICATE:
+                                print "only two identical waypoints. abort"
+                                sys.exit(1)
+                        return W
+
+                assert(Nwaypoints>2)
+                if np.linalg.norm(W[:,0]-W[:,1])<ACCURACY_DUPLICATE:
+                        W = np.delete(W,0,axis=1)
+                if np.linalg.norm(W[:,-2]-W[:,-1])<ACCURACY_DUPLICATE:
+                        W = np.delete(W,-1,axis=1)
+
                 return W
 
         def addMinimalWaypoints(self, W):
@@ -280,13 +302,13 @@ class Trajectory():
                         Nc = oldNc
 
                 ### AVP on the subtrajectory between 0 and Nc
-                if Nc > 0:
-                        [bspline, trajstr, durationVector] = self.computeTrajectorySubstringForTOPP(W, Nc)
-                        [semin, semax] = self.topp.getSpeedIntervalAtCriticalPoint(Nc, durationVector, trajstr)
-                else:
-                        semin = 0.0
-                        semax = 0.0
-                print "MAX SPEED AT CRITICAL PT",Nc,"/",Nwaypoints," is:",semin,semax
+                #if Nc > 0:
+                #        [bspline, trajstr, durationVector] = self.computeTrajectorySubstringForTOPP(W, Nc)
+                #        [semin, semax] = self.topp.getSpeedIntervalAtCriticalPoint(Nc, durationVector, trajstr)
+                #else:
+                #        semin = 0.0
+                #        semax = 0.0
+                #print "MAX SPEED AT CRITICAL PT",Nc,"/",Nwaypoints," is:",semin,semax
 
                 return Nc
 
@@ -408,38 +430,62 @@ class Trajectory():
                 Ndims = W.shape[0]
                 Nwaypoints = W.shape[1]
                 tmp_handle = []
-                with env.env:
-                        for i in range(0,Nwaypoints):
-                                pt = np.array(((W[0,i],W[1,i],W[2,i])))
-                                tmp_handle.append(env.env.plot3(points=pt,
-                                                   pointsize=self.ptsize,
-                                                   colors=self.trajectory_color,
-                                                   drawstyle=1))
-                                dpt = np.array(((dW[0,i],dW[1,i],dW[2,i])))
-                                ddpt = np.array(((ddW[0,i],ddW[1,i],ddW[2,i])))
-                                dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
-                                #ddpt = self.dVECTOR_LENGTH*ddpt/np.linalg.norm(ddpt)
+                if Nwaypoints > 0:
+                        with env.env:
+                                #for i in range(0,Nwaypoints):
+                                #        pt = np.array(((W[0,i],W[1,i],W[2,i])))
+                                #        dpt = np.array(((dW[0,i],dW[1,i],dW[2,i])))
+                                #        dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
+                                #        P = np.array(((pt[0],pt[1],pt[2]),
+                                #                (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
+                                #        tmp_handle.append(h)
+                                #        #P = np.array(((pt[0],pt[1],pt[2]),
+                                #        #        (pt[0]+ddpt[0],pt[1]+ddpt[1],pt[2]+ddpt[2])))
+                                #        #h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=np.array(((0.9,0.9,0.9,0.9))))
+                                #        #tmp_handle.append(h)
 
-                                P = np.array(((pt[0],pt[1],pt[2]),
-                                        (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
-                                h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=self.trajectory_tangent_color)
+                                #for i in range(0,Nwaypoints):
+                                #        zoffset=0.05
+                                #        pt = np.array(((W[0,i],W[1,i],W[2,i]-zoffset)))
+                                #        dpt = np.array(((dW[0,i],dW[1,i],dW[2,i]-zoffset)))
+                                #        dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
+                                #        P = np.array(((pt[0],pt[1],pt[2]), (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
+                                #        h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=self.trajectory_tangent_color)
+                                #        tmp_handle.append(h)
+
+                                Wext = np.zeros((3, 2*Nwaypoints))
+
+                                zoffset=0.01
+                                for i in range(0,Nwaypoints):
+                                        pt = np.array(((W[0,i],W[1,i],W[2,i]-zoffset)))
+                                        dpt = np.array(((dW[0,i],dW[1,i],dW[2,i]-zoffset)))
+                                        dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
+                                        Wext[:,2*i] = pt
+                                        Wext[:,2*i+1] = np.array( (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2]) )
+
+                                #Wext = np.array(zip(W[0:3,:],Wdir)).flatten().reshape(Ndim,2*Nwaypoints)
+                                h=env.env.drawlinestrip(points=Wext.T,linewidth=self.lw_tangent,colors=self.trajectory_tangent_color)
                                 tmp_handle.append(h)
-                                #P = np.array(((pt[0],pt[1],pt[2]),
-                                #        (pt[0]+ddpt[0],pt[1]+ddpt[1],pt[2]+ddpt[2])))
-                                #h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=np.array(((0.9,0.9,0.9,0.9))))
-                                #tmp_handle.append(h)
+
+                                h=env.env.drawlinestrip(points=W[0:3,:].T,linewidth=self.lw_path,colors=self.trajectory_color)
+                                tmp_handle.append(h)
 
                 return tmp_handle
 
         def draw(self, env, keep_handle=True):
                 [W,dW,ddW] = self.get_waypoints_second_order()
+                t1 = time.time()
                 N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
+                t2 = time.time()
                 tmp_handle = []
 
                 self.trajectory_color = self.trajectory_color_feasible
                 tmp_handle.append(self.get_handle_draw_waypoints(env, W[:,0:N], dW[:,0:N], ddW[:,0:N]))
                 self.trajectory_color = self.trajectory_color_infeasible
                 tmp_handle.append(self.get_handle_draw_waypoints(env, W[:,N:], dW[:,N:], ddW[:,N:]))
+                t3 = time.time()
+                if self.DEBUG:
+                        print "draw loop: ",t3-t1," topp:",t2-t1," draw:",t3-t2
 
                 if keep_handle:
                         self.handle = tmp_handle

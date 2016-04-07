@@ -67,7 +67,8 @@ def compute_lambda_updates(q,dq,ddq,F,amax,dt):
         return [epsilon*cos(thetaBest),epsilon*sin(thetaBest)]
 
 
-def avalue(Ncritical, i, c=20.0):
+k = 0.5
+def avalue(Ncritical, i, c=k*20.0):
         return np.exp(-((Ncritical-i)*(Ncritical-i))/(2*c*c))
 
 def A1matrix(traj, Ncritical, W):
@@ -106,7 +107,7 @@ def A3matrix(traj, Ncritical, W):
         while i > 0:
                 #if abs(i-Ncritical)<M and i<Nwaypoints:
                 if i>Ncritical:
-                        A3[i] = avalue(Ncritical, i, 10.0)
+                        A3[i] = avalue(Ncritical, i, k*10.0)
                 else:
                         A3[i] = 1.0
                 i -= 1
@@ -118,7 +119,7 @@ def A4matrix(traj, W):
         #M = 100
         i = Nwaypoints-1
         while i > 0:
-                A4[i] = avalue(Nwaypoints-1, i, 20.0)
+                A4[i] = avalue(Nwaypoints-1, i, k*20.0)
                 i -= 1
         return A4
 
@@ -129,7 +130,7 @@ def A5matrix(traj, W):
         #M = 100
         i = Nwaypoints-1
         while i > 0:
-                A5[i] = avalue(0, i, 20.0)
+                A5[i] = avalue(0, i, k*30.0)
                 i -= 1
         return A5
 

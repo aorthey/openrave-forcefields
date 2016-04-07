@@ -44,16 +44,17 @@ if __name__ == "__main__":
         traj = Trajectory.from_ravetraj(rave_path)
         traj.info()
         traj.draw(env)
-        traj.PlotParametrization(env)
+        #traj.PlotParametrization(env)
+        traj.draw_delete()
         td = DeformationStretchPull(traj, env)
 
-        Nd = 25
-        #raw_input('Press <ENTER> to start.')
+        Nd = 50
+        raw_input('Press <ENTER> to start.')
+
+
         for i in range(Nd):
                 print "DEFORMATION:",i,"/",Nd
                 if td.deform(N_iter=1):
-                        if i==0:
-                                traj.draw_delete()
                         td.draw_deformation() 
                 else:
                         td.draw_deformation() 

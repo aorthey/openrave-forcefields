@@ -92,6 +92,9 @@ class TOPPInterface():
                 if return_code != 1:
                         print "TOPP Error:", return_code
                         print "waypoint: ",N,"/",self.Nwaypoints
+                        self.critical_point = x.GetCriticalPoint()
+                        self.critical_point_value = x.GetCriticalPointValue()
+                        print "CRITICAL POINT:",self.critical_point,self.critical_point_value
                         sys.exit(1)
 
                 semin = x.sdendmin
@@ -239,7 +242,7 @@ class TOPPInterface():
                         if ret == 4:
                                 self.critical_point = x.GetCriticalPoint()
                                 self.critical_point_value = x.GetCriticalPointValue()
-                                print "TOPP critical pt:",self.critical_point,self.critical_point_value
+                                #print "TOPP critical pt:",self.critical_point,self.critical_point_value
                                 return self.critical_point
                         if ret == 1: ##TOPP_OK
                                 #print "TOPP: success"

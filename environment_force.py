@@ -1,6 +1,7 @@
 import abc
 from openravepy import *
 from numpy import array,pi
+from math import cos,sin
 import numpy as np
 
 class ForceEnvironment():
@@ -100,7 +101,7 @@ class ForceEnvironment():
                         [xg,yg,zg,tg,dxg,dyg,dzg,dtg]=self.RobotGetGoalPosition()
                         #self.robot.SetDOFLimits((-10,10),(-5,5),(-1,1))
                         #self.robot.SetDOFLimits((-10,-8,-0.15,-4*pi),(10,8,0.15,4*pi))
-                        self.robot.SetDOFLimits((-10,-10,-0.15,-2*pi),(10,10,0.15,2*pi))
+                        self.robot.SetDOFLimits((-10,-10,-0.2,-2*pi),(10,10,0.2,2*pi))
                         self.robot.SetDOFValues((xi,yi,zi,ti))
                         self.robot.SetDOFVelocities((dxi,dyi,dzi,dti))
                         self.robot.SetDOFVelocityLimits([10.0,10.0,0.0,5.0])
@@ -116,6 +117,14 @@ class ForceEnvironment():
                                            pointsize=0.15,
                                            colors=array(((0.0,1.0,0.0,0.8))),
                                            drawstyle=1))
+
+                        d = 0.3
+                        self.handles.append(self.env.drawlinestrip(points=np.array(((xi,yi,zi),(xi+d*cos(ti),yi+d*sin(ti),zi))),
+                                           linewidth=5,
+                                           colors=np.array(((0.0,0.0,0.0,0.8)))))
+                        self.handles.append(self.env.drawlinestrip(points=np.array(((xg,yg,zg),(xg+d*cos(tg),yg+d*sin(tg),zg))),
+                                           linewidth=5,
+                                           colors=np.array(((0.0,0.0,0.0,0.8)))))
                         return self.robot
 
         def DrawBorderAroundCell(self, cell):

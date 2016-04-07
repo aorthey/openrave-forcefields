@@ -6,6 +6,7 @@ from trajectory import *
 import copy
 
 class Deformation():
+        DEBUG = 0
         __metaclass__ = abc.ABCMeta
 
         ## number of steps of a linear homotopy deformation between two given
@@ -87,8 +88,10 @@ class Deformation():
                 #print self.traj_display.info()
                 #print self.traj_current.info()
 
-                sys.stdout.write("## DRAWING LINEAR HOMOTOPY DEFORMATION ...")
+                t1 = time.time()
+                sys.stdout.write("## DRAWING LINEAR HOMOTOPY DEFORMATION ...\n")
 
+                tdraw = 0.0
                 for i in range(0,self.DEFORMATION_STEPS):
                         k = float(i)/float(self.DEFORMATION_STEPS)
                         Wk = (1-k)*W0 + k*W1
@@ -97,11 +100,17 @@ class Deformation():
                         else:
                                 self.traj_current.new_from_waypoints(Wk)
                                 #self.handle = self.traj_current.draw_nocritical(self.env, keep_handle=False)
+                                ti1 = time.time()
                                 self.handle = self.traj_current.draw(self.env, keep_handle=False)
+                                ti2 = time.time()
                                 #if i == 0:
                                         #raw_input('Press <ENTER> to draw deformation.')
                                 #time.sleep(0.001)
+                        tdraw += ti2-ti1
                 sys.stdout.write("DONE\n")
+                t2 = time.time()
+                if self.DEBUG:
+                        print "DEFORMATION TIME(s): ",t2-t1," (drawing:",tdraw,")"
 
                 self.traj_display = copy.copy(self.traj_current)
 
