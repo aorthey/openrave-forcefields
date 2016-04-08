@@ -48,17 +48,18 @@ if __name__ == "__main__":
         traj.draw_delete()
         td = DeformationStretchPull(traj, env)
 
-        Nd = 50
+        Nd = 5
         raw_input('Press <ENTER> to start.')
 
 
-        for i in range(Nd):
-                print "DEFORMATION:",i,"/",Nd
-                if td.deform(N_iter=1):
-                        td.draw_deformation() 
-                else:
-                        td.draw_deformation() 
-                        break
+        td.deform(N_iter=100)
+        #for i in range(Nd):
+        #        print "DEFORMATION:",i,"/",Nd
+        #        if td.deform(N_iter=10):
+        #                td.draw_deformation() 
+        #        else:
+        #                td.draw_deformation() 
+        #                break
 
         xt = td.traj_current.topp.traj0
         env.MakeRobotVisible()

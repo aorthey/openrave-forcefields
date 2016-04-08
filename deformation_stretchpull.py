@@ -151,18 +151,21 @@ class DeformationStretchPull(Deformation):
 
         ## change only traj_deformed here
         cur_Nc = 0
-        def deform_onestep(self):
+        def deform_onestep(self, computeNewCriticalPoint = True):
                 #dt = 0.01
                 traj = self.traj_deformed
                 L = traj.get_length()
-
                 [Wori,dWori,ddWori] = traj.get_waypoints_second_order()
                 [Ndim, Nwaypoints] = traj.getWaypointDim(Wori)
                 F = traj.get_forces_at_waypoints(Wori, self.env)
                 [R,amin,amax] = traj.getControlMatrix(Wori)
 
                 ### FORWARD PASS UNTIL CRITICAL POINT IS HIT
-                Nc = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.cur_Nc)
+                if computeNewCriticalPoint:
+                        Nc = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.cur_Nc)
+                else:
+                        Nc = self.cur_Nc
+
                 print "###########################################"
                 print "CRITICAL WAYPOINT: ",Nc,"/",Nwaypoints," oldNc=",self.cur_Nc
                 print "###########################################"
@@ -172,14 +175,21 @@ class DeformationStretchPull(Deformation):
                         print "No deformation necessary => Trajectory dynamically feasible"
                         print traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.cur_Nc)
                         traj.PlotParametrization(self.env)
-                        return False
+                        return DEFORM_NONE
 
+
+                traj = self.traj_deformed
+                L = traj.get_length()
+                [Wori,dWori,ddWori] = traj.get_waypoints_second_order()
+                [Ndim, Nwaypoints] = traj.getWaypointDim(Wori)
+                F = traj.get_forces_at_waypoints(Wori, self.env)
+                [R,amin,amax] = traj.getControlMatrix(Wori)
                 ###############################################################
                 ## for all points where dF = 0, we can say that lambda_1 = lambda_2 = 0
                 ###############################################################
 
-                dt = 0.01
-                [lambda_1, lambda_2] = compute_lambda_updates(Wori[:,Nc], dWori[:,Nc], ddWori[:,Nc], F[:,Nc], amax, dt)
+                #dt = 0.01
+                #[lambda_1, lambda_2] = compute_lambda_updates(Wori[:,Nc], dWori[:,Nc], ddWori[:,Nc], F[:,Nc], amax, dt)
 
                 ###############################################################
                 ## update trajectory into lambda directions
@@ -194,9 +204,20 @@ class DeformationStretchPull(Deformation):
                 A2 = A2matrix(traj,Nc,Wori)
 
                 dU = np.zeros((Ndim,Nwaypoints))
-                lambda_1 = 0.005
-                lambda_2 = 0.00
+                #lambda_1 = 0.005
+
+                ###############################################################
+                ### LAMBDA1: (smooth) change in position at critical point
+                ### LAMBDA2: (smooth) change in velocity before critical point
+                ###          => increase length of subpath before Nc
+                ### LAMBDA3: (smooth) flow following (be complient)
+                ###############################################################
+                lambda_1 = 0.01
+                lambda_2 = 0.000
                 lambda_3 = 0.00005
+                #lambda_1 = 0.001
+                #lambda_2 = 0.000
+                #lambda_3 = 0.00005
                 eta = 1.0
                 print "## LAMBDAS: ",lambda_1,lambda_2,lambda_3
 
@@ -253,10 +274,14 @@ class DeformationStretchPull(Deformation):
 
                 Wnext = Wori + eta*dU
 
+                if np.linalg.norm(Wori-Wnext)<1e-5:
+                        print "no deformation achieved with current critical point"
+                        return DEFORM_NOPROGRESS
+
                 if self.traj_deformed.IsInCollision(self.env, Wnext):
                         print "no deformation possible -> collision"
-                        return False
+                        return DEFORM_COLLISION
                 else:
                         self.traj_deformed.new_from_waypoints(Wnext)
+                        return DEFORM_OK
 
-                return True

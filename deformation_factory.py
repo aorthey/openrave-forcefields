@@ -5,6 +5,11 @@ import numpy as np
 from trajectory import *
 import copy
 
+DEFORM_NONE = 0
+DEFORM_OK = 1
+DEFORM_COLLISION = 2
+DEFORM_NOPROGRESS = 3
+
 class Deformation():
         DEBUG = 0
         __metaclass__ = abc.ABCMeta
@@ -39,13 +44,26 @@ class Deformation():
         def deform_onestep(self):
                 pass
 
+
         def deform(self, N_iter = 1):
+                computeNewCriticalPoint = True
                 for i in range(0,N_iter):
-                        if self.deform_onestep():
-                                self.traj_current = copy.copy(self.traj_deformed)
-                        else:
-                                self.traj_current = copy.copy(self.traj_deformed)
+                        res = self.deform_onestep(computeNewCriticalPoint)
+                        self.traj_current = copy.copy(self.traj_deformed)
+                        self.draw_deformation() 
+                        if res == DEFORM_NONE:
+                                print "DEFORM_NONE"
                                 return False
+                        elif res== DEFORM_OK:
+                                print "DEFORM_OK"
+                                computeNewCriticalPoint=True
+                        elif res== DEFORM_COLLISION:
+                                print "DEFORM_COLLISION"
+                                computeNewCriticalPoint=True
+                        elif res== DEFORM_NOPROGRESS:
+                                print "DEFORM_NOPROGRESS"
+                                computeNewCriticalPoint=True
+
                 return True
 
         def GetForcesAtWaypoints(self, W):
