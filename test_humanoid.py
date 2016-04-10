@@ -25,8 +25,8 @@ if __name__ == "__main__":
 
         #planner = MotionPlannerGeometrical(robot, env)
         #planner = MotionPlannerKinodynamic(robot, env)
-
         #rave_path = planner.GetPath()
+
         tname = 'misc/trajectory.xml'
 
         fhandle = open(tname, 'r')

@@ -1,4 +1,5 @@
 import abc
+import sys
 from openravepy import *
 from numpy import array,pi
 from math import cos,sin
@@ -11,6 +12,11 @@ class ForceEnvironment():
         ViewerName = 'qtcoin'
         PhysicsEngineName = 'ode'
         CollisionCheckerName = 'ode'
+        FORCE_FIELD_MIN_SPACING = 0.3
+        FORCE_FIELD_MAX_SPACING = 0.4
+        FORCE_FIELD_PT_SIZE = 4
+        FORCE_FIELD_ARROW_SIZE = 2
+        FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))
         #######################################################################
         env_xml=''
         robot_xml=''
@@ -175,6 +181,82 @@ class ForceEnvironment():
                 return F
 
         def DrawForceArrowsInCell(self, cell, force):
+                G1 = cell.GetGeometries()[0]
+                B = G1.GetBoxExtents()
+                T = G1.GetTransform()
+
+                ## force in box
+                Fx = force[0]
+                Fy = force[1]
+                ## middle point of box
+                mean_x = T[0,3]
+                mean_y = T[1,3]
+                ## extend of box
+                ext_x = B[0]
+                ext_y = B[1]
+
+                if np.sqrt(Fx*Fx+Fy*Fy) < 0.001:
+                        ## no force to display
+                        return None
+
+
+                #maxlx = 0.4*self.FORCE_FIELD_SPACING
+                #maxly = 0.4*self.FORCE_FIELD_SPACING
+                #minlx = -maxlx
+                #minly = -maxly
+                lx = np.sign(Fx)*min((abs(Fx)/10.0),10.0)*self.FORCE_FIELD_MAX_SPACING
+                ly = np.sign(Fy)*min((abs(Fy)/10.0),10.0)*self.FORCE_FIELD_MAX_SPACING
+
+                #if lx > maxlx:
+                #        lx = maxlx
+                #if lx < minlx:
+                #        lx = minlx
+                #if ly > maxly:
+                #        ly = maxly
+                #if ly < minly:
+                #        ly = minly
+
+                #if (lx == 0):
+                #        lx=lx+0.001
+                #if (ly == 0):
+                #        ly=ly+0.001
+                ########################################################
+                ## compute arrows inside of box (assume rectangular cover)
+                ########################################################
+                dxspacing = min(max(self.FORCE_FIELD_MIN_SPACING,abs(lx)),self.FORCE_FIELD_MAX_SPACING)
+                dyspacing = min(max(self.FORCE_FIELD_MIN_SPACING,abs(ly)),self.FORCE_FIELD_MAX_SPACING)
+                print dxspacing,dyspacing
+                print lx,ly
+                Nx = int(np.floor(2*ext_x/dxspacing))
+                Ny = int(np.floor(2*ext_y/dyspacing))
+                print Nx,Ny
+                #N = int(np.ceil(B[0]))+1
+                #M = int(np.ceil(B[1]))+1
+
+                xstart = (mean_x - ext_x) + 0.5*dxspacing
+                ystart = (mean_y - ext_y) + 0.5*dyspacing
+
+                l = np.sqrt(lx*lx+ly*ly)
+
+                handles=[]
+                lx = 0.8*lx
+                ly = 0.8*ly
+                for i in range(0,Nx):
+                    for j in range(0,Ny):
+                        x = xstart+i*dxspacing
+                        y = ystart+j*dyspacing
+                        A = self.env.plot3(points=np.array(((x,y,self.ZPOS_ARROW))),
+                                        pointsize=self.FORCE_FIELD_PT_SIZE,
+                                        colors=self.FORCE_FIELD_COLOR)
+                        handles.append(A)
+                        A = self.env.drawlinestrip(points=np.array(((x,y,self.ZPOS_ARROW),(x+lx,y+ly,self.ZPOS_ARROW))),
+                                        linewidth = self.FORCE_FIELD_ARROW_SIZE,
+                                        colors=self.FORCE_FIELD_COLOR)
+                        handles.append(A)
+                return handles
+
+
+        def DrawForceArrowsInCell2(self, cell, force):
                 G1 = cell.GetGeometries()[0]
                 B = G1.GetBoxExtents()
                 T = G1.GetTransform()

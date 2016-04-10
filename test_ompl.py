@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import time
 import scipy
 import sys
@@ -35,6 +36,7 @@ if __name__ == "__main__":
         env.DisplayForces()
         time.sleep(0.5)
 
+        sys.exit(0)
         planner = MotionPlannerGeometrical(robot, env)
         #planner = MotionPlannerKinodynamic(robot, env)
 
