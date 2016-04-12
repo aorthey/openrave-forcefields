@@ -18,7 +18,7 @@ class EnvironmentTheRay(ForceEnvironment):
                 ##
 
                 self.forces = np.array((0.0,0.0,0.0))
-                self.forces = np.vstack([self.forces,(7.0,-5.7,0.0)])
+                self.forces = np.vstack([self.forces,(0.3,-5.7,0.0)])
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
 
                 return self.forces

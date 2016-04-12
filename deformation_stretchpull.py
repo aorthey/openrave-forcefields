@@ -151,6 +151,7 @@ class DeformationStretchPull(Deformation):
 
         ## change only traj_deformed here
         cur_Nc = 0
+        Nc_handle = []
         def deform_onestep(self, computeNewCriticalPoint = True):
                 #dt = 0.01
                 traj = self.traj_deformed
@@ -168,15 +169,16 @@ class DeformationStretchPull(Deformation):
 
                 print "###########################################"
                 print "CRITICAL WAYPOINT: ",Nc,"/",Nwaypoints," oldNc=",self.cur_Nc
-                print "###########################################"
                 self.cur_Nc = Nc
+                self.Nc_handle=self.env.env.plot3(Wori[0:3,Nc]+np.array((0,0,0.1)),pointsize=0.07,colors=np.array((1.0,1.0,0)),drawstyle=1)
+
 
                 if Nc >= Nwaypoints:
                         print "No deformation necessary => Trajectory dynamically feasible"
                         print traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.cur_Nc)
+                        print "###########################################"
                         traj.PlotParametrization(self.env)
                         return DEFORM_NONE
-
 
                 traj = self.traj_deformed
                 L = traj.get_length()
@@ -184,11 +186,13 @@ class DeformationStretchPull(Deformation):
                 [Ndim, Nwaypoints] = traj.getWaypointDim(Wori)
                 F = traj.get_forces_at_waypoints(Wori, self.env)
                 [R,amin,amax] = traj.getControlMatrix(Wori)
+
+                print "POS   :",Wori[0:2,Nc]
+                print "FORCE :",F[0:2,Nc]
+                print "###########################################"
                 ###############################################################
                 ## for all points where dF = 0, we can say that lambda_1 = lambda_2 = 0
                 ###############################################################
-
-                #dt = 0.01
                 #[lambda_1, lambda_2] = compute_lambda_updates(Wori[:,Nc], dWori[:,Nc], ddWori[:,Nc], F[:,Nc], amax, dt)
 
                 ###############################################################
@@ -197,12 +201,12 @@ class DeformationStretchPull(Deformation):
                 q = Wori[:,Nc]
                 trajNormal = np.array((-q[1],q[0],0.0,0.0))
                 trajNormal = trajNormal/np.linalg.norm(trajNormal)
-                FN_critical = np.dot(F[:,Nc].flatten().T, trajNormal)
+                self.FN_critical = np.dot(F[:,Nc].flatten().T, trajNormal)*trajNormal
+                #self.FN_critical = F[:,Nc].flatten()
 
-                FN = self.getForceNormalComponent(F, Wori)
+                #FN = self.getForceNormalComponent(F, Wori)
                 A1 = A1matrix(traj,Nc,Wori)
                 A2 = A2matrix(traj,Nc,Wori)
-
                 dU = np.zeros((Ndim,Nwaypoints))
                 #lambda_1 = 0.005
 
@@ -210,11 +214,11 @@ class DeformationStretchPull(Deformation):
                 ### LAMBDA1: (smooth) change in position at critical point
                 ### LAMBDA2: (smooth) change in velocity before critical point
                 ###          => increase length of subpath before Nc
-                ### LAMBDA3: (smooth) flow following (be complient)
+                ### LAMBDA3: (smooth) flow following (compliance)
                 ###############################################################
-                lambda_1 = 0.01
-                lambda_2 = 0.000
-                lambda_3 = 0.00005
+                lambda_1 = 0.001
+                lambda_2 = 0.005
+                lambda_3 = 0.00
                 #lambda_1 = 0.001
                 #lambda_2 = 0.000
                 #lambda_3 = 0.00005
@@ -226,7 +230,7 @@ class DeformationStretchPull(Deformation):
                 #################################################################
                 dUtmp = np.zeros((Ndim,Nwaypoints))
                 for i in range(0,Nwaypoints):
-                        dUtmp[:,i] = A1[i]*(-lambda_1 * FN_critical * trajNormal)
+                        dUtmp[:,i] = A1[i]*(-lambda_1 * self.FN_critical)
 
                 Wnext = Wori + eta*dUtmp
                 if not self.traj_deformed.IsInCollision(self.env, Wnext):

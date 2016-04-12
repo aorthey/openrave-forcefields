@@ -8,15 +8,16 @@ import numpy as np
 class ForceEnvironment():
         __metaclass__ = abc.ABCMeta
         #######################################################################
-        ZPOS_ARROW = 0.05
+        ZPOS_ARROW = 0.1
         ViewerName = 'qtcoin'
         PhysicsEngineName = 'ode'
         CollisionCheckerName = 'ode'
         FORCE_FIELD_MIN_SPACING = 0.3
         FORCE_FIELD_MAX_SPACING = 0.4
         FORCE_FIELD_PT_SIZE = 4
-        FORCE_FIELD_ARROW_SIZE = 2
-        FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))
+        FORCE_FIELD_ARROW_SIZE = 0.02
+        #FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))
+        FORCE_FIELD_COLOR = np.array((0.4,0.1,0.0,0.7))
         #######################################################################
         env_xml=''
         robot_xml=''
@@ -55,7 +56,6 @@ class ForceEnvironment():
                         self.env.SetForces( self.GetForces() )
                         #self.recorder = RaveCreateModule(self.env,'viewerrecorder')
                         #self.env.AddModule(self.recorder,'')
-
 
         def setrobotenv(self,robot_xml,env_xml):
                 with self.env:
@@ -115,12 +115,12 @@ class ForceEnvironment():
 
 
                         self.handles.append(self.env.plot3(points=array(((xg,yg,zg))),
-                                           pointsize=0.15,
+                                           pointsize=0.08,
                                            colors=array(((1.0,0.0,0.0,0.8))),
                                            drawstyle=1))
 
                         self.handles.append(self.env.plot3(points=array(((xi,yi,zg))),
-                                           pointsize=0.15,
+                                           pointsize=0.08,
                                            colors=array(((0.0,1.0,0.0,0.8))),
                                            drawstyle=1))
 
@@ -188,71 +188,64 @@ class ForceEnvironment():
                 ## force in box
                 Fx = force[0]
                 Fy = force[1]
+                Fz = force[2]
+
                 ## middle point of box
                 mean_x = T[0,3]
                 mean_y = T[1,3]
+                mean_z = T[2,3]
                 ## extend of box
                 ext_x = B[0]
                 ext_y = B[1]
+                ext_z = B[2]
 
-                if np.sqrt(Fx*Fx+Fy*Fy) < 0.001:
+                if np.sqrt(Fx*Fx+Fy*Fy+Fz*Fz) < 0.001:
                         ## no force to display
                         return None
 
-
-                #maxlx = 0.4*self.FORCE_FIELD_SPACING
-                #maxly = 0.4*self.FORCE_FIELD_SPACING
-                #minlx = -maxlx
-                #minly = -maxly
                 lx = np.sign(Fx)*min((abs(Fx)/10.0),10.0)*self.FORCE_FIELD_MAX_SPACING
                 ly = np.sign(Fy)*min((abs(Fy)/10.0),10.0)*self.FORCE_FIELD_MAX_SPACING
+                lz = np.sign(Fz)*min((abs(Fz)/10.0),10.0)*self.FORCE_FIELD_MAX_SPACING
 
-                #if lx > maxlx:
-                #        lx = maxlx
-                #if lx < minlx:
-                #        lx = minlx
-                #if ly > maxly:
-                #        ly = maxly
-                #if ly < minly:
-                #        ly = minly
-
-                #if (lx == 0):
-                #        lx=lx+0.001
-                #if (ly == 0):
-                #        ly=ly+0.001
                 ########################################################
                 ## compute arrows inside of box (assume rectangular cover)
                 ########################################################
                 dxspacing = min(max(self.FORCE_FIELD_MIN_SPACING,abs(lx)),self.FORCE_FIELD_MAX_SPACING)
                 dyspacing = min(max(self.FORCE_FIELD_MIN_SPACING,abs(ly)),self.FORCE_FIELD_MAX_SPACING)
-                print dxspacing,dyspacing
-                print lx,ly
+                dzspacing = min(max(self.FORCE_FIELD_MIN_SPACING,abs(lz)),self.FORCE_FIELD_MAX_SPACING)
+
                 Nx = int(np.floor(2*ext_x/dxspacing))
                 Ny = int(np.floor(2*ext_y/dyspacing))
-                print Nx,Ny
-                #N = int(np.ceil(B[0]))+1
-                #M = int(np.ceil(B[1]))+1
+                Nz = int(np.floor(2*ext_z/dzspacing))
+
+                Nx = max(Nx,1)
+                Ny = max(Ny,1)
+                Nz = max(Nz,1)
 
                 xstart = (mean_x - ext_x) + 0.5*dxspacing
                 ystart = (mean_y - ext_y) + 0.5*dyspacing
+                zstart = (mean_z - ext_z) + 0.5*dzspacing + self.ZPOS_ARROW
 
-                l = np.sqrt(lx*lx+ly*ly)
+                l = np.sqrt(lx*lx+ly*ly+lz*lz)
 
                 handles=[]
                 lx = 0.8*lx
                 ly = 0.8*ly
+                lz = 0.8*lz
                 for i in range(0,Nx):
-                    for j in range(0,Ny):
-                        x = xstart+i*dxspacing
-                        y = ystart+j*dyspacing
-                        A = self.env.plot3(points=np.array(((x,y,self.ZPOS_ARROW))),
-                                        pointsize=self.FORCE_FIELD_PT_SIZE,
-                                        colors=self.FORCE_FIELD_COLOR)
-                        handles.append(A)
-                        A = self.env.drawlinestrip(points=np.array(((x,y,self.ZPOS_ARROW),(x+lx,y+ly,self.ZPOS_ARROW))),
-                                        linewidth = self.FORCE_FIELD_ARROW_SIZE,
-                                        colors=self.FORCE_FIELD_COLOR)
-                        handles.append(A)
+                        for j in range(0,Ny):
+                                for k in range(0,Nz):
+                                        x = xstart+i*dxspacing
+                                        y = ystart+j*dyspacing
+                                        z = zstart+k*dzspacing
+
+                                        scale = 0.9
+                                        dx = scale*i*dxspacing
+                                        dy = scale*j*dyspacing
+                                        dz = scale*k*dzspacing
+
+                                        A = self.env.drawarrow(p1=array((x,y,z)),p2=array((x+lx,y+ly,z+lz)),linewidth=self.FORCE_FIELD_ARROW_SIZE,color=self.FORCE_FIELD_COLOR)
+                                        handles.append(A)
                 return handles
 
 

@@ -17,10 +17,16 @@ from motion_planner_geometrical import MotionPlannerGeometrical
 from motion_planner_kinodynamic import MotionPlannerKinodynamic
 #import statsmodels.api as sm
 
+def waitrobot(robot):
+    """busy wait for robot completion"""
+    while not robot.GetController().IsDone():
+        time.sleep(0.01)
+
 if __name__ == "__main__":
 
         env = EnvironmentHumanoid()
-        env.MakeRobotVisible()
+        env.DisplayForces()
+        #env.MakeRobotVisible()
         time.sleep(0.5)
 
         #planner = MotionPlannerGeometrical(robot, env)
@@ -35,24 +41,29 @@ if __name__ == "__main__":
         rave_path = RaveCreateTrajectory(env.env,'').deserialize(trajdata)
 
         robot = env.GetRobot()
+        #env.env.GetPhysicsEngine().SetGravity([0,0,-9.81])
+        #env.env.GetPhysicsEngine().SetGravity([0,0.1,-0.2])
+        rave.planningutils.RetimeActiveDOFTrajectory(rave_path,robot)
+
         robot.GetController().SetPath(rave_path)
+        waitrobot(robot)
 
-        N = rave_path.GetNumWaypoints()
+        #N = rave_path.GetNumWaypoints()
 
-        while not robot.GetController().IsDone():
-                #robot.SetConfigurationValues(rave_path.GetWaypoint(i,robot.GetConfigurationSpecification()))
-                env.env.StepSimulation(0.01)
+        #while not robot.GetController().IsDone():
+        #        #robot.SetConfigurationValues(rave_path.GetWaypoint(i,robot.GetConfigurationSpecification()))
+        #        env.env.StepSimulation(0.01)
 
         #trajectory = MotionPlannerDeformation(path, robot, env)
         #traj = Trajectory.from_ravetraj(rave_path)
         #traj.info()
         #traj.draw(env)
         #traj.PlotParametrization(env)
-        RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug
+        #RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug
 
-        openravepy.RaveLogInfo("Waiting for controller to finish")
-        robot.GetController().SetPath(rave_path)
-        robot.WaitForController(0)
-        #robot.GetController().Reset()
+        #openravepy.RaveLogInfo("Waiting for controller to finish")
+        #robot.GetController().SetPath(rave_path)
+        #robot.WaitForController(0)
+        ##robot.GetController().Reset()
 
-        raw_input('Enter any key to quit. ')
+        #raw_input('Enter any key to quit. ')

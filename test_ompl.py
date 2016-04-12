@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import time
 import scipy
 import sys
@@ -36,7 +35,6 @@ if __name__ == "__main__":
         env.DisplayForces()
         time.sleep(0.5)
 
-        sys.exit(0)
         planner = MotionPlannerGeometrical(robot, env)
         #planner = MotionPlannerKinodynamic(robot, env)
 
@@ -52,7 +50,6 @@ if __name__ == "__main__":
 
         Nd = 5
         raw_input('Press <ENTER> to start.')
-
 
         td.deform(N_iter=100)
         #for i in range(Nd):
@@ -73,4 +70,3 @@ if __name__ == "__main__":
         #robot.WaitForController(0)
         #robot.GetController().Reset()
         raw_input('Enter any key to quit. ')
-
