@@ -42,17 +42,28 @@ if __name__ == "__main__":
 
         robot = env.GetRobot()
         #env.env.GetPhysicsEngine().SetGravity([0,0,-9.81])
-        #env.env.GetPhysicsEngine().SetGravity([0,0.1,-0.2])
+        #env.env.GetPhysicsEngine().SetGravity([0,5.0,0])
         rave.planningutils.RetimeActiveDOFTrajectory(rave_path,robot)
 
-        robot.GetController().SetPath(rave_path)
-        waitrobot(robot)
+        raw_input('Press <ENTER> to start.')
+        #robot.GetController().SetPath(rave_path)
+        #waitrobot(robot)
 
-        #N = rave_path.GetNumWaypoints()
-
-        #while not robot.GetController().IsDone():
-        #        #robot.SetConfigurationValues(rave_path.GetWaypoint(i,robot.GetConfigurationSpecification()))
-        #        env.env.StepSimulation(0.01)
+        N = rave_path.GetNumWaypoints()
+        i = 0
+        while i < N:
+                q = rave_path.GetWaypoint(i,robot.GetConfigurationSpecification())
+                robot.SetConfigurationValues(q)
+                x=robot.GetJoint('x_prismatic_joint').GetValues()
+                y=robot.GetJoint('y_prismatic_joint').GetValues()
+                z=robot.GetJoint('z_prismatic_joint').GetValues()
+                print x,y,z
+                if x > 1.0:
+                        env.env.GetPhysicsEngine().SetGravity([0,0.2,0])
+                #env.env.StepSimulation(0.0001)
+                waitrobot(robot)
+                time.sleep(0.1)
+                i = i+1
 
         #trajectory = MotionPlannerDeformation(path, robot, env)
         #traj = Trajectory.from_ravetraj(rave_path)

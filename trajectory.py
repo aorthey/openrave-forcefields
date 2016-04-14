@@ -27,9 +27,9 @@ class Trajectory():
         traj = []
         waypoints = []
         handle = []
-
         #env_ptr = []
-        SMOOTH_CONSTANT=0
+
+        SMOOTH_CONSTANT=0 ##TODO: do not change to >0 => problems with PPoly
         POLYNOMIAL_DEGREE=3
         MIN_NUMBER_WAYPOINTS = 5
 
@@ -186,10 +186,17 @@ class Trajectory():
                         [B,idx]=np.unique(poly.x,return_index=True)
                         coeff = poly.c[:,idx]
 
-                        P[:,i,0] = coeff[3,:-1]
-                        P[:,i,1] = coeff[2,:-1]
-                        P[:,i,2] = coeff[1,:-1]
-                        P[:,i,3] = coeff[0,:-1]
+                        try:
+                                P[:,i,0] = coeff[3,:-1]
+                                P[:,i,1] = coeff[2,:-1]
+                                P[:,i,2] = coeff[1,:-1]
+                                P[:,i,3] = coeff[0,:-1]
+                        except Exception as e:
+                                print Ninterval
+                                print "TOPP EXCEPTION: ",e
+                                print B
+                                print coeff
+                                sys.exit(0)
 
                         #### TODO: remove z-coordinates for now
                         if i == 2:

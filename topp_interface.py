@@ -12,9 +12,9 @@ from TOPP import TOPPopenravepy
 class TOPPInterface():
         #DURATION_DISCRETIZATION = 0.0001
         #DURATION_DISCRETIZATION = 1
-        DURATION_DISCRETIZATION = 0.01
+        DURATION_DISCRETIZATION = 0.001
 
-        TRAJECTORY_ACCURACY_REQUIRED = 1e-2
+        TRAJECTORY_ACCURACY_REQUIRED = 1e-5
         traj0 = []
         trajstr = []
         durationVector = []
@@ -26,6 +26,7 @@ class TOPPInterface():
         topp_inst = []
         semin = -1
         semax = -1
+        path_length = -1
         F_ = []
         R_ = []
         amin_ = []
@@ -44,7 +45,6 @@ class TOPPInterface():
 
                 self.traj0 = Trajectory.PiecewisePolynomialTrajectory.FromString(self.trajstr)
                 self.length = np.sum(self.durationVector)
-
                 dendpoint = np.linalg.norm(self.traj0.Eval(self.length)-W[:,-1])
 
                 if dendpoint > self.TRAJECTORY_ACCURACY_REQUIRED:
@@ -63,6 +63,7 @@ class TOPPInterface():
 
         def __init__(self, trajectoryclass, durationVector, trajectorystring, F, R, amin, amax, W, dW):
                 self.trajectoryclass_ = trajectoryclass
+                self.path_length = trajectoryclass.get_length()
                 self.F_ = F
                 self.R_ = R
                 self.amin_ = amin
@@ -131,6 +132,10 @@ class TOPPInterface():
                 offset_a_coordinate = 0.3
 
                 #################################
+                        #dt = self.DISCRETIZATION_TIME_STEP
+                        #L = self.get_length()
+                        #N = int(L/dt)
+                        #Npts = int(self.path_length/dt)
                 dt = float(self.DURATION_DISCRETIZATION)
                 Npts = int(self.traj0.duration/dt)
                 tvect = np.linspace(0,self.traj0.duration, Npts)
@@ -315,7 +320,11 @@ class TOPPInterface():
                                         print H2[j],"<= q[",j,"]<=",-H1[j]
                                         sys.exit(1)
 
+                        #for j in range(self.Ndim):
+                                #print H2[j],"<= q[",j,"]<=",-H1[j]
+
                         c[i,:] = np.hstack((H1,H2)).flatten()
+                #sys.exit(0)
 
                 for i in range(0,self.Nwaypoints):
                         a[i,:] = np.dot(G,qs[:,i]).flatten()

@@ -18,9 +18,9 @@ from openravepy import *
 if __name__ == "__main__":
     #env = EnvironmentTheStream()
     #env = EnvironmentTheCounterStream()
-    #env = EnvironmentTheRay()
+    env = EnvironmentTheRay()
     #env = EnvironmentTheHideout()
-    env = EnvironmentTripleStream()
+    #env = EnvironmentTripleStream()
     #env = EnvironmentCrossroadStream()
     robot = env.GetRobot()
 
@@ -35,5 +35,16 @@ if __name__ == "__main__":
 
     recorder = RaveCreateModule(env.env,'viewerrecorder')
     print recorder
+
+    env.env.AddModule(recorder,'')
+    codecs = recorder.SendCommand('GetCodecs') # linux only
+    print codecs
+#-vcodec libx264
+    filename = 'openrave2.mpg'
+    codec = 13
+    recorder.SendCommand('Start 640 480 30 codec %d timing realtime filename %s\nviewer %s'%(codec,filename,env.env.GetViewer().GetName()))
+    time.sleep(5)
+    recorder.SendCommand('Stop') # stop the video
+    env.env.Remove(recorder) # remove the recorder
 
     raw_input('Enter any key to quit. ')

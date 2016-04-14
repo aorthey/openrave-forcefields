@@ -97,7 +97,7 @@ class EnvironmentHumanoid(ForceEnvironment):
         def GetForces(self):
                 ##
                 self.forces = np.array((0.0,0.0,0.0))
-                self.forces = np.vstack([self.forces,(0.0,1.0,0.0)])
+                self.forces = np.vstack([self.forces,(0.0,5.0,0.0)])
                 return self.forces
 
         def RobotGetInitialPosition(self):
@@ -115,6 +115,31 @@ class EnvironmentHumanoid(ForceEnvironment):
                             [0., 0., 0., 1.]
                         ])
                         return self.robot
+
+        def DisplayForces(self):
+                if self.forces is None:
+                        self.forces = self.GetForces()
+                if self.cells is None:
+                        self.cells = self.GetCells()
+
+                #with self.env:
+                assert(len(self.forces)==len(self.cells))
+
+                self.ResetForceHandles()
+                for i in range(0,len(self.cells)):
+                        C = self.cells[i]
+                        G1 = C.GetGeometries()[0]
+                        B = G1.GetBoxExtents()
+                        T = G1.GetTransform()
+                        T[2,3] = 1.0
+                        B[2] = 1.0
+                        ######
+                        h = self.DrawBoxMesh(T,B)
+                        self.AddForceHandles([h])
+                        ######
+                        F = self.forces[i]
+                        h = self.DrawForceArrowsInBox(T, B, F)
+                        self.AddForceHandles(h)
 
 if __name__ == "__main__":
         env = EnvironmentHumanoid()

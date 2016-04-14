@@ -31,10 +31,6 @@ class ForceEnvironment():
         def ResetForceHandles(self):
                 force_handles = []
 
-        def PrintForceHandleInfo(self):
-                print len(self.force_handles)
-                print self.force_handles
-
         def AddForceHandles(self,H):
                 if H is None:
                         return
@@ -139,19 +135,40 @@ class ForceEnvironment():
                         G1 = cell.GetGeometries()[0]
                         B = G1.GetBoxExtents()
                         T = G1.GetTransform()
+                        h = self.DrawBoxMesh(T,B)
+                        handle.append(h)
+                        return handle
 
+        ### transform matrix T \in [3x3]
+        ### box extend vector B \in [3x1]
+        def DrawBoxMesh(self, T, B):
                         ########################################################
                         ## visualize extend of force constraint box
                         ########################################################
-                        P = array(((T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]), \
-                                (T[0,3]+B[0],T[1,3]-B[1],B[2]+T[2,3]), \
-                                (T[0,3]+B[0],T[1,3]+B[1],B[2]+T[2,3]), \
-                                (T[0,3]-B[0],T[1,3]+B[1],B[2]+T[2,3]),\
-                                (T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3])))
+                        P = array(((T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+0.01), \
+                                (T[0,3]+B[0],T[1,3]-B[1],B[2]+T[2,3]+0.01), \
+                                (T[0,3]+B[0],T[1,3]+B[1],B[2]+T[2,3]+0.01), \
+                                (T[0,3]-B[0],T[1,3]+B[1],B[2]+T[2,3]+0.01),\
+                                (T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+0.01),\
+                                ## go up
+                                (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+0.01), \
+                                ## next point
+                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+0.01), \
+                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]+B[2]+0.01), \
+                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+0.01), \
+                                ## next point
+                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+0.01), \
+                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]+B[2]+0.01), \
+                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+0.01), \
+                                ## next point
+                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+0.01),\
+                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]+B[2]+0.01),\
+                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+0.01),\
+                                ## back start
+                                (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+0.01)))
 
-                        h=self.env.drawlinestrip(points=P,linewidth=5.0,colors=array(((1,1,1,0.5))))
-                        handle.append(h)
-                        return handle
+                        h=self.env.drawlinestrip(points=P,linewidth=5.0,colors=array(((0.5,0.5,0.5,0.5))))
+                        return h
 
         def GetZeroForce(self):
                 return np.zeros(self.forces[0].shape)
@@ -184,11 +201,13 @@ class ForceEnvironment():
                 G1 = cell.GetGeometries()[0]
                 B = G1.GetBoxExtents()
                 T = G1.GetTransform()
+                return self.DrawForceArrowsInBox(T,B,force)
 
+        def DrawForceArrowsInBox(self, T, B, F):
                 ## force in box
-                Fx = force[0]
-                Fy = force[1]
-                Fz = force[2]
+                Fx = F[0]
+                Fy = F[1]
+                Fz = F[2]
 
                 ## middle point of box
                 mean_x = T[0,3]
@@ -248,61 +267,8 @@ class ForceEnvironment():
                                         handles.append(A)
                 return handles
 
-
-        def DrawForceArrowsInCell2(self, cell, force):
-                G1 = cell.GetGeometries()[0]
-                B = G1.GetBoxExtents()
-                T = G1.GetTransform()
-                Fx = force[0]
-                Fy = force[1]
-
-                ########################################################
-                ## compute arrows inside of box
-                ########################################################
-                bx = T[0,3]
-                by = T[1,3]
-                N = int(np.ceil(B[0]))+1
-                M = int(np.ceil(B[1]))+1
-                dxspacing = B[0]/N
-                dyspacing = B[1]/M
-
-                if np.sqrt(Fx*Fx+Fy*Fy) < 0.001:
-                        return None
-
-                ### lx,ly == direction vector of line
-                maxlx = dxspacing-dxspacing/4
-                minlx = -maxlx
-                maxly = dyspacing-dyspacing/4
-                minly = -maxly
-                lx = (Fx/10.0)*maxlx
-                ly = (Fy/10.0)*maxly
-
-                if lx > maxlx:
-                        lx = maxlx
-                if lx < minlx:
-                        lx = minlx
-                if ly > maxly:
-                        ly = maxly
-                if ly < minly:
-                        ly = minly
-
-                if (lx == 0) & (ly==0):
-                        lx=lx+0.001
-
-                l = np.sqrt(lx*lx+ly*ly)
-
-                xstart = -B[0]+bx
-                ystart = -B[1]+by
-                handles=[]
-                for i in range(0,2*N-1):
-                    for j in range(0,2*M-1):
-                        x = xstart+i*dxspacing+dxspacing
-                        y = ystart+j*dyspacing+dyspacing
-                        A = self.env.drawarrow(array((x,y,self.ZPOS_ARROW)),array((x+lx,y+ly,self.ZPOS_ARROW)),linewidth=0.08*l,color=array((1,0,0)))
-                        handles.append(A)
-                return handles
-
         recorder = None
+
         def VideoRecordStart(self, fname):
                 with self.env:
                         codecs = self.recorder.SendCommand('GetCodecs') # linux only
