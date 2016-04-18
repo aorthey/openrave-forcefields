@@ -45,21 +45,48 @@ if __name__ == "__main__":
         #env.env.GetPhysicsEngine().SetGravity([0,5.0,0])
         rave.planningutils.RetimeActiveDOFTrajectory(rave_path,robot)
 
-        raw_input('Press <ENTER> to start.')
+        #raw_input('Press <ENTER> to start.')
         #robot.GetController().SetPath(rave_path)
         #waitrobot(robot)
+        #traj = TrajectoryHumanoid.from_ravetraj(rave_path)
 
         N = rave_path.GetNumWaypoints()
         i = 0
+        W = np.zeros((3,N))
         while i < N:
                 q = rave_path.GetWaypoint(i,robot.GetConfigurationSpecification())
                 robot.SetConfigurationValues(q)
-                x=robot.GetJoint('x_prismatic_joint').GetValues()
-                y=robot.GetJoint('y_prismatic_joint').GetValues()
-                z=robot.GetJoint('z_prismatic_joint').GetValues()
-                print x,y,z
-                if x > 1.0:
-                        env.env.GetPhysicsEngine().SetGravity([0,0.2,0])
+                #x=robot.GetJoint('x_prismatic_joint').GetValues()
+                #y=robot.GetJoint('y_prismatic_joint').GetValues()
+                #z=robot.GetJoint('z_prismatic_joint').GetValues()+0.9
+                W[:,i] = robot.GetCenterOfMass()
+                i = i+1
+
+        tmp_handle=[]
+        with env.env:
+                h=env.env.drawlinestrip(points=W.T,linewidth=6,colors=np.array((1,0,0)))
+                tmp_handle.append(h)
+        i=0
+        while i < N:
+                q = rave_path.GetWaypoint(i,robot.GetConfigurationSpecification())
+                robot.SetConfigurationValues(q)
+                #x=robot.GetJoint('x_prismatic_joint').GetValues()
+                #y=robot.GetJoint('y_prismatic_joint').GetValues()
+                #z=robot.GetJoint('z_prismatic_joint').GetValues()
+                F = np.array([0.0,0.0000001,0])
+                for link in robot.GetLinks():
+                        P = link.GetLocalCOM()
+                        Pg = link.GetGlobalCOM()
+                        #print P,Pg,link.GetName(),link.IsEnabled()
+                        print link.GetGlobalInertia()
+                        if Pg[0] > 1.0:
+                                link.SetForce(F,P,True)
+                        #sys.exit(0)
+
+                #print x,y,z
+                #sys.exit(0)
+                #if x > 1.0:
+                        #env.env.GetPhysicsEngine().SetGravity([0,0.2,0])
                 #env.env.StepSimulation(0.0001)
                 waitrobot(robot)
                 time.sleep(0.1)

@@ -141,5 +141,25 @@ class EnvironmentHumanoid(ForceEnvironment):
                         h = self.DrawForceArrowsInBox(T, B, F)
                         self.AddForceHandles(h)
 
+        def AddForcesToRobot(self, robot):
+                for link in robot.GetLinks():
+                        print "######################"
+                        for geom in link.GetGeometries():
+                                print geom
+                                robotIsInCollision = env.env.CheckCollision(link, outercells[i]) 
+
+                        for i in range(0,len(self.cells)):
+                                C = self.cells[i]
+                                G1 = C.GetGeometries()[0]
+                                B = G1.GetBoxExtents()
+                                T = G1.GetTransform()
+                                T[2,3] = 1.0
+                                B[2] = 1.0
+                                ######
+                        env.AddForcesToRobot(robot)
+                        P = link.GetLocalCOM()
+                        link.SetForce(F,P,True)
+
+
 if __name__ == "__main__":
         env = EnvironmentHumanoid()

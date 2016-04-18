@@ -231,7 +231,7 @@ class DeformationStretchPull(Deformation):
                 ### LAMBDA3: (smooth) flow following (compliance)
                 ### LAMBDA4: (smooth) change of angle of attack in regular force field patch
                 ###############################################################
-                lambda_1 = 0.002
+                lambda_1 = 0.001
                 lambda_2 = 0.00
                 lambda_3 = 0.0001
                 lambda_6 = 0.00
