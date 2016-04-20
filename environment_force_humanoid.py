@@ -71,7 +71,6 @@ class EnvironmentHumanoid(ForceEnvironment):
                         self.robot.SetActiveDOFs(whole_body_indices)
                         self.robot.SetTransform(np.array([[1,0,0,0],[0,1,0,0],[0,0,1,robot_z],[0,0,0,1]]))
 
-
                         # surrender posture
                         DOFValues = self.robot.GetDOFValues()
                         DOFValues[6] = math.pi/2
@@ -97,7 +96,7 @@ class EnvironmentHumanoid(ForceEnvironment):
         def GetForces(self):
                 ##
                 self.forces = np.array((0.0,0.0,0.0))
-                self.forces = np.vstack([self.forces,(0.0,5.0,0.0)])
+                self.forces = np.vstack([self.forces,(0.0,2.0,0.0)])
                 return self.forces
 
         def RobotGetInitialPosition(self):
