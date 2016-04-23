@@ -88,6 +88,30 @@ class EnvironmentHumanoid(ForceEnvironment):
                         #sys.exit(0)
 
 
+        def EnforceLimits(self, q, qlimL, qlimU, DEBUG=False):
+                epsilon=1e-1
+                for i in range(0,q.shape[0]):
+                       if DEBUG:
+                                print "DOF",i,":",qlimL[i],"<=",q[i],"<=",qlimU[i]
+                       if ( q[i] <= qlimL[i] + epsilon ):
+                               qq = q[i] - epsilon
+                               q[i] = qlimL[i] + epsilon
+                               #print "q[i]=",qq," (<",qlimL[i],") => q[i]=",q[i]
+                       if ( q[i] >= qlimU[i] - epsilon ):
+                               qq = q[i] + epsilon
+                               q[i] = qlimU[i] - epsilon
+                               #print "q[i]=",qq," (>",qlimU[i],") => q[i]=",q[i]
+                #for i in range(0,q.shape[0]):
+                #        if ( q[i] <= qlimL[i]):
+                #                q[i] = qlimL[i]
+                #        if ( q[i] >= qlimU[i]):
+                #                q[i] = qlimU[i]
+                #                print "DOF",i,":",q[i],">",qlimU[i]
+                #                #print "q[i]=",qq," (>",qlimU[i],") => q[i]=",q[i]
+                return q
+
+
+
         def GetCells(self):
                 C = self.GetCellsAll()
                 self.cells = C[0:2]

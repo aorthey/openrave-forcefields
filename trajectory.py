@@ -348,7 +348,6 @@ class Trajectory():
 
         @classmethod
         def from_ravetraj(cls, ravetraj):
-                rave_traj = ravetraj
                 N = ravetraj.GetNumWaypoints()
                 W=[]
                 for i in range(0,N):
