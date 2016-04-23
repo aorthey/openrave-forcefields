@@ -109,7 +109,6 @@ if __name__ == "__main__":
         #        COM_offset_tmp[2,i] = np.dot(A,COM_offset[2,:])
         #COM_offset = COM_offset_tmp
 
-
         tmp_handle=[]
         with env.env:
                 h=env.env.drawlinestrip(points=COM_original.T,linewidth=6,colors=np.array((1,0,0)))
@@ -120,7 +119,6 @@ if __name__ == "__main__":
                 #tmp_handle.append(h)
 
 
-        #raw_input('Press <ENTER> to start.')
         #if True:
         if not os.path.isfile(q_gik_fname+'.npy'):
                 i = 0
@@ -207,6 +205,7 @@ if __name__ == "__main__":
                 tmp_handle.append(h)
                 h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0.8,0,0.8,0.3)))
                 tmp_handle.append(h)
+                robot.SetActiveDOFValues(q_gik[:,0])
 
 ###############################################################################
 ##### CREATE NEW COM PATH
@@ -225,6 +224,7 @@ if __name__ == "__main__":
         rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=1)#plannername='ParabolicTrajectoryRetimer')
         rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
 
+        raw_input('Press <ENTER> to start.')
         openravepy.RaveLogInfo("Waiting for controller to finish")
         robot.GetController().SetPath(traj)
         #robot.GetController().SetPath(rave_path)
