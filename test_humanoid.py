@@ -116,7 +116,7 @@ if __name__ == "__main__":
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot)
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,fmaxvelmult=0.15)#plannername='ParabolicTrajectoryRetimer')
         with env.env:
-                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=1)
+                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.95)
                 rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
 
 

@@ -99,6 +99,7 @@ def GIK_from_COM(COM_path, q_original, robot, env, recompute=False, DEBUG=False)
                                         zfoot[1,i]=right_leg_tf[2,3]
 
                                         print "ZHEIGHT FEET:",left_leg_tf[2,3],right_leg_tf[2,3],support_list
+
                                         cog = COM_path[:,i]
                                         #obstacle_list = [('floor',(0,0,1))]
                                         obstacle_list = [('floor',(0,0,1))]
