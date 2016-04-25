@@ -32,7 +32,15 @@ class EnvironmentHumanoid(ForceEnvironment):
                         #self.env.Add(self.env.ReadRobotXMLFile(self.robot_xml))
                         module = rave.RaveCreateModule(self.env, 'urdf')
                         self.robot_name = module.SendCommand('load {} {}'.format(urdf, srdf))
+
+                        #body = self.env.GetKinBody(self.robot_name)
+                        #self.env.Remove(body)
+                        #self.robot_name = 'escher22'
+                        #body.SetName(self.robot_name)
+                        #self.env.Add(body)
+
                         self.robot = self.env.GetRobot(self.robot_name)
+
                         self.manip = AttributePassthrough(self.robot.GetManipulator, self.robot.GetManipulators)
                         self.manip.l_arm.SetLocalToolDirection(np.array([1, 0, 0]))
                         self.manip.l_arm.SetLocalToolTransform(np.array([
@@ -131,12 +139,12 @@ class EnvironmentHumanoid(ForceEnvironment):
 
         def GetRobot(self):
                 with self.env:
-                        self.env.GetViewer().SetCamera([
-                            [0.31499128, 0.09759726, -0.94406317, 6.81987572],
-                            [0.94805905, 0.01409698, 0.31778187, -2.29564428],
-                            [0.04432308, -0.99512615, -0.08808754, 1.60788679],
-                            [0., 0., 0., 1.]
-                        ])
+                        #self.env.GetViewer().SetCamera([
+                        #    [0.31499128, 0.09759726, -0.94406317, 6.81987572],
+                        #    [0.94805905, 0.01409698, 0.31778187, -2.29564428],
+                        #    [0.04432308, -0.99512615, -0.08808754, 1.60788679],
+                        #    [0., 0., 0., 1.]
+                        #])
                         return self.robot
 
         def DisplayForces(self):
