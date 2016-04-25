@@ -81,11 +81,20 @@ class EnvironmentHumanoid(ForceEnvironment):
 
                         # surrender posture
                         DOFValues = self.robot.GetDOFValues()
-                        DOFValues[6] = math.pi/2
-                        DOFValues[19] = math.pi/2
-                        DOFValues[24] = -math.pi/2
-                        DOFValues[37] = -math.pi/2
+                        DOFValues[6] = math.pi/4
+                        DOFValues[19] = math.pi/4
+                        DOFValues[24] = -math.pi/4
+                        DOFValues[37] = -math.pi/4
+                        #DOFValues[6] = math.pi/2
+                        #DOFValues[19] = math.pi/2
+                        #DOFValues[24] = -math.pi/2
+                        #DOFValues[37] = -math.pi/2
                         self.robot.SetDOFValues(DOFValues)
+
+                        dof = self.robot.GetDOF()
+                        v = np.ones(dof)
+                        self.robot.SetDOFVelocityLimits(1 * v)
+                        #self.rave.SetDOFTorqueLimits(tunings.torque_limits)
 
                         OriginalDOFValues = self.robot.GetDOFValues()
 

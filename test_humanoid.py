@@ -44,12 +44,10 @@ if __name__ == "__main__":
         rave.planningutils.RetimeActiveDOFTrajectory(rave_path,robot)
         rave.planningutils.SmoothActiveDOFTrajectory(rave_path,robot)
 
-        cbirrt = CBiRRT(env.env, env.robot_name)
         M = rave_path.GetNumWaypoints()
         N = len(robot.GetActiveDOFValues())
 
         [q_original, COM_original] = COM_from_path( rave_path, robot, env)
-
 
         #######################################################################
         ### COMPUTE NEW COM
@@ -58,8 +56,10 @@ if __name__ == "__main__":
         T = arange(0,M)
         C = float(M/12)
         COM_offset = np.zeros((3,M))
-        COM_offset[1,:]=-0.35*exp(-(T-M/2)**2/(2*C*C))
-        COM_offset[2,:]=-0.05*exp(-(T-M/2)**2/(2*C*C))
+        COM_offset += COM_original
+        COM_offset[0,:]+=0.00*exp(-(T-M/2)**2/(2*C*C))
+        COM_offset[1,:]+=-0.02*exp(-(T-M/2)**2/(2*C*C))
+        COM_offset[2,:]+=-0.00*exp(-(T-M/2)**2/(2*C*C))
 
         tmp_handle=[]
         with env.env:
@@ -68,12 +68,27 @@ if __name__ == "__main__":
                 h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0,1,0)))
                 tmp_handle.append(h)
 
+        #traj = Trajectory.from_ravetraj(rave_path)
+        #traj.info()
+        #traj.draw(env)
+        ##traj.PlotParametrization(env)
+        #traj.draw_delete()
+        #td = DeformationStretchPull(traj, env)
+        #td.deform(N_iter=100)
 
         #######################################################################
         ### RECOMPUTE GIK FROM NEW COM
         #######################################################################
 
-        [q_gik, COM_gik] = GIK_from_COM( COM_offset, q_original, robot, env, recompute=False)
+        #[q_gik, COM_gik] = GIK_from_COM( COM_original, q_original, robot, env, recompute=True)
+        [q_gik, COM_gik] = GIK_from_COM( COM_offset, q_original, robot, env,
+                        recompute=True)
+        #[q_gik, COM_gik] = [q_original,COM_original]
+
+        #q_gik_fname = 'tmp/q_gik.numpy'
+        #COM_gik_fname = 'tmp/COM_gik.numpy'
+        #q_gik = np.load(q_gik_fname+'.npy')
+        #COM_gik = np.load(COM_gik_fname+'.npy')
 
         tmp_handle=[]
         with env.env:
@@ -85,10 +100,12 @@ if __name__ == "__main__":
                 tmp_handle.append(h)
                 robot.SetActiveDOFValues(q_gik[:,0])
 
+        #time.sleep(0.5)
+        #visualize_configurations(q_original, robot, env)
+        #sys.exit(0)
         ###############################################################################
         ##### CREATE A NEW RAVE TRAJ FROM NEW CONFIGURATIONS AND RETIME
         ###############################################################################
-
         traj = RaveCreateTrajectory(env.env,'')
         traj.Init(robot.GetActiveConfigurationSpecification())
         i=0
@@ -97,8 +114,11 @@ if __name__ == "__main__":
                 i=i+1
 
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot)
-        rave.planningutils.RetimeActiveDOFTrajectory(traj,robot)#plannername='ParabolicTrajectoryRetimer')
-        rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
+        #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,fmaxvelmult=0.15)#plannername='ParabolicTrajectoryRetimer')
+        with env.env:
+                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=1)
+                rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
+
 
         raw_input('Press <ENTER> to start.')
         openravepy.RaveLogInfo("Waiting for controller to finish")

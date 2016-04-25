@@ -17,7 +17,7 @@ class ForceEnvironment():
         FORCE_FIELD_PT_SIZE = 4
         FORCE_FIELD_ARROW_SIZE = 0.02
         #FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))
-        FORCE_FIELD_COLOR = np.array((0.4,0.1,0.0,0.7))
+        FORCE_FIELD_COLOR = np.array((0.4,0.1,0.0,0.4))
         #######################################################################
         env_xml=''
         robot_xml=''
