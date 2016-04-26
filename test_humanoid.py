@@ -53,20 +53,22 @@ if __name__ == "__main__":
         ### COMPUTE NEW COM
         #######################################################################
 
+        COM_linear = COM_interpolate(COM_original[:,0],COM_original[:,-1],M)
+
         T = arange(0,M)
         C = float(M/12)
         COM_offset = np.zeros((3,M))
-        COM_offset += COM_original
+        COM_offset += COM_linear
         COM_offset[0,:]+=0.00*exp(-(T-M/2)**2/(2*C*C))
-        COM_offset[1,:]+=-0.02*exp(-(T-M/2)**2/(2*C*C))
-        COM_offset[2,:]+=-0.00*exp(-(T-M/2)**2/(2*C*C))
+        COM_offset[1,:]+=-0.2*exp(-(T-M/2)**2/(2*C*C))
+        COM_offset[2,:]+=-0.01*exp(-(T-M/2)**2/(2*C*C))
 
-        tmp_handle=[]
-        with env.env:
-                h=env.env.drawlinestrip(points=COM_original.T,linewidth=6,colors=np.array((1,0,0)))
-                tmp_handle.append(h)
-                h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0,1,0)))
-                tmp_handle.append(h)
+        #tmp_handle=[]
+        #with env.env:
+        #        h=env.env.drawlinestrip(points=COM_original.T,linewidth=6,colors=np.array((1,0,0)))
+        #        tmp_handle.append(h)
+        #        h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0,1,0)))
+        #        tmp_handle.append(h)
 
         #traj = Trajectory.from_ravetraj(rave_path)
         #traj.info()
@@ -76,6 +78,19 @@ if __name__ == "__main__":
         #td = DeformationStretchPull(traj, env)
         #td.deform(N_iter=100)
 
+        #with env.env:
+        #        h=env.env.drawlinestrip(points=COM_original.T,linewidth=6,colors=np.array((1,0,0)))
+        #        tmp_handle.append(h)
+        #        h=env.env.drawlinestrip(points=COM_linear.T,linewidth=6,colors=np.array((0,1,0)))
+        #        tmp_handle.append(h)
+
+        env.DrawAxes()
+
+        COM_zig_zag = COM_compute_zig_zag_motion(COM_offset, env)
+
+        [q_gik, COM_gik] = GIK_from_COM( COM_zig_zag, q_original, robot, env, recompute=True)
+        sys.exit(0)
+
         #######################################################################
         ### RECOMPUTE GIK FROM NEW COM
         #######################################################################
@@ -83,7 +98,6 @@ if __name__ == "__main__":
         #[q_gik, COM_gik] = GIK_from_COM( COM_original, q_original, robot, env, recompute=True)
         [q_gik, COM_gik] = GIK_from_COM( COM_offset, q_original, robot, env,
                         recompute=True)
-        #[q_gik, COM_gik] = [q_original,COM_original]
 
         #q_gik_fname = 'tmp/q_gik.numpy'
         #COM_gik_fname = 'tmp/COM_gik.numpy'
@@ -116,7 +130,7 @@ if __name__ == "__main__":
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot)
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,fmaxvelmult=0.15)#plannername='ParabolicTrajectoryRetimer')
         with env.env:
-                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.95)
+                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=3.95)
                 rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
 
 

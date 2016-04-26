@@ -25,6 +25,7 @@ class ForceEnvironment():
         robot=''
         handles = []
         force_handles = []
+        static_handles = []
         cells = None
         forces = None
 
@@ -185,6 +186,23 @@ class ForceEnvironment():
                                 print "COLLISION:",X[0:2],outercells[i]
                                 return True
                 return False
+
+        def DrawAxes(self):
+                e0 = np.array((0,0,0))
+                e1 = np.array((1,0,0))
+                e2 = np.array((0,1,0))
+                e3 = np.array((0,0,1))
+                caxis1 = np.array((1,0,0))
+                caxis2 = np.array((0,1,0))
+                caxis3 = np.array((0,0,1))
+                lw = 0.03
+                A = self.env.drawarrow(p1=e0,p2=e1,linewidth=lw,color=caxis1)
+                self.static_handles.append(A)
+                A = self.env.drawarrow(p1=e0,p2=e2,linewidth=lw,color=caxis2)
+                self.static_handles.append(A)
+                A = self.env.drawarrow(p1=e0,p2=e3,linewidth=lw,color=caxis3)
+                self.static_handles.append(A)
+
 
         def GetForceAtX(self, X):
                 self.robot.SetDOFValues(X)
