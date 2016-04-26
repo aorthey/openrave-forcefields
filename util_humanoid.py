@@ -34,7 +34,71 @@ def GetStepLength(COM_project, startPos, MAX_FOOT_STEP_LENGTH):
                         i=i+1
         return [FOOT_STEP_LENGTH,i-1]
 
+FOOT_WIDTH = 0.08
+FOOT_LENGTH = 0.12
+FOOT_SPACING = 0.25
+MAX_FOOT_STEP_LENGTH = 0.4
+FOOT_STEP_LENGTH = 0.4
+FOOT_STEP_HEIGHT = 0.1
+
+def visualizeSingleFoot(env, F, dF, colorF):
+
+        ndF=dF/np.linalg.norm(dF)
+        bdF = np.dot(Rz(math.pi/2),ndF)
+
+        X=np.zeros((3,7))
+        X[:,0] = F + FOOT_LENGTH*ndF - FOOT_WIDTH*bdF
+        X[:,1] = F + FOOT_LENGTH*ndF + FOOT_WIDTH*bdF
+        X[:,2] = F - FOOT_LENGTH*ndF + FOOT_WIDTH*bdF
+        X[:,3] = F - FOOT_LENGTH*ndF - FOOT_WIDTH*bdF
+        X[:,4] = F + FOOT_LENGTH*ndF - FOOT_WIDTH*bdF
+        X[:,5] = F + FOOT_LENGTH*ndF
+        X[:,6] = F
+
+        h = env.env.drawlinestrip(points=X.T,
+                        linewidth = 6,
+                        colors=colorF)
+        return h
+
+def visualizeFoot(env, F, dF, colorF):
+        handles = []
+        print F.shape[0]
+        for i in range(0,F.shape[0]):
+                print F[i,:]
+                h = visualizeSingleFoot(env, F[i,:],dF[i,:],colorF)
+                handles.append(h)
+        return handles
+
+def interpolateFoot(f1, df1, f2, df2):
+        if np.linalg.norm(f1-f2)>FOOT_STEP_LENGTH:
+                print "cannot interpolate footstep"
+                sys.exit(1)
+        #######################################################
+        ## PARABOLA ALONG STEP TO COMPUTE Z-COORDINATE
+        #######################################################
+        d=0.0
+        dstep = 0.05
+        ftvec = []
+        dftvec = []
+        while d < FOOT_STEP_LENGTH:
+                t = d/FOOT_STEP_LENGTH
+                ft = (1-t)*f1 + t*f2
+                dft = (1-t)*df1 + t*df2
+
+                b = FOOT_STEP_HEIGHT
+                a = 4*FOOT_STEP_HEIGHT/(FOOT_STEP_LENGTH*FOOT_STEP_LENGTH)
+                z = max(-a*(d-FOOT_STEP_LENGTH/2)**2 + b,0.0)
+
+                ft[2] = z
+                ftvec.append(ft)
+                dftvec.append(ft)
+                d = d+dstep
+        return [np.array(ftvec),np.array(dftvec)]
+
+
 def COM_compute_zig_zag_motion(COM_linear, env):
+        ### in (cm)
+
         ##assume that we start with both feet spaced apart at start pos
 
         M = COM_linear.shape[1]
@@ -48,12 +112,6 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         Lf = np.zeros((3,2*M))
         Rf = np.zeros((3,2*M))
 
-
-        ### in (cm)
-        FOOT_SPACING = 0.25
-        MAX_FOOT_STEP_LENGTH = 0.4
-        FOOT_STEP_HEIGHT = 0.1
-
         #######################################################################
         ### compute der and normal to com path projhected onto floor
         #######################################################################
@@ -65,31 +123,32 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         nrml[:,-1]=nrml[:,-2]
         der[:,-1]=der[:,-2]
 
-        Lsupport = True
-        Lposition = 0
-        Rposition = 0
-        i = 0
-
         leftFoot = []
         rightFoot = []
+        leftFootDer = []
+        rightFootDer = []
 
         #######################################################################
         ### compute starting foot steps
         #######################################################################
         Lf = COM_project[:,0] + 0.5*FOOT_SPACING*nrml[:,0]
         leftFoot.append(Lf)
+        leftFootDer.append(der[:,0])
         Rf = COM_project[:,0] - 0.5*FOOT_SPACING*nrml[:,0]
         rightFoot.append(Rf)
+        rightFootDer.append(der[:,0])
 
         #######################################################################
         ### make a half step with right foot
         #######################################################################
         d=0.0
+        i = 0
         while d < MAX_FOOT_STEP_LENGTH/2:
                 d = np.linalg.norm(COM_project[:,i] - COM_project[:,0])
                 i=i+1
         Rf = COM_project[:,i-1] - 0.5*FOOT_SPACING*nrml[:,i-1]
         rightFoot.append(Rf)
+        rightFootDer.append(der[:,i-1])
 
         #######################################################################
         ### start alternating footsteps
@@ -103,27 +162,34 @@ def COM_compute_zig_zag_motion(COM_linear, env):
                         ## Lsupport, compute next right foot
                         [FOOT_STEP_LENGTH, Rposition] = GetStepLength(COM_project, Rposition, MAX_FOOT_STEP_LENGTH)
                         Rf = COM_project[:,Rposition] - 0.5*FOOT_SPACING*nrml[:,Rposition]
-                        rightFoot.append(Rf)
-                        print "RIGHT:",Rposition,Rf
+                        dRf = der[:,Rposition]
                         Lsupport = False
+                        rightFoot.append(Rf)
+                        rightFootDer.append(dRf)
+                        print "RIGHT:",Rposition,Rf
                 else:
                         ## Rsupport, compute next left foot
                         [FOOT_STEP_LENGTH, Lposition] = GetStepLength(COM_project, Lposition, MAX_FOOT_STEP_LENGTH)
                         Lf = COM_project[:,Lposition] + 0.5*FOOT_SPACING*nrml[:,Lposition]
-                        print "LEFT:",Lposition,Lf
+                        dLf = der[:,Lposition]
                         Lsupport = True
                         leftFoot.append(Lf)
+                        leftFootDer.append(dLf)
+                        print "LEFT:",Lposition,Lf
 
         Lf = np.array(leftFoot)
         Rf = np.array(rightFoot)
+        dLf = np.array(leftFootDer)
+        dRf = np.array(rightFootDer)
 
-        handles=[]
-        handles.append(env.env.plot3(points=Lf,
-                           pointsize=25,
-                           colors=np.array(((1.0,0.0,0.0,0.8)))))
-        handles.append(env.env.plot3(points=Rf,
-                           pointsize=25,
-                           colors=np.array(((0.0,1.0,0.0,0.8)))))
+        handles = []
+        handleL = visualizeFoot( env, Lf, dLf, np.array((1.0,0.0,0.0,0.8)))
+        handles.append(handleL)
+        handleR = visualizeFoot( env, Rf, dRf, np.array((0.0,1.0,0.0,0.8)))
+        #raw_input('Press <ENTER> to continue.')
+
+        Rsteps = Rf.shape[0]
+        Lsteps = Lf.shape[0]
 
         FFn = Lf.shape[0] + Rf.shape[0]
         COM = np.zeros((FFn,3))
@@ -134,12 +200,10 @@ def COM_compute_zig_zag_motion(COM_linear, env):
                 COM[ctr,:] = Lf[i,:]
                 ctr+=1
 
-        print Rf.shape[0],Lf.shape[0]
         if Rf.shape[0] > Lf.shape[0]:
                 COM[ctr,:] = Rf[-1,:]
         elif Rf.shape[0]<Lf.shape[0]:
                 COM[ctr,:] = Lf[-1,:]
-
         COM=COM.T
 
         #######################################################################
@@ -153,6 +217,7 @@ def COM_compute_zig_zag_motion(COM_linear, env):
 
         print COM_traj.shape
         COM_traj[2,:] = COM_linear[2,:]
+
         handles.append(env.env.drawlinestrip(points=COM_linear.T,
                            linewidth=8,
                            colors=np.array((0.0,1.0,0.0,1.0))))
@@ -160,7 +225,6 @@ def COM_compute_zig_zag_motion(COM_linear, env):
                            linewidth=8,
                            colors=np.array((1.0,0.0,1.0,0.5))))
 
-        raw_input('Press <ENTER> to continue.')
 
 
         #handles.append(env.env.drawlinestrip(points=Lf,
@@ -170,8 +234,22 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         #                   linewidth=6,
         #                   colors=np.array(((0.0,1.0,0.0,0.8)))))
 
-        #while i < M:
-        #        if Lsupport:
+        #######################################################################
+        ### compute end effector trajectory of footsteps
+        #######################################################################
+        print Lf[0,:]
+        print Rf[0,:]
+        footpos = np.hstack((Lf[0,:],Rf[0,:]))
+        print footpos
+
+        Lsupport = False
+        Lposition = 0
+        Rposition = 0
+        while True:
+                if Lsupport:
+                        pass
+
+
         #                ### left foot is on support, only move right foot
         #                d= 0.0
 
@@ -214,10 +292,28 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         #                Lsupport = False
         #                print "RIGHT FOOT:",Rposition,"->",i
         #                Rposition = i
-        #        else:
-        #                ### right foot is on support, only move left foot
-        #                d= 0.0
-        #                i = Lposition
+                else:
+                        ### right foot is on support, only move left foot
+
+                        ## move right foot from Rf[Rposition,0]
+                        f1 = Rf[Rposition,:]
+                        df1 = dRf[Rposition,:]
+                        f2 = Rf[Rposition+1,:]
+                        df2 = dRf[Rposition+1,:]
+
+                        [ftvec,dftvec] = interpolateFoot(f1, df1, f2, df2)
+                        print ftvec.shape
+
+                        ## copy left foot
+                        fl = Lf[Lposition,:]
+                        dfl = dLf[Lposition,:]
+
+                        np.repeat(fl, 3, axis=1)
+
+                        footpos_tmp = np.hstack((Lf[0,:],Rf[0,:]))
+
+                        sys.exit(0)
+                        i = Lposition
 
         #                #######################################################
         #                ## CHECK THAT STEP LENGTH DOES NOT OVERSHOOT TARGET
@@ -255,6 +351,7 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         #                Lsupport = True
         #                print "LEFT FOOT:",Lposition,"->",i
         #                Lposition = i
+        raw_input('Press <ENTER> to continue.')
 
 
 
