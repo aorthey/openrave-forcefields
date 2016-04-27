@@ -11,6 +11,28 @@ def waitrobot(robot):
     while not robot.GetController().IsDone():
         time.sleep(0.1)
 
+def findNextCOMsegment(istart, COM, Fpos):
+        ## find nearest point on COM to left foot
+        ictr = istart
+
+        d = 100.0
+        dold = 1000.0
+        while d < dold or d > 0.05:
+                dold = d
+                if ictr >= COM.shape[1]:
+                        return [istart, COM.shape[1]-1]
+                d = np.linalg.norm(COM[:,ictr]-Fpos)
+                print d,ictr
+                ictr +=1
+
+        ictr -= 2
+        d = np.linalg.norm(COM[:,ictr]-Fpos)
+        print d,ictr
+        #print ictr,d
+
+        return [istart,ictr]
+
+
 def COM_interpolate(c1,c2,M):
         COM_linear = np.zeros((3,M))
         i=0
@@ -20,26 +42,42 @@ def COM_interpolate(c1,c2,M):
                 i=i+1
         return COM_linear
 
-def GetStepLength(COM_project, startPos, MAX_FOOT_STEP_LENGTH):
+COLOR_LEFT_FOOT = np.array((1.0,0.0,0.0,0.9))
+COLOR_RIGHT_FOOT = np.array((0.0,1.0,0.0,0.9))
+FOOT_WIDTH = 0.08
+FOOT_LENGTH = 0.12
+FOOT_SPACING = 0.25
+MAX_FOOT_STEP_LENGTH = 0.3
+FOOT_STEP_HEIGHT = 0.1
+
+def GetStepLengthFoot(sign, COM_project, nrml, startPos):
         d=0.0
         M = COM_project.shape[1]
         i=startPos
         FOOT_STEP_LENGTH = MAX_FOOT_STEP_LENGTH
         while d<=MAX_FOOT_STEP_LENGTH:
                 if i >= M:
-                        FOOT_STEP_LENGTH = np.linalg.norm(COM_project[:,M-1] - COM_project[:,startPos])
-                        break
+                        pstart = COM_project[:,M-1] + sign*0.5*FOOT_SPACING*nrml[:,M-1]
+                        pd = COM_project[:,startPos] + sign*0.5*FOOT_SPACING*nrml[:,startPos]
+                        d = np.linalg.norm(pd - pstart)
+                        return [d, M-1]
                 else:
-                        d = np.linalg.norm(COM_project[:,i] - COM_project[:,startPos])
+                        pstart = COM_project[:,i] + sign*0.5*FOOT_SPACING*nrml[:,i]
+                        pd = COM_project[:,startPos] + sign*0.5*FOOT_SPACING*nrml[:,startPos]
+                        d = np.linalg.norm(pd - pstart)
                         i=i+1
-        return [FOOT_STEP_LENGTH,i-1]
 
-FOOT_WIDTH = 0.08
-FOOT_LENGTH = 0.12
-FOOT_SPACING = 0.25
-MAX_FOOT_STEP_LENGTH = 0.4
-FOOT_STEP_LENGTH = 0.4
-FOOT_STEP_HEIGHT = 0.1
+        pstart = COM_project[:,i-2] + sign*0.5*FOOT_SPACING*nrml[:,i-2]
+        pd = COM_project[:,startPos] + sign*0.5*FOOT_SPACING*nrml[:,startPos]
+        d = np.linalg.norm(pd - pstart)
+        return [d,i-2]
+
+def GetStepLengthRightFoot(COM_project, nrml, startPos):
+        return GetStepLengthFoot(-1, COM_project, nrml, startPos)
+
+def GetStepLengthLeftFoot(COM_project, nrml, startPos):
+        return GetStepLengthFoot(+1, COM_project, nrml, startPos)
+
 
 def visualizeSingleFoot(env, F, dF, colorF):
 
@@ -69,25 +107,29 @@ def visualizeFoot(env, F, dF, colorF):
                 handles.append(h)
         return handles
 
-def interpolateFoot(f1, df1, f2, df2):
-        if np.linalg.norm(f1-f2)>FOOT_STEP_LENGTH:
+def interpolateFoot(N, f1, df1, f2, df2):
+        ### create N points interpolation between f1,f2
+        footstep_length = np.linalg.norm(f1-f2)
+        if footstep_length>MAX_FOOT_STEP_LENGTH:
                 print "cannot interpolate footstep"
+                print f1,f2
+                print footstep_length,">",MAX_FOOT_STEP_LENGTH
                 sys.exit(1)
         #######################################################
         ## PARABOLA ALONG STEP TO COMPUTE Z-COORDINATE
         #######################################################
         d=0.0
-        dstep = 0.05
+        dstep = footstep_length/(N-1)
         ftvec = []
         dftvec = []
-        while d < FOOT_STEP_LENGTH:
-                t = d/FOOT_STEP_LENGTH
+        while d <= footstep_length:
+                t = d/footstep_length
                 ft = (1-t)*f1 + t*f2
                 dft = (1-t)*df1 + t*df2
 
                 b = FOOT_STEP_HEIGHT
-                a = 4*FOOT_STEP_HEIGHT/(FOOT_STEP_LENGTH*FOOT_STEP_LENGTH)
-                z = max(-a*(d-FOOT_STEP_LENGTH/2)**2 + b,0.0)
+                a = 4*FOOT_STEP_HEIGHT/(footstep_length*footstep_length)
+                z = max(-a*(d-footstep_length/2)**2 + b,0.0)
 
                 ft[2] = z
                 ftvec.append(ft)
@@ -160,16 +202,17 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         while (Rposition < M-1) and (Lposition < M-1):
                 if Lsupport:
                         ## Lsupport, compute next right foot
-                        [FOOT_STEP_LENGTH, Rposition] = GetStepLength(COM_project, Rposition, MAX_FOOT_STEP_LENGTH)
+                        [FOOT_STEP_LENGTH, Rposition] = GetStepLengthRightFoot(COM_project, nrml, Rposition)
+                        print FOOT_STEP_LENGTH
                         Rf = COM_project[:,Rposition] - 0.5*FOOT_SPACING*nrml[:,Rposition]
                         dRf = der[:,Rposition]
                         Lsupport = False
                         rightFoot.append(Rf)
                         rightFootDer.append(dRf)
-                        print "RIGHT:",Rposition,Rf
+                        print "RIGHT:",Rposition,Rf,FOOT_STEP_LENGTH
                 else:
                         ## Rsupport, compute next left foot
-                        [FOOT_STEP_LENGTH, Lposition] = GetStepLength(COM_project, Lposition, MAX_FOOT_STEP_LENGTH)
+                        [FOOT_STEP_LENGTH, Lposition] = GetStepLengthLeftFoot(COM_project, nrml, Lposition)
                         Lf = COM_project[:,Lposition] + 0.5*FOOT_SPACING*nrml[:,Lposition]
                         dLf = der[:,Lposition]
                         Lsupport = True
@@ -183,9 +226,9 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         dRf = np.array(rightFootDer)
 
         handles = []
-        handleL = visualizeFoot( env, Lf, dLf, np.array((1.0,0.0,0.0,0.8)))
+        handleL = visualizeFoot( env, Lf, dLf, COLOR_LEFT_FOOT)
         handles.append(handleL)
-        handleR = visualizeFoot( env, Rf, dRf, np.array((0.0,1.0,0.0,0.8)))
+        handleR = visualizeFoot( env, Rf, dRf, COLOR_RIGHT_FOOT)
         #raw_input('Press <ENTER> to continue.')
 
         Rsteps = Rf.shape[0]
@@ -215,146 +258,112 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         [trajectory,tmp] = splprep(COM,k=3,s=0.0)
         COM_traj = np.array([splev(t,trajectory) for t in tvec]).T
 
-        print COM_traj.shape
+        COM_traj_projected = np.zeros((3,M))
+        COM_traj_projected[0:2,:] = COM_traj[0:2,:]
+
         COM_traj[2,:] = COM_linear[2,:]
 
         handles.append(env.env.drawlinestrip(points=COM_linear.T,
-                           linewidth=8,
-                           colors=np.array((0.0,1.0,0.0,1.0))))
+                           linewidth=10,
+                           colors=np.array((1.0,0.0,1.0,0.8))))
         handles.append(env.env.drawlinestrip(points=COM_traj.T,
                            linewidth=8,
-                           colors=np.array((1.0,0.0,1.0,0.5))))
-
-
-
-        #handles.append(env.env.drawlinestrip(points=Lf,
-        #                   linewidth=6,
-        #                   colors=np.array(((1.0,0.0,0.0,0.8)))))
-        #handles.append(env.env.drawlinestrip(points=Rf,
-        #                   linewidth=6,
-        #                   colors=np.array(((0.0,1.0,0.0,0.8)))))
-
+                           colors=np.array((1.0,0.0,1.0,0.4))))
+        #raw_input('Press <ENTER> to continue.')
         #######################################################################
         ### compute end effector trajectory of footsteps
         #######################################################################
-        print Lf[0,:]
-        print Rf[0,:]
-        footpos = np.hstack((Lf[0,:],Rf[0,:]))
-        print footpos
 
-        Lsupport = False
+        ### footpos should have same size as COM input
+        footpos = np.hstack((Lf[0,:],Rf[0,:]))
+        dfootpos = np.hstack((dLf[0,:],dRf[0,:]))
+
+        ### COM_traj starts in R, then moves to L without movement
         Lposition = 0
         Rposition = 0
-        while True:
+        COMposition = 0
+
+        ### start (shift COM from right foot to left foot, so that L becomes SF)
+        [istart, ictr] = findNextCOMsegment(COMposition, COM_traj_projected, Lf[Lposition,:])
+        COMposition = ictr
+        footpos = np.tile( footpos , (ictr-istart,1))
+        dfootpos = np.tile( dfootpos , (ictr-istart,1))
+
+        Lsupport = True
+        while COMposition < M:
                 if Lsupport:
-                        pass
+                        if Rposition+1 >= Rsteps:
+                                ## no more right foot steps abort
+                                break
+                        #######################################################
+                        ### left foot is on support, only move right foot
+                        ### from Rf[Rposition,0] to Rf[Rposition+1,0]
+                        #######################################################
+                        [istart, ictr] = findNextCOMsegment(COMposition, COM_traj_projected, Rf[Rposition+1,:])
+                        COMposition = ictr
+                        Nwpts = ictr-istart
 
-
-        #                ### left foot is on support, only move right foot
-        #                d= 0.0
-
-        #                #######################################################
-        #                ## CHECK THAT STEP LENGTH DOES NOT OVERSHOOT TARGET
-        #                #######################################################
-        #                FOOT_STEP_LENGTH = MAX_FOOT_STEP_LENGTH
-
-        #                while d<=MAX_FOOT_STEP_LENGTH:
-        #                        if i >= M:
-        #                                FOOT_STEP_LENGTH = np.linalg.norm(COM_project[:,M-1] - COM_project[:,Rposition])
-        #                                break
-        #                        else:
-        #                                d = np.linalg.norm(COM_project[:,i] - COM_project[:,Rposition])
-        #                                i=i+1
-
-        #                i = Rposition
-        #                d = 0.0
-        #                #######################################################
-        #                ## PARABOLA ALONG STEP TO COMPUTE Z-COORDINATE
-        #                #######################################################
-        #                ## compute parabola
-        #                ## -a*x^2 + b
-        #                ## b = FOOT_STEP_HEIGHT
-        #                ## a = 4*b/(FOOT_STEP_SIZE**2)
-
-        #                while d < FOOT_STEP_LENGTH:
-        #                        b = FOOT_STEP_HEIGHT
-        #                        a = 4*FOOT_STEP_HEIGHT/(FOOT_STEP_LENGTH*FOOT_STEP_LENGTH)
-        #                        z = max(-a*(d-FOOT_STEP_LENGTH/2)**2 + b,0.0)
-        #                        Lf[:,i] = COM_project[:,Lposition] + 0.5*FOOT_SPACING*nrml[:,Lposition]
-        #                        Rf[:,i] = COM_project[:,i] - 0.5*FOOT_SPACING*nrml[:,i]
-        #                        Rf[2,i] = z + COM_project[2,i]
-
-        #                        d = np.linalg.norm(COM_project[:,i] - COM_project[:,Rposition])
-        #                        i=i+1
-        #                ### one security step to make sure that we rest at z=0
-        #                Lf[:,i-1] = COM_project[:,Lposition] + 0.5*FOOT_SPACING*nrml[:,Lposition]
-        #                Rf[:,i-1] = COM_project[:,i-1] - 0.5*FOOT_SPACING*nrml[:,i-1]
-        #                Lsupport = False
-        #                print "RIGHT FOOT:",Rposition,"->",i
-        #                Rposition = i
-                else:
-                        ### right foot is on support, only move left foot
-
-                        ## move right foot from Rf[Rposition,0]
                         f1 = Rf[Rposition,:]
                         df1 = dRf[Rposition,:]
                         f2 = Rf[Rposition+1,:]
                         df2 = dRf[Rposition+1,:]
 
-                        [ftvec,dftvec] = interpolateFoot(f1, df1, f2, df2)
-                        print ftvec.shape
+                        [frvec,dfrvec] = interpolateFoot(Nwpts, f1, df1, f2, df2)
 
-                        ## copy left foot
                         fl = Lf[Lposition,:]
                         dfl = dLf[Lposition,:]
+                        flvec = np.tile( fl, (frvec.shape[0],1) )
+                        dflvec = np.tile( dfl, (dfrvec.shape[0],1) )
 
-                        np.repeat(fl, 3, axis=1)
+                        footpos = np.vstack((footpos,np.hstack((flvec, frvec))))
+                        dfootpos = np.vstack((dfootpos,np.hstack((dflvec, dfrvec))))
 
-                        footpos_tmp = np.hstack((Lf[0,:],Rf[0,:]))
+                        Rposition = Rposition+1
+                        Lsupport = False
+                        print "right foot move finished"
+                        #sys.exit(0)
+                else:
+                        if Lposition+1 >= Lsteps:
+                                ## no more right foot steps abort
+                                break
+                        #######################################################
+                        ### right foot is on support, only move left foot
+                        ### from Lf[Lposition,0] to Lf[Lposition+1,0]
+                        #######################################################
+                        [istart, ictr] = findNextCOMsegment(COMposition, COM_traj_projected, Lf[Lposition+1,:])
+                        COMposition = ictr
+                        Nwpts = ictr-istart
 
-                        sys.exit(0)
-                        i = Lposition
+                        f1 = Lf[Lposition,:]
+                        df1 = dLf[Lposition,:]
+                        f2 = Lf[Lposition+1,:]
+                        df2 = dLf[Lposition+1,:]
 
-        #                #######################################################
-        #                ## CHECK THAT STEP LENGTH DOES NOT OVERSHOOT TARGET
-        #                #######################################################
-        #                FOOT_STEP_LENGTH = MAX_FOOT_STEP_LENGTH
+                        [flvec,dflvec] = interpolateFoot(Nwpts, f1, df1, f2, df2)
 
-        #                while d<=MAX_FOOT_STEP_LENGTH:
-        #                        if i >= M:
-        #                                FOOT_STEP_LENGTH = np.linalg.norm(COM_project[:,M-1] - COM_project[:,Lposition])
-        #                                break
-        #                        else:
-        #                                d = np.linalg.norm(COM_project[:,i] - COM_project[:,Lposition])
-        #                                i=i+1
+                        fr = Rf[Rposition,:]
+                        dfr = dRf[Rposition,:]
+                        frvec = np.tile( fr, (flvec.shape[0],1) )
+                        dfrvec = np.tile( dfr, (dflvec.shape[0],1) )
 
-        #                i = Lposition
-        #                d = 0.0
-        #                #######################################################
-        #                ## PARABOLA ALONG STEP TO COMPUTE Z-COORDINATE
-        #                #######################################################
-        #                #i = Lposition
-        #                while d < FOOT_STEP_LENGTH:
-        #                        b = FOOT_STEP_HEIGHT
-        #                        a = 4*FOOT_STEP_HEIGHT/(FOOT_STEP_LENGTH*FOOT_STEP_LENGTH)
-        #                        z = max(-a*(d-FOOT_STEP_LENGTH/2)**2 + b,0.0)
-        #                        Rf[:,i] = COM_project[:,Rposition] - 0.5*FOOT_SPACING*nrml[:,Rposition]
+                        footpos = np.vstack((footpos,np.hstack((flvec, frvec))))
+                        dfootpos = np.vstack((dfootpos,np.hstack((dflvec, dfrvec))))
 
-        #                        Lf[:,i] = COM_project[:,i] + 0.5*FOOT_SPACING*nrml[:,i]
-        #                        Lf[2,i] = z + COM_project[2,i]
+                        Lposition = Lposition+1
+                        Lsupport = True
+                        print "left foot move finished"
 
-        #                        d = np.linalg.norm(COM_project[:,i] - COM_project[:,Lposition])
-        #                        i=i+1
-        #                ### one security step to make sure that we rest at z=0
-        #                Rf[:,i-1] = COM_project[:,Rposition] - 0.5*FOOT_SPACING*nrml[:,Rposition]
-        #                Lf[:,i-1] = COM_project[:,i-1] + 0.5*FOOT_SPACING*nrml[:,i-1]
-        #                Lsupport = True
-        #                print "LEFT FOOT:",Lposition,"->",i
-        #                Lposition = i
-        raw_input('Press <ENTER> to continue.')
+        handles.append(env.env.drawlinestrip(points=footpos[:,0:3],
+                           linewidth=8,
+                           colors=COLOR_LEFT_FOOT))
 
+        handles.append(env.env.drawlinestrip(points=footpos[:,3:6],
+                           linewidth=8,
+                           colors=COLOR_RIGHT_FOOT))
 
+        #raw_input('Press <ENTER> to continue.')
 
+        return [COM_traj,footpos,dfootpos]
 
 def COM_from_path(rave_path, robot, env):
         active_dofs = robot.GetActiveConfigurationSpecification()
@@ -395,6 +404,154 @@ def visualize_configurations(q_original, robot, env):
                         waitrobot(robot)
                 time.sleep(0.1)
                 i=i+1
+
+def HTfromPosDer(F, dF):
+        H = np.eye(4)
+        H[0:3,3] = F
+        ndF = dF/np.linalg.norm(dF)
+
+        ex = np.array((1,0,0))
+
+        angle = math.acos(np.dot(ndF,ex))
+        sign = np.sign(np.cross(ex, ndF)[2])
+
+        if sign >= 0:
+                ## left side rotation [0,pi]
+                rot=Rz(angle)
+        else:
+                rot=Rz(-angle)
+
+        H[0:3,0:3] = rot
+        return H
+
+def createTransformFromPosDer( footpos, dfootpos ):
+        HL = HTfromPosDer( footpos[0:3], dfootpos[0:3])
+        HR = HTfromPosDer( footpos[3:6], dfootpos[3:6])
+        return [HL,HR]
+
+
+def GIK_from_COM_and_FOOTPOS(COM_path, footpos, dfootpos, q_original, robot, env, recompute=False, DEBUG=False):
+        q_gik_fname = 'tmp/q_gik2.numpy'
+        COM_gik_fname = 'tmp/COM_gik2.numpy'
+
+        N = q_original.shape[0]
+        M = q_original.shape[1]
+
+        q_gik = np.zeros((N,M))
+        #Z_FOOT_CONTACT = 0.002
+        Z_FOOT_CONTACT = 0.00001
+        COM_gik = np.zeros((3,M))
+        if not os.path.isfile(q_gik_fname+'.npy') or recompute:
+                i = 0
+                with env.env:
+                        cbirrt = CBiRRT(env.env, env.robot_name)
+                        feet_pos = np.zeros((6,M))
+                        while i < M:
+                                if DEBUG:
+                                        print "------------------------------------------------------------------"
+                                        print "------------ WAYPOINT",i,"/",M,": recompute GIK ------------ "
+                                        print "------------------------------------------------------------------"
+                                try:
+                                        robot.SetActiveDOFValues(q_original[:,i])
+
+                                        left_leg_tf = robot.GetManipulator('l_leg').GetTransform()
+                                        #right_leg_tf = robot.GetManipulator('r_leg').GetTransform()
+                                        #left_arm_tf = robot.GetManipulator('l_arm').GetTransform()
+                                        #right_arm_tf = robot.GetManipulator('r_arm').GetTransform()
+
+                                        #maniptm_list = [('l_leg',left_leg_tf),('r_leg',right_leg_tf),('l_arm',left_arm_tf),('r_arm',right_arm_tf)]
+                                        #maniptm_list = [('l_leg',left_leg_tf),('r_leg',right_leg_tf)]
+                                        friction_coefficient = 0.8
+
+                                        #support_list = [('l_leg',friction_coefficient),
+                                                        #('r_leg',friction_coefficient),
+                                                        #('l_arm',friction_coefficient),
+                                                        #('r_arm',friction_coefficient)]
+
+                                        support_list = []
+                                        maniptm_list = []
+
+                                        [left_leg_tf, right_leg_tf] = createTransformFromPosDer( footpos[i,:], dfootpos[i,:] )
+
+                                        if left_leg_tf[2,3] < Z_FOOT_CONTACT:
+                                                support_list.append(('l_leg',friction_coefficient))
+                                                maniptm_list.append(('l_leg',left_leg_tf))
+                                        if right_leg_tf[2,3] < Z_FOOT_CONTACT:
+                                                support_list.append(('r_leg',friction_coefficient))
+                                                maniptm_list.append(('r_leg',right_leg_tf))
+                                        
+                                        feet_pos[0:3,i]=left_leg_tf[0:3,3]
+                                        feet_pos[3:6,i]=right_leg_tf[0:3,3]
+                                        #zfoot[0,i]=left_leg_tf[2,3]
+                                        #zfoot[1,i]=right_leg_tf[2,3]
+
+                                        print "ZHEIGHT FEET:",left_leg_tf[2,3],right_leg_tf[2,3],support_list
+
+                                        cog = COM_path[:,i]
+                                        #obstacle_list = [('floor',(0,0,1))]
+                                        obstacle_list = [('floor',(0,0,1))]
+                                        F = np.zeros((3))
+                                        F += np.array((0,0,-9.81))
+                                        #F += np.array((0,0.01,0))
+                                        q_res = cbirrt.DoGeneralIK(
+                                                        movecog=cog,
+                                                        gravity=F.tolist(),
+                                                        #checkcollisionlink=['l_foot','r_foot'],
+                                                        obstacles=obstacle_list,
+                                                        maniptm=maniptm_list,
+                                                        support=support_list,
+                                                        printcommand=False)
+
+                                        if q_res is None:
+                                                print "------------ WAYPOINT",i,"/",M,": recompute GIK ------------ "
+                                                print "No solution found GIK"
+                                                sys.exit(0)
+                                        else:
+                                                q_gik[:,i] = q_res
+                                        #print "DIST q,q_gik:",np.linalg.norm(q_original[:,i]-q_gik[:,i])
+                                        robot.SetActiveDOFValues(q_gik[:,i])
+                                        COM_gik[:,i] = robot.GetCenterOfMass()
+                                        left_leg_tf_gik = robot.GetManipulator('l_leg').GetTransform()
+                                        right_leg_tf_gik = robot.GetManipulator('r_leg').GetTransform()
+
+                                        print "CHANGE IN FOOT POS (L):"
+                                        print left_leg_tf[0:3,3]
+                                        print left_leg_tf_gik[0:3,3]
+                                        print "CHANGE IN FOOT POS (R):"
+                                        print right_leg_tf[0:3,3]
+                                        print right_leg_tf_gik[0:3,3]
+
+                                except Exception as e:
+                                        print "Exception in GIK, waypoint",i,"/",M
+                                        print e
+                                        sys.exit(0)
+
+                                if DEBUG:
+                                        dcc = np.linalg.norm(cog[:,i]-COM_gik[:,i])
+                                        print "ERROR GIK      :",dcc
+                                        print "INPUT GIK  COM :",cog
+                                        print "OUTPUT GIK COM :",COM_gik[:,i]
+
+                                i = i+1
+
+                #from pylab import *
+                #plot(arange(0,M),feet_pos[0,:],'-r',linewidth=4)
+                #plot(arange(0,M),feet_pos[1,:],'-g',linewidth=4)
+                #plot(arange(0,M),feet_pos[2,:],'-b',linewidth=4)
+                #plot(arange(0,M),feet_pos[3,:],'--r',linewidth=4)
+                #plot(arange(0,M),feet_pos[4,:],'--g',linewidth=4)
+                #plot(arange(0,M),feet_pos[5,:],'--b',linewidth=4)
+                #plt.show()
+                np.save(q_gik_fname,q_gik)
+                np.save(COM_gik_fname,COM_gik)
+
+        else:
+                q_gik = np.load(q_gik_fname+'.npy')
+                COM_gik = np.load(COM_gik_fname+'.npy')
+
+        return [q_gik, COM_gik]
+
+
 
 def GIK_from_COM(COM_path, q_original, robot, env, recompute=False, DEBUG=False):
         q_gik_fname = 'tmp/q_gik.numpy'

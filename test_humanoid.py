@@ -85,19 +85,15 @@ if __name__ == "__main__":
         #        tmp_handle.append(h)
 
         env.DrawAxes()
+        [COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
 
-        COM_zig_zag = COM_compute_zig_zag_motion(COM_offset, env)
-
-        [q_gik, COM_gik] = GIK_from_COM( COM_zig_zag, q_original, robot, env, recompute=True)
+        [q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, q_original, robot, env, recompute=True)
+        #[q_gik, COM_gik] = GIK_from_COM( COM_zig_zag, q_original, robot, env, recompute=True)
         sys.exit(0)
 
         #######################################################################
         ### RECOMPUTE GIK FROM NEW COM
         #######################################################################
-
-        #[q_gik, COM_gik] = GIK_from_COM( COM_original, q_original, robot, env, recompute=True)
-        [q_gik, COM_gik] = GIK_from_COM( COM_offset, q_original, robot, env,
-                        recompute=True)
 
         #q_gik_fname = 'tmp/q_gik.numpy'
         #COM_gik_fname = 'tmp/COM_gik.numpy'
