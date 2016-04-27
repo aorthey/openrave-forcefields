@@ -84,12 +84,28 @@ if __name__ == "__main__":
         #        h=env.env.drawlinestrip(points=COM_linear.T,linewidth=6,colors=np.array((0,1,0)))
         #        tmp_handle.append(h)
 
-        env.DrawAxes()
+        #env.DrawAxes()
         [COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
 
-        [q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, q_original, robot, env, recompute=True)
+        #Mcut = 60
+        #COM_zig_zag = COM_zig_zag[:,0:Mcut]
+        #footpos = footpos[0:Mcut,:]
+        #dfootpos = dfootpos[0:Mcut,:]
+        #q_original = q_original[:,0:Mcut]
+
+        #C = np.around(COM_zig_zag.T,decimals=2)
+        #F = np.around(footpos,decimals=2)
+        #Z = np.arange(0,Mcut)
+        #Z1 = np.hstack((C,F))
+
+        #print Z1[0:40]
+        #print Z1[40:Mcut]
+
+        #sys.exit(0)
+
+        #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env, recompute=True)
+        [q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env)
         #[q_gik, COM_gik] = GIK_from_COM( COM_zig_zag, q_original, robot, env, recompute=True)
-        sys.exit(0)
 
         #######################################################################
         ### RECOMPUTE GIK FROM NEW COM
@@ -102,11 +118,11 @@ if __name__ == "__main__":
 
         tmp_handle=[]
         with env.env:
-                h=env.env.drawlinestrip(points=COM_original.T,linewidth=6,colors=np.array((1,0,0)))
+                #h=env.env.drawlinestrip(points=COM_original.T,linewidth=6,colors=np.array((1,0,0)))
+                #tmp_handle.append(h)
+                h=env.env.drawlinestrip(points=COM_gik.T,linewidth=8,colors=np.array((0,1,0)))
                 tmp_handle.append(h)
-                h=env.env.drawlinestrip(points=COM_gik.T,linewidth=6,colors=np.array((0,1,0)))
-                tmp_handle.append(h)
-                h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0.8,0,0.8,0.3)))
+                h=env.env.drawlinestrip(points=COM_offset.T,linewidth=8,colors=np.array((0.8,0,0.8,0.3)))
                 tmp_handle.append(h)
                 robot.SetActiveDOFValues(q_gik[:,0])
 
@@ -116,6 +132,8 @@ if __name__ == "__main__":
         ###############################################################################
         ##### CREATE A NEW RAVE TRAJ FROM NEW CONFIGURATIONS AND RETIME
         ###############################################################################
+        M = COM_gik.shape[1]
+        print "WAYPOINTS: ",M
         traj = RaveCreateTrajectory(env.env,'')
         traj.Init(robot.GetActiveConfigurationSpecification())
         i=0
@@ -126,7 +144,7 @@ if __name__ == "__main__":
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot)
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,fmaxvelmult=0.15)#plannername='ParabolicTrajectoryRetimer')
         with env.env:
-                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=3.95)
+                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.95)
                 rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
 
 
