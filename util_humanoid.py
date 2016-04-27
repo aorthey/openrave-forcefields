@@ -143,6 +143,7 @@ def interpolateFoot(N, f1, df1, f2, df2):
 handles = []
 
 def COM_compute_zig_zag_motion(COM_linear, env):
+        del handles[:]
         ### in (cm)
 
         ##assume that we start with both feet spaced apart at start pos
@@ -263,7 +264,7 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         COM_traj[2,:] = COM_linear[2,:]
 
         ### interpolate more waypoints
-        M = 2*M
+        M = 1.5*M
         tvec = np.linspace(0,1,M)
         [trajectory,tmp] = splprep(COM_traj,k=3,s=0)
         COM_traj = np.array([splev(t,trajectory) for t in tvec]).T

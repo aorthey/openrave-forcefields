@@ -56,36 +56,35 @@ if __name__ == "__main__":
         COM_linear = COM_interpolate(COM_original[:,0],COM_original[:,-1],M)
 
         T = arange(0,M)
-        C = float(M/12)
-        COM_offset = np.zeros((3,M))
-        COM_offset += COM_linear
-        COM_offset[0,:]+=0.00*exp(-(T-M/2)**2/(2*C*C))
-        COM_offset[1,:]+=-0.2*exp(-(T-M/2)**2/(2*C*C))
-        COM_offset[2,:]+=-0.01*exp(-(T-M/2)**2/(2*C*C))
+        C = float(M/5)
 
-        #tmp_handle=[]
-        #with env.env:
-        #        h=env.env.drawlinestrip(points=COM_original.T,linewidth=6,colors=np.array((1,0,0)))
-        #        tmp_handle.append(h)
-        #        h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0,1,0)))
-        #        tmp_handle.append(h)
+        scale=0.0
+        raw_input('Press <ENTER> to start.')
+        while scale<0.5:
+                COM_offset = np.zeros((3,M))
+                COM_offset += COM_linear
+                COM_offset[0,:]+=0.00*exp(-(T-M/2)**2/(2*C*C))
+                COM_offset[1,:]+=-scale*exp(-(T-M/2)**2/(2*C*C))
+                COM_offset[2,:]+=-0.01*exp(-(T-M/2)**2/(2*C*C))
 
-        #traj = Trajectory.from_ravetraj(rave_path)
-        #traj.info()
-        #traj.draw(env)
-        ##traj.PlotParametrization(env)
-        #traj.draw_delete()
-        #td = DeformationStretchPull(traj, env)
-        #td.deform(N_iter=100)
+                env.DrawAxes()
 
-        #with env.env:
-        #        h=env.env.drawlinestrip(points=COM_original.T,linewidth=6,colors=np.array((1,0,0)))
-        #        tmp_handle.append(h)
-        #        h=env.env.drawlinestrip(points=COM_linear.T,linewidth=6,colors=np.array((0,1,0)))
-        #        tmp_handle.append(h)
+                tmp_handle=[]
+                with env.env:
+                        h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0,1,0)))
+                        tmp_handle.append(h)
 
-        #env.DrawAxes()
-        [COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
+                #traj = Trajectory.from_ravetraj(rave_path)
+                #traj.info()
+                #traj.draw(env)
+                ##traj.PlotParametrization(env)
+                #traj.draw_delete()
+                #td = DeformationStretchPull(traj, env)
+                #td.deform(N_iter=100)
+
+                [COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
+                scale+=0.05
+                time.sleep(0.5)
 
         #Mcut = 60
         #COM_zig_zag = COM_zig_zag[:,0:Mcut]
@@ -144,7 +143,7 @@ if __name__ == "__main__":
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot)
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,fmaxvelmult=0.15)#plannername='ParabolicTrajectoryRetimer')
         with env.env:
-                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.95)
+                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.75)
                 rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
 
 
