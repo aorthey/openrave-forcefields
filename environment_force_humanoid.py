@@ -19,6 +19,7 @@ class AttributePassthrough(object):
 
 
 class EnvironmentHumanoid(ForceEnvironment):
+        surrender_pos = []
         def __init__(self):
                 ForceEnvironment.__init__(self)
                 xmlenv='environments/plane.env.xml'
@@ -90,6 +91,8 @@ class EnvironmentHumanoid(ForceEnvironment):
                         #DOFValues[24] = -math.pi/2
                         #DOFValues[37] = -math.pi/2
                         self.robot.SetDOFValues(DOFValues)
+
+                        self.surrender_pos = self.robot.GetActiveDOFValues()
 
                         dof = self.robot.GetDOF()
                         v = np.ones(dof)

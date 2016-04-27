@@ -6,6 +6,17 @@ import math
 import time
 from cbirrtpy import *
 
+COLOR_LEFT_FOOT = np.array((1.0,0.0,0.0,0.9))
+COLOR_RIGHT_FOOT = np.array((0.0,1.0,0.0,0.9))
+FOOT_WIDTH = 0.07
+FOOT_LENGTH = 0.12
+FOOT_SPACING = 0.25
+MAX_FOOT_STEP_LENGTH = 0.3
+FOOT_STEP_HEIGHT = 0.05
+#Z_FOOT_CONTACT = 0.002
+Z_FOOT_CONTACT = 0.0001
+SURFACE_FRICTION = 0.8
+
 def waitrobot(robot):
     """busy wait for robot completion"""
     while not robot.GetController().IsDone():
@@ -41,14 +52,6 @@ def COM_interpolate(c1,c2,M):
                 COM_linear[:,i] = c1*(1-a) + a*c2
                 i=i+1
         return COM_linear
-
-COLOR_LEFT_FOOT = np.array((1.0,0.0,0.0,0.9))
-COLOR_RIGHT_FOOT = np.array((0.0,1.0,0.0,0.9))
-FOOT_WIDTH = 0.07
-FOOT_LENGTH = 0.10
-FOOT_SPACING = 0.2
-MAX_FOOT_STEP_LENGTH = 0.3
-FOOT_STEP_HEIGHT = 0.1
 
 def GetStepLengthFoot(sign, COM_project, nrml, startPos):
         d=0.0
@@ -100,9 +103,7 @@ def visualizeSingleFoot(env, F, dF, colorF):
 
 def visualizeFoot(env, F, dF, colorF):
         handles = []
-        print F.shape[0]
         for i in range(0,F.shape[0]):
-                print F[i,:]
                 h = visualizeSingleFoot(env, F[i,:],dF[i,:],colorF)
                 handles.append(h)
         return handles
@@ -354,6 +355,11 @@ def COM_compute_zig_zag_motion(COM_linear, env):
                         Lsupport = True
                         print "left foot move finished"
 
+        lastfootpos = footpos[-1,:]
+        ### stack it up until finished
+        while footpos.shape[0] < M:
+                footpos = np.vstack((footpos,lastfootpos))
+
         handles.append(env.env.drawlinestrip(points=footpos[:,0:3],
                            linewidth=8,
                            colors=COLOR_LEFT_FOOT))
@@ -431,124 +437,6 @@ def createTransformFromPosDer( footpos, dfootpos ):
         return [HL,HR]
 
 
-def GIK_from_COM_and_FOOTPOS(COM_path, footpos, dfootpos, q_original, robot, env, recompute=False, DEBUG=False):
-        q_gik_fname = 'tmp/q_gik2.numpy'
-        COM_gik_fname = 'tmp/COM_gik2.numpy'
-
-        N = q_original.shape[0]
-        M = q_original.shape[1]
-
-        q_gik = np.zeros((N,M))
-        #Z_FOOT_CONTACT = 0.002
-        Z_FOOT_CONTACT = 0.0001
-        COM_gik = np.zeros((3,M))
-        if not os.path.isfile(q_gik_fname+'.npy') or recompute:
-                i = 0
-                with env.env:
-                        cbirrt = CBiRRT(env.env, env.robot_name)
-                        while i < M:
-                                if DEBUG:
-                                        print "------------------------------------------------------------------"
-                                        print "------------ WAYPOINT",i,"/",M,": recompute GIK ------------ "
-                                        print "------------------------------------------------------------------"
-                                try:
-                                        robot.SetActiveDOFValues(q_original[:,i])
-
-                                        left_leg_tf = robot.GetManipulator('l_leg').GetTransform()
-                                        #right_leg_tf = robot.GetManipulator('r_leg').GetTransform()
-                                        #left_arm_tf = robot.GetManipulator('l_arm').GetTransform()
-                                        #right_arm_tf = robot.GetManipulator('r_arm').GetTransform()
-
-                                        #maniptm_list = [('l_leg',left_leg_tf),('r_leg',right_leg_tf),('l_arm',left_arm_tf),('r_arm',right_arm_tf)]
-                                        #maniptm_list = [('l_leg',left_leg_tf),('r_leg',right_leg_tf)]
-                                        friction_coefficient = 0.8
-
-                                        #support_list = [('l_leg',friction_coefficient),
-                                                        #('r_leg',friction_coefficient),
-                                                        #('l_arm',friction_coefficient),
-                                                        #('r_arm',friction_coefficient)]
-
-                                        support_list = []
-                                        maniptm_list = []
-
-                                        [left_leg_tf, right_leg_tf] = createTransformFromPosDer( footpos[i,:], dfootpos[i,:] )
-
-                                        if left_leg_tf[2,3] < Z_FOOT_CONTACT:
-                                                support_list.append(('l_leg',friction_coefficient))
-                                                maniptm_list.append(('l_leg',left_leg_tf))
-                                        if right_leg_tf[2,3] < Z_FOOT_CONTACT:
-                                                support_list.append(('r_leg',friction_coefficient))
-                                                maniptm_list.append(('r_leg',right_leg_tf))
-                                        
-                                        print "ZHEIGHT FEET:",left_leg_tf[2,3],right_leg_tf[2,3],support_list
-                                        print COM_path[:,i],left_leg_tf[0:3,3],right_leg_tf[0:3,3]
-
-                                        cog = COM_path[:,i]
-                                        #obstacle_list = [('floor',(0,0,1))]
-                                        obstacle_list = [('floor',(0,0,1))]
-                                        F = np.zeros((3))
-                                        F += np.array((0,0,-9.81))
-                                        #F += np.array((0,0.01,0))
-                                        q_res = cbirrt.DoGeneralIK(
-                                                        movecog=cog,
-                                                        gravity=F.tolist(),
-                                                        #checkcollisionlink=['l_foot','r_foot'],
-                                                        obstacles=obstacle_list,
-                                                        maniptm=maniptm_list,
-                                                        support=support_list,
-                                                        printcommand=False)
-
-                                        if q_res is None:
-                                                print "------------ WAYPOINT",i,"/",M,": recompute GIK ------------ "
-                                                print "No solution found GIK"
-                                                sys.exit(0)
-                                        else:
-                                                q_gik[:,i] = q_res
-                                        #print "DIST q,q_gik:",np.linalg.norm(q_original[:,i]-q_gik[:,i])
-                                        robot.SetActiveDOFValues(q_gik[:,i])
-                                        COM_gik[:,i] = robot.GetCenterOfMass()
-                                        left_leg_tf_gik = robot.GetManipulator('l_leg').GetTransform()
-                                        right_leg_tf_gik = robot.GetManipulator('r_leg').GetTransform()
-
-                                        print "CHANGE IN FOOT POS (L):"
-                                        print left_leg_tf[0:3,3]
-                                        print left_leg_tf_gik[0:3,3]
-                                        print "CHANGE IN FOOT POS (R):"
-                                        print right_leg_tf[0:3,3]
-                                        print right_leg_tf_gik[0:3,3]
-
-                                except Exception as e:
-                                        print "Exception in GIK, waypoint",i,"/",M
-                                        print e
-                                        sys.exit(0)
-
-                                if DEBUG:
-                                        dcc = np.linalg.norm(cog[:,i]-COM_gik[:,i])
-                                        print "ERROR GIK      :",dcc
-                                        print "INPUT GIK  COM :",cog
-                                        print "OUTPUT GIK COM :",COM_gik[:,i]
-
-                                i = i+1
-
-                #from pylab import *
-                #plot(arange(0,M),feet_pos[0,:],'-r',linewidth=4)
-                #plot(arange(0,M),feet_pos[1,:],'-g',linewidth=4)
-                #plot(arange(0,M),feet_pos[2,:],'-b',linewidth=4)
-                #plot(arange(0,M),feet_pos[3,:],'--r',linewidth=4)
-                #plot(arange(0,M),feet_pos[4,:],'--g',linewidth=4)
-                #plot(arange(0,M),feet_pos[5,:],'--b',linewidth=4)
-                #plt.show()
-                np.save(q_gik_fname,q_gik)
-                np.save(COM_gik_fname,COM_gik)
-
-        else:
-                q_gik = np.load(q_gik_fname+'.npy')
-                COM_gik = np.load(COM_gik_fname+'.npy')
-
-        return [q_gik, COM_gik]
-
-
-
 def GIK_from_COM(COM_path, q_original, robot, env, recompute=False, DEBUG=False):
         q_gik_fname = 'tmp/q_gik.numpy'
         COM_gik_fname = 'tmp/COM_gik.numpy'
@@ -557,7 +445,6 @@ def GIK_from_COM(COM_path, q_original, robot, env, recompute=False, DEBUG=False)
         M = q_original.shape[1]
 
         q_gik = np.zeros((N,M))
-        Z_FOOT_CONTACT = 0.002
         COM_gik = np.zeros((3,M))
         if not os.path.isfile(q_gik_fname+'.npy') or recompute:
                 i = 0
@@ -611,8 +498,9 @@ def GIK_from_COM(COM_path, q_original, robot, env, recompute=False, DEBUG=False)
                                         q_res = cbirrt.DoGeneralIK(
                                                         movecog=cog,
                                                         gravity=F.tolist(),
+                                                        returnclosest=True,
                                                         #checkcollisionlink=['l_foot','r_foot'],
-                                                        obstacles=obstacle_list,
+                                                        #obstacles=obstacle_list,
                                                         maniptm=maniptm_list,
                                                         support=support_list,
                                                         printcommand=False)
@@ -665,3 +553,118 @@ def GIK_from_COM(COM_path, q_original, robot, env, recompute=False, DEBUG=False)
                 COM_gik = np.load(COM_gik_fname+'.npy')
 
         return [q_gik, COM_gik]
+
+def GIK_from_COM_and_FOOTPOS(COM_path, footpos, dfootpos, q_original, robot, env, recompute=False, DEBUG=False):
+        q_gik_fname = 'tmp/q_gik2.numpy'
+        COM_gik_fname = 'tmp/COM_gik2.numpy'
+
+        N = q_original.shape[0]
+        M = q_original.shape[1]
+
+        q_gik = np.zeros((N,M))
+        COM_gik = np.zeros((3,M))
+        if not os.path.isfile(q_gik_fname+'.npy') or recompute:
+                i = 0
+                with env.env:
+                        cbirrt = CBiRRT(env.env, env.robot_name)
+                        while i < M:
+                                if DEBUG:
+                                        print "------------------------------------------------------------------"
+                                        print "------------ WAYPOINT",i,"/",M,": recompute GIK ------------ "
+                                        print "------------------------------------------------------------------"
+                                try:
+                                        qori = env.surrender_pos
+                                        #robot.SetActiveDOFValues(q_original[:,i])
+                                        robot.SetActiveDOFValues(qori)
+                                        robot.SetTransform(np.array([[1,0,0,COM_path[0,i]],[0,1,0,COM_path[1,i]],[0,0,1,COM_path[2,i]],[0,0,0,1]]))
+
+
+
+                                        left_leg_tf_ori = robot.GetManipulator('l_leg').GetTransform()
+                                        right_leg_tf_ori = robot.GetManipulator('r_leg').GetTransform()
+                                        #left_arm_tf = robot.GetManipulator('l_arm').GetTransform()
+                                        #right_arm_tf = robot.GetManipulator('r_arm').GetTransform()
+
+                                        support_list = []
+                                        maniptm_list = []
+
+                                        [left_leg_tf, right_leg_tf] = createTransformFromPosDer( footpos[i,:], dfootpos[i,:] )
+
+                                        if left_leg_tf[2,3] < Z_FOOT_CONTACT:
+                                                support_list.append(('l_leg',SURFACE_FRICTION))
+                                                maniptm_list.append(('l_leg',left_leg_tf))
+                                        if right_leg_tf[2,3] < Z_FOOT_CONTACT:
+                                                support_list.append(('r_leg',SURFACE_FRICTION))
+                                                maniptm_list.append(('r_leg',right_leg_tf))
+                                        
+
+                                        cog = COM_path[:,i]
+                                        #obstacle_list = [('floor',(0,0,1))]
+                                        obstacle_list = [('floor',(0,0,1))]
+                                        F = np.zeros((3))
+                                        F += np.array((0,0,-9.81))
+                                        #F += np.array((0,0.01,0))
+                                        q_res = cbirrt.DoGeneralIK(
+                                                        movecog=cog,
+                                                        gravity=F.tolist(),
+                                                        returnclosest=True,
+                                                        #checkcollisionlink=['l_foot','r_foot'],
+                                                        #obstacles=obstacle_list,
+                                                        maniptm=maniptm_list,
+                                                        support=support_list,
+                                                        printcommand=False)
+
+                                        if q_res is None:
+                                                print "------------ WAYPOINT",i,"/",M,": recompute GIK ------------ "
+                                                print "No solution found GIK"
+                                                print "ZHEIGHT FEET (L,R):",left_leg_tf[2,3],right_leg_tf[2,3],support_list
+                                                print "COM PATH          :",COM_path[:,i]
+                                                print "LEFT FOOT POS     :",left_leg_tf[0:3,3]
+                                                print "RIGHT FOOT POS    :",right_leg_tf[0:3,3]
+                                                sys.exit(0)
+                                        else:
+                                                q_gik[:,i] = q_res
+                                        #print "DIST q,q_gik:",np.linalg.norm(q_original[:,i]-q_gik[:,i])
+                                        robot.SetActiveDOFValues(q_gik[:,i])
+                                        COM_gik[:,i] = robot.GetCenterOfMass()
+                                        left_leg_tf_gik = robot.GetManipulator('l_leg').GetTransform()
+                                        right_leg_tf_gik = robot.GetManipulator('r_leg').GetTransform()
+
+                                        print "CHANGE IN FOOT POS (L):"
+                                        print np.around(left_leg_tf_ori[0:3,3],decimals=2)
+                                        print np.around(left_leg_tf_gik[0:3,3],decimals=2)
+                                        print "CHANGE IN FOOT POS (R):"
+                                        print np.around(right_leg_tf_ori[0:3,3],decimals=2)
+                                        print np.around(right_leg_tf_gik[0:3,3],decimals=2)
+
+                                except Exception as e:
+                                        print "Exception in GIK, waypoint",i,"/",M
+                                        print e
+                                        sys.exit(0)
+
+                                if DEBUG:
+                                        dcc = np.linalg.norm(cog[:,i]-COM_gik[:,i])
+                                        print "ERROR GIK      :",dcc
+                                        print "INPUT GIK  COM :",cog
+                                        print "OUTPUT GIK COM :",COM_gik[:,i]
+
+                                i = i+1
+
+                #from pylab import *
+                #plot(arange(0,M),feet_pos[0,:],'-r',linewidth=4)
+                #plot(arange(0,M),feet_pos[1,:],'-g',linewidth=4)
+                #plot(arange(0,M),feet_pos[2,:],'-b',linewidth=4)
+                #plot(arange(0,M),feet_pos[3,:],'--r',linewidth=4)
+                #plot(arange(0,M),feet_pos[4,:],'--g',linewidth=4)
+                #plot(arange(0,M),feet_pos[5,:],'--b',linewidth=4)
+                #plt.show()
+                np.save(q_gik_fname,q_gik)
+                np.save(COM_gik_fname,COM_gik)
+
+        else:
+                q_gik = np.load(q_gik_fname+'.npy')
+                COM_gik = np.load(COM_gik_fname+'.npy')
+
+        return [q_gik, COM_gik]
+
+
