@@ -44,9 +44,9 @@ def COM_interpolate(c1,c2,M):
 
 COLOR_LEFT_FOOT = np.array((1.0,0.0,0.0,0.9))
 COLOR_RIGHT_FOOT = np.array((0.0,1.0,0.0,0.9))
-FOOT_WIDTH = 0.08
-FOOT_LENGTH = 0.12
-FOOT_SPACING = 0.25
+FOOT_WIDTH = 0.07
+FOOT_LENGTH = 0.10
+FOOT_SPACING = 0.2
 MAX_FOOT_STEP_LENGTH = 0.3
 FOOT_STEP_HEIGHT = 0.1
 
@@ -137,6 +137,7 @@ def interpolateFoot(N, f1, df1, f2, df2):
                 d = d+dstep
         return [np.array(ftvec),np.array(dftvec)]
 
+handles = []
 
 def COM_compute_zig_zag_motion(COM_linear, env):
         ### in (cm)
@@ -225,10 +226,10 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         dLf = np.array(leftFootDer)
         dRf = np.array(rightFootDer)
 
-        handles = []
         handleL = visualizeFoot( env, Lf, dLf, COLOR_LEFT_FOOT)
         handles.append(handleL)
         handleR = visualizeFoot( env, Rf, dRf, COLOR_RIGHT_FOOT)
+        handles.append(handleR)
         #raw_input('Press <ENTER> to continue.')
 
         Rsteps = Rf.shape[0]
@@ -439,13 +440,12 @@ def GIK_from_COM_and_FOOTPOS(COM_path, footpos, dfootpos, q_original, robot, env
 
         q_gik = np.zeros((N,M))
         #Z_FOOT_CONTACT = 0.002
-        Z_FOOT_CONTACT = 0.00001
+        Z_FOOT_CONTACT = 0.0001
         COM_gik = np.zeros((3,M))
         if not os.path.isfile(q_gik_fname+'.npy') or recompute:
                 i = 0
                 with env.env:
                         cbirrt = CBiRRT(env.env, env.robot_name)
-                        feet_pos = np.zeros((6,M))
                         while i < M:
                                 if DEBUG:
                                         print "------------------------------------------------------------------"
@@ -480,12 +480,8 @@ def GIK_from_COM_and_FOOTPOS(COM_path, footpos, dfootpos, q_original, robot, env
                                                 support_list.append(('r_leg',friction_coefficient))
                                                 maniptm_list.append(('r_leg',right_leg_tf))
                                         
-                                        feet_pos[0:3,i]=left_leg_tf[0:3,3]
-                                        feet_pos[3:6,i]=right_leg_tf[0:3,3]
-                                        #zfoot[0,i]=left_leg_tf[2,3]
-                                        #zfoot[1,i]=right_leg_tf[2,3]
-
                                         print "ZHEIGHT FEET:",left_leg_tf[2,3],right_leg_tf[2,3],support_list
+                                        print COM_path[:,i],left_leg_tf[0:3,3],right_leg_tf[0:3,3]
 
                                         cog = COM_path[:,i]
                                         #obstacle_list = [('floor',(0,0,1))]
