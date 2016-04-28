@@ -165,8 +165,36 @@ if __name__ == "__main__":
         #env.env.GetPhysicsEngine().SetGravity([0,0.001,0])
 
         with env.env:
-                F =np.array((0.0,500.0,0.0))
-                env.AddForceAtTorso(robot, F)
+                #robot.GetDOFValues()
+                #robot.GetDOFVelocities()
+                tm,tc,tg = robot.ComputeInverseDynamics([],None,returncomponents=True)
+                ## tm = M*qdd 
+                ## tc = C(q,qd)
+                ## tg = G(q)
+
+        Nl = len(robot.GetLinks())
+
+        forcetorquemap = np.zeros((Nl,6))
+        link = robot.GetLink('torso')
+        iTorso = link.GetIndex()
+        forcetorquemap[iTorso,0]=0.0
+        forcetorquemap[iTorso,1]=5.0
+        forcetorquemap[iTorso,2]=0.0
+
+
+        ## create forcetorquemap dictionary
+        {x: np.zeros(6) for x in np.arange(Nl)}
+
+
+        with env.env:
+                dt = 0.01
+                tm,tc,tg = robot.ComputeInverseDynamics([],forcetorquemap,returncomponents=True)
+                qdd = (tm+tc+tg)
+                qd = dt*qdd
+                q = 0.5*dt*dt*qdd
+                print q
+                #F =np.array((0.0,50.0,0.0))
+                #env.AddForceAtTorso(robot, F)
 
                 rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.75)
                 rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)

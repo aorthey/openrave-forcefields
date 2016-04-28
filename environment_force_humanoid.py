@@ -187,11 +187,11 @@ class EnvironmentHumanoid(ForceEnvironment):
         def AddForceAtTorso(self, robot, F):
                 #link = robot.GetLink('l_foot')
                 link = robot.GetLink('torso')
-                print "found TORSO"
                 P = link.GetLocalCOM()
-                #link.SetForce(F,P,True)
-                self.env.GetPhysicsEngine().SetBodyForce(link,F,P,True)
+                print "found TORSO"
+                link.SetForce(F,P,True)
 
+                #self.env.GetPhysicsEngine().SetBodyForce(link,F,P,True)
                 ### color in the geometries
                 for geom in link.GetGeometries():
                         c = np.array((1,0,0))
