@@ -108,26 +108,26 @@ class EnvironmentHumanoid(ForceEnvironment):
                         #sys.exit(0)
 
 
-        def EnforceLimits(self, q, qlimL, qlimU, DEBUG=False):
-                epsilon=1e-1
+        def EnforceLimits(self, q, qlimL, qlimU):
+                ### EnforceLimits is only checking for rounding errors
+                ### function returns error if joint limits are too far outside
+                ### (specified by epsilon) => this case means that there is some
+                ### general problem with another functions which provides the q
+                epsilon=1e-5
                 for i in range(0,q.shape[0]):
-                       if DEBUG:
-                                print "DOF",i,":",qlimL[i],"<=",q[i],"<=",qlimU[i]
-                       if ( q[i] <= qlimL[i] + epsilon ):
-                               qq = q[i] - epsilon
-                               q[i] = qlimL[i] + epsilon
-                               #print "q[i]=",qq," (<",qlimL[i],") => q[i]=",q[i]
-                       if ( q[i] >= qlimU[i] - epsilon ):
-                               qq = q[i] + epsilon
-                               q[i] = qlimU[i] - epsilon
-                               #print "q[i]=",qq," (>",qlimU[i],") => q[i]=",q[i]
-                #for i in range(0,q.shape[0]):
-                #        if ( q[i] <= qlimL[i]):
-                #                q[i] = qlimL[i]
-                #        if ( q[i] >= qlimU[i]):
-                #                q[i] = qlimU[i]
-                #                print "DOF",i,":",q[i],">",qlimU[i]
-                #                #print "q[i]=",qq," (>",qlimU[i],") => q[i]=",q[i]
+                        #print "DOF",i,":",qlimL[i],"<=",q[i],"<=",qlimU[i]
+                       if ( q[i] <= qlimL[i]):
+                               q[i] = qlimL[i]+epsilon
+                               if q[i] < (qlimL[i]-epsilon):
+                                       print "!q[i]=",q[i]," (<",qlimL[i],") epsilon neighborhood:",epsilon
+                                       print "ERROR: joint value is too far outside joint limits"
+                                       sys.exit(1)
+                       if ( q[i] >= qlimU[i] ):
+                               q[i] = qlimU[i]-epsilon
+                               if q[i] > (qlimU[i]+epsilon):
+                                       print "!q[i]=",q[i]," (>",qlimU[i],") epsilon neighborhood:",epsilon
+                                       print "ERROR: joint value is too far outside joint limits"
+                                       sys.exit(1)
                 return q
 
 
@@ -183,6 +183,20 @@ class EnvironmentHumanoid(ForceEnvironment):
                         F = self.forces[i]
                         h = self.DrawForceArrowsInBox(T, B, F)
                         self.AddForceHandles(h)
+
+        def AddForceAtTorso(self, robot, F):
+                #link = robot.GetLink('l_foot')
+                link = robot.GetLink('torso')
+                print "found TORSO"
+                P = link.GetLocalCOM()
+                #link.SetForce(F,P,True)
+                self.env.GetPhysicsEngine().SetBodyForce(link,F,P,True)
+
+                ### color in the geometries
+                for geom in link.GetGeometries():
+                        c = np.array((1,0,0))
+                        geom.SetAmbientColor(c) 
+                        geom.SetDiffuseColor(c) 
 
         def AddForcesToRobot(self, robot):
                 for link in robot.GetLinks():

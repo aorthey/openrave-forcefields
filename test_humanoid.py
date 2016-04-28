@@ -58,33 +58,53 @@ if __name__ == "__main__":
         T = arange(0,M)
         C = float(M/5)
 
-        scale=0.0
-        raw_input('Press <ENTER> to start.')
-        while scale<0.5:
-                COM_offset = np.zeros((3,M))
-                COM_offset += COM_linear
-                COM_offset[0,:]+=0.00*exp(-(T-M/2)**2/(2*C*C))
-                COM_offset[1,:]+=-scale*exp(-(T-M/2)**2/(2*C*C))
-                COM_offset[2,:]+=-0.01*exp(-(T-M/2)**2/(2*C*C))
+        scale=0.01
 
-                env.DrawAxes()
+        COM_offset = np.zeros((3,M))
+        COM_offset += COM_linear
+        COM_offset[0,:]+=0.00*exp(-(T-M/2)**2/(2*C*C))
+        COM_offset[1,:]+=-scale*exp(-(T-M/2)**2/(2*C*C))
+        COM_offset[2,:]+=-scale*0.1*exp(-(T-M/2)**2/(2*C*C))
 
-                tmp_handle=[]
-                with env.env:
-                        h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0,1,0)))
-                        tmp_handle.append(h)
+        env.DrawAxes()
 
-                #traj = Trajectory.from_ravetraj(rave_path)
-                #traj.info()
-                #traj.draw(env)
-                ##traj.PlotParametrization(env)
-                #traj.draw_delete()
-                #td = DeformationStretchPull(traj, env)
-                #td.deform(N_iter=100)
-
+        tmp_handle=[]
+        with env.env:
+                h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0,1,0)))
+                tmp_handle.append(h)
                 [COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
-                scale+=0.05
-                time.sleep(0.5)
+
+        time.sleep(0.1)
+
+        #while scale<0.8:
+
+        #        COM_offset = np.zeros((3,M))
+        #        COM_offset += COM_linear
+        #        COM_offset[0,:]+=0.00*exp(-(T-M/2)**2/(2*C*C))
+        #        COM_offset[1,:]+=-scale*exp(-(T-M/2)**2/(2*C*C))
+        #        COM_offset[2,:]+=-scale*0.1*exp(-(T-M/2)**2/(2*C*C))
+
+        #        env.DrawAxes()
+
+        #        tmp_handle=[]
+        #        with env.env:
+        #                h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0,1,0)))
+        #                tmp_handle.append(h)
+        #        [COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
+        #        scale+=0.05
+        #        time.sleep(0.1)
+
+        #raw_input('Press <ENTER> to start.')
+
+        #traj = Trajectory.from_ravetraj(rave_path)
+        #traj.info()
+        #traj.draw(env)
+        ##traj.PlotParametrization(env)
+        #traj.draw_delete()
+        #td = DeformationStretchPull(traj, env)
+        #td.deform(N_iter=100)
+
+        #time.sleep(0.5)
 
         #Mcut = 60
         #COM_zig_zag = COM_zig_zag[:,0:Mcut]
@@ -142,10 +162,23 @@ if __name__ == "__main__":
 
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot)
         #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,fmaxvelmult=0.15)#plannername='ParabolicTrajectoryRetimer')
+        #env.env.GetPhysicsEngine().SetGravity([0,0.001,0])
+
         with env.env:
+                F =np.array((0.0,500.0,0.0))
+                env.AddForceAtTorso(robot, F)
+
                 rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.75)
                 rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
+                #controller = RaveCreateController(env.env,'odevelocity')
+                #robot.SetController(controller,range(robot.GetDOF()),0)
 
+                env.env.StopSimulation()
+                env.env.StartSimulation(timestep=0.001)
+
+                q = robot.GetActiveDOFValues()
+
+        #robot.SetController(RaveCreateController(env,'odevelocity'),range(robot.GetDOF()),0)
 
         raw_input('Press <ENTER> to start.')
         openravepy.RaveLogInfo("Waiting for controller to finish")

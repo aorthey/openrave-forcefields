@@ -635,6 +635,10 @@ def GIK_from_COM_and_FOOTPOS(COM_path, footpos, dfootpos, robot, env, recompute=
                                 print "------------ WAYPOINT",i,"/",M,": GIK  ---------------------------"
                                 print "------------------------------------------------------------------"
                                 try:
+
+                                        [qlimL,qlimU]=robot.GetActiveDOFLimits()
+                                        env.EnforceLimits(q_old, qlimL, qlimU)
+
                                         robot.SetActiveDOFValues(q_old)
                                         #robot.SetTransform(np.array([[1,0,0,COM_path[0,i]],[0,1,0,COM_path[1,i]],[0,0,1,COM_path[2,i]],[0,0,0,1]]))
 
@@ -720,7 +724,7 @@ def GIK_from_COM_and_FOOTPOS(COM_path, footpos, dfootpos, robot, env, recompute=
                                         print np.around(footpos[i,3:6],decimals=2)
                                         print np.around(right_leg_tf_gik[0:3,3],decimals=2)
 
-                                        q_old = q_res
+                                        q_old = q_gik[:,i]
 
                                 except Exception as e:
                                         print "Exception in GIK, waypoint",i,"/",M
