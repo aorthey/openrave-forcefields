@@ -160,58 +160,119 @@ if __name__ == "__main__":
                 traj.Insert(i,q_gik[:,i])
                 i=i+1
 
-        #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot)
-        #rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,fmaxvelmult=0.15)#plannername='ParabolicTrajectoryRetimer')
-        #env.env.GetPhysicsEngine().SetGravity([0,0.001,0])
-
-        with env.env:
-                #robot.GetDOFValues()
-                #robot.GetDOFVelocities()
-                tm,tc,tg = robot.ComputeInverseDynamics([],None,returncomponents=True)
-                ## tm = M*qdd 
-                ## tc = C(q,qd)
-                ## tg = G(q)
-
         Nl = len(robot.GetLinks())
 
-        forcetorquemap = np.zeros((Nl,6))
-        link = robot.GetLink('torso')
-        iTorso = link.GetIndex()
-        forcetorquemap[iTorso,0]=0.0
-        forcetorquemap[iTorso,1]=5.0
-        forcetorquemap[iTorso,2]=0.0
-
-
-        ## create forcetorquemap dictionary
-        {x: np.zeros(6) for x in np.arange(Nl)}
-
+        ##forcetorquemap = np.zeros((Nl,6))
+        #forcetorquemap = {x: np.zeros(6) for x in np.arange(Nl)}
+        ### create forcetorquemap dictionary
+        #link = robot.GetLink('torso')
+        #iTorso = link.GetIndex()
+        #Ftorso = np.array((0,0.0,0,0,0,0))
+        #forcetorquemap[iTorso]=Ftorso
 
         with env.env:
-                dt = 0.01
-                tm,tc,tg = robot.ComputeInverseDynamics([],forcetorquemap,returncomponents=True)
-                qdd = (tm+tc+tg)
-                qd = dt*qdd
-                q = 0.5*dt*dt*qdd
-                print q
-                #F =np.array((0.0,50.0,0.0))
-                #env.AddForceAtTorso(robot, F)
-
-                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.75)
                 rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
-                #controller = RaveCreateController(env.env,'odevelocity')
-                #robot.SetController(controller,range(robot.GetDOF()),0)
+                rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.75)
 
+        Td = traj.GetDuration()
+
+        active_dofs = robot.GetActiveConfigurationSpecification()
+
+        dt = 0.1
+        t = 0.0
+        while t < Td:
+                qt = traj.Sample(t,active_dofs)
+                t=t+dt
+        sys.exit(0)
+        dtsleep = 0.1
+
+        #raw_input('Press <ENTER> to execute trajectory.')
+
+        with env.env:
+                #env.env.GetPhysicsEngine().SetGravity([0,0,-0.981])
+                env.env.GetPhysicsEngine().SetGravity([0,0,0])
+                robot.GetLinks()[0].SetStatic(True)
+                #F = np.array((-1000,0,0))
+                #env.AddForceAtTorso(robot, F)
+                #robot.SetController(RaveCreateController(env.env,'odevelocity'),range(robot.GetDOF()),0)
                 env.env.StopSimulation()
                 env.env.StartSimulation(timestep=0.001)
+                #qd = np.zeros(robot.GetDOF())
+                #robot.GetController().SendCommand('setvelocity '+' '.join(str(qdi) for qdi in qd))
 
-                q = robot.GetActiveDOFValues()
-
-        #robot.SetController(RaveCreateController(env,'odevelocity'),range(robot.GetDOF()),0)
-
-        raw_input('Press <ENTER> to start.')
-        openravepy.RaveLogInfo("Waiting for controller to finish")
-        #robot.GetController().SetPath(rave_path)
         robot.GetController().SetPath(traj)
         robot.WaitForController(0)
         robot.GetController().Reset()
         raw_input('Enter any key to quit. ')
+
+
+        #robot.GetController().SetPath(rave_path)
+        #robot.GetController().SendCommand('setvelocity '+' '.join(str(f) for f in velocities))
+        dtsleep = 0.1
+
+        def printProgress(i, d, dall):
+                t=d/dall
+                T = int(t*10)
+                print "[",i,"]",
+                for i in range(0,T):
+                        ".",
+                print
+
+        i = 3
+        q_old = np.zeros(robot.GetDOF())
+        q_next = np.zeros(robot.GetDOF())
+        q_last = np.zeros(robot.GetDOF())
+        qd = np.zeros(robot.GetDOF())
+
+        with env.env:
+                robot.SetActiveDOFValues(q_gik[:,i])
+                q_cur = robot.GetDOFValues()
+                env.env.StopSimulation()
+                env.env.StartSimulation(timestep=0.001)
+
+        while i<M:
+                ictr = 0 
+                while True:
+                        with env.env:
+                                q_cur = robot.GetDOFValues()
+
+                                robot.SetActiveDOFValues(q_gik[:,i+1])
+                                q_next = robot.GetDOFValues()
+
+                                robot.SetActiveDOFValues(q_gik[:,i])
+                                q_last = robot.GetDOFValues()
+
+                                robot.SetActiveDOFValues(q_cur)
+
+                                qd = 0.001*(q_next-q_last)/dt
+                                C = robot.GetController()
+                                dq = np.linalg.norm(qd)
+
+                                #qd = np.zeros(robot.GetDOF())
+                                #C.SendCommand('setvelocity '+' '.join(str(qdi) for qdi in qd))
+
+                                ### draw line from q_last to q_next, check q_cur
+                                ### position on this line
+                                dstart = np.linalg.norm(q_cur-q_last)
+                                dtarg = np.linalg.norm(q_cur-q_next)
+                                dline = np.linalg.norm(q_next-q_last)
+
+                                if dstart > dline:
+                                        ## overshoot
+                                        print "overshooting"
+                                        qd = np.zeros(robot.GetDOF())
+                                        robot.GetController().SendCommand('setvelocity '+' '.join(str(qdi) for qdi in qd))
+
+                                #tm,tc,tg = robot.ComputeInverseDynamics([],None,returncomponents=True)
+                                #qdd = (tm+tc+tg)
+                                #print qdd
+                                #qd = dt*qdd + (q_new-q_old)/dt
+                                #printProgress(i,d,dall)
+
+                                print ictr,"vel:",dq,"overall dist:",dline," dist from start:",dstart,"dist to targ:",dtarg
+                        time.sleep(dt)
+                        ictr+=1
+                        if ictr > 20:
+                                sys.exit(0)
+                i=i+1
+                sys.exit(0)

@@ -191,7 +191,7 @@ class EnvironmentHumanoid(ForceEnvironment):
                 print "found TORSO"
                 link.SetForce(F,P,True)
 
-                #self.env.GetPhysicsEngine().SetBodyForce(link,F,P,True)
+                self.env.GetPhysicsEngine().SetBodyForce(link,F,P,True)
                 ### color in the geometries
                 for geom in link.GetGeometries():
                         c = np.array((1,0,0))
