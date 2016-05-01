@@ -17,6 +17,7 @@ import numpy as np
 from motion_planner_geometrical import MotionPlannerGeometrical
 from motion_planner_kinodynamic import MotionPlannerKinodynamic
 from util_humanoid import *
+from gazebo_interface import *
 #import statsmodels.api as sm
 
 def waitrobot(robot):
@@ -74,20 +75,24 @@ if __name__ == "__main__":
                 tmp_handle.append(h)
                 [COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
 
+                M = COM_offset.shape[1]
+                COM_project = np.zeros((3,M))
+                COM_project[0:2,:]=COM_offset[0:2,:]
+                [Lf, dLf, Rf, dRf] = GetFootPositionFromProjectedCOM( COM_project )
+
         time.sleep(0.1)
 
         #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env, recompute=True)
         [q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env)
         #[q_gik, COM_gik] = GIK_from_COM( COM_zig_zag, q_original, robot, env, recompute=True)
 
+        gazebo = GazeboInterface()
+        gazebo.executeFootStepPath(Lf, dLf, Rf, dRf)
+
+        sys.exit(0)
         #######################################################################
         ### RECOMPUTE GIK FROM NEW COM
         #######################################################################
-
-        #q_gik_fname = 'tmp/q_gik.numpy'
-        #COM_gik_fname = 'tmp/COM_gik.numpy'
-        #q_gik = np.load(q_gik_fname+'.npy')
-        #COM_gik = np.load(COM_gik_fname+'.npy')
 
         tmp_handle=[]
         with env.env:
@@ -99,9 +104,6 @@ if __name__ == "__main__":
                 tmp_handle.append(h)
                 robot.SetActiveDOFValues(q_gik[:,0])
 
-        #time.sleep(0.5)
-        #visualize_configurations(q_original, robot, env)
-        #sys.exit(0)
         ###############################################################################
         ##### CREATE A NEW RAVE TRAJ FROM NEW CONFIGURATIONS AND RETIME
         ###############################################################################

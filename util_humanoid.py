@@ -142,17 +142,8 @@ def interpolateFoot(N, f1, df1, f2, df2):
 
 handles = []
 
-def COM_compute_zig_zag_motion(COM_linear, env):
-        del handles[:]
-        ### in (cm)
-
-        ##assume that we start with both feet spaced apart at start pos
-
-        M = COM_linear.shape[1]
-        ## project COM onto surface
-        COM_project = np.zeros((3,M))
-        COM_project[0:2,:]=COM_linear[0:2,:]
-
+def GetFootPositionFromProjectedCOM( COM_project ):
+        M = COM_project.shape[1]
         ## GET derivative along path
         der = np.zeros((3,M))
         nrml = np.zeros((3,M))
@@ -160,7 +151,7 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         Rf = np.zeros((3,2*M))
 
         #######################################################################
-        ### compute der and normal to com path projhected onto floor
+        ### compute der and normal to com path projected onto floor
         #######################################################################
         for i in range(0,M-1):
                 der[:,i] = COM_project[:,i+1] - COM_project[:,i]
@@ -228,12 +219,25 @@ def COM_compute_zig_zag_motion(COM_linear, env):
         Rf = np.array(rightFoot)
         dLf = np.array(leftFootDer)
         dRf = np.array(rightFootDer)
+        return [Lf, dLf, Rf, dRf]
+
+def COM_compute_zig_zag_motion(COM_linear, env):
+        del handles[:]
+        ### in (cm)
+
+        ##assume that we start with both feet spaced apart at start pos
+
+        M = COM_linear.shape[1]
+        ## project COM onto surface
+        COM_project = np.zeros((3,M))
+        COM_project[0:2,:]=COM_linear[0:2,:]
+
+        [Lf, dLf, Rf, dRf] = GetFootPositionFromProjectedCOM( COM_project )
 
         handleL = visualizeFoot( env, Lf, dLf, COLOR_LEFT_FOOT)
         handles.append(handleL)
         handleR = visualizeFoot( env, Rf, dRf, COLOR_RIGHT_FOOT)
         handles.append(handleR)
-        #raw_input('Press <ENTER> to continue.')
 
         Rsteps = Rf.shape[0]
         Lsteps = Lf.shape[0]
@@ -464,31 +468,24 @@ def visualize_configurations(q_original, robot, env):
                 time.sleep(0.1)
                 i=i+1
 
+### compute signed angle between vector in xy plane and x-axis (yaw)
+def GetSignedAngle(dF):
+        ndF = dF/np.linalg.norm(dF)
+        ex = np.array((1,0,0))
+        angle = math.acos(np.dot(ndF,ex))
+        sign = np.sign(np.cross(ex, ndF)[2])
+        if sign >= 0:
+                ## left side rotation [0,pi]
+                angle = angle
+        else:
+                angle = -angle
+        return angle
+
 def HTfromPosDer(F, dF):
         H = np.eye(4)
         H[0:3,3] = F
-        ndF = dF/np.linalg.norm(dF)
-
-        ex = np.array((1,0,0))
-
-        angle = math.acos(np.dot(ndF,ex))
-        sign = np.sign(np.cross(ex, ndF)[2])
-
-        print angle
-        if angle>math.pi/4:
-                print "angle too big"
-                print dF
-                print ex
-                print angle
-                sys.exit(1)
-        if sign >= 0:
-                ## left side rotation [0,pi]
-
-                rot=Rz(angle)
-        else:
-                rot=Rz(-angle)
-
-        H[0:3,0:3] = rot
+        angle = GetSignedAngle(dF)
+        H[0:3,0:3] = Rz(angle)
         return H
 
 def createTransformFromPosDer( fpos, dfpos):
