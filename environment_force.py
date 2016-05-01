@@ -25,6 +25,7 @@ class ForceEnvironment():
         robot=''
         handles = []
         force_handles = []
+        extra_handles = []
         static_handles = []
         cells = None
         forces = None
@@ -203,6 +204,18 @@ class ForceEnvironment():
                 A = self.env.drawarrow(p1=e0,p2=e3,linewidth=lw,color=caxis3)
                 self.static_handles.append(A)
 
+
+        def DrawArrow(self, pos, direction, deleteOld=False, lw = None, ca = None):
+                if deleteOld:
+                        self.extra_handles = []
+                if np.linalg.norm(direction)<0.05:
+                        return
+                if lw is None:
+                        lw = self.FORCE_FIELD_ARROW_SIZE
+                if ca is None:
+                        ca = self.FORCE_FIELD_COLOR
+                A = self.env.drawarrow(p1=pos,p2=pos+direction,linewidth=lw,color=ca)
+                self.extra_handles.append(A)
 
         def GetForceAtX(self, X):
                 self.robot.SetDOFValues(X)

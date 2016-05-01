@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#start!/usr/bin/env python
 import time
 import scipy
 import sys
@@ -171,108 +171,106 @@ if __name__ == "__main__":
         #forcetorquemap[iTorso]=Ftorso
 
         with env.env:
+                env.env.GetPhysicsEngine().SetGravity([0,0,-9.81])
                 rave.planningutils.SmoothActiveDOFTrajectory(traj,robot)
                 rave.planningutils.RetimeActiveDOFTrajectory(traj,robot,hastimestamps=False,maxvelmult=0.75)
 
         Td = traj.GetDuration()
 
         active_dofs = robot.GetActiveConfigurationSpecification()
+        forcetorquemap = {x: np.zeros(6) for x in np.arange(Nl)}
+        ### create forcetorquemap dictionary
+        link = robot.GetLink('torso')
+        iTorso = link.GetIndex()
+        Ftorso = np.array((0,0.0,0,0,0,0))
+
+        for geom in link.GetGeometries():
+                c = np.array((1,0,0))
+                geom.SetAmbientColor(c) 
+                geom.SetDiffuseColor(c) 
+
+        forcetorquemap[iTorso]=Ftorso
 
         dt = 0.1
         t = 0.0
+        qold = traj.Sample(0,active_dofs)
+        qext = np.zeros((robot.GetDOF()))
+        zlvec = []
+        zrvec = []
+        ictr=0
         while t < Td:
+                t0 = time.time()
                 qt = traj.Sample(t,active_dofs)
+
+                tmutex = time.time()
+                with env.env:
+                        #### add contact forces
+                        tstart = time.time()
+                        rlink = robot.GetManipulator('r_leg')
+                        llink = robot.GetManipulator('l_leg')
+                        zr = rlink.GetTransform()[2,3]
+                        zl = llink.GetTransform()[2,3]
+                        zlvec.append(zl)
+                        zrvec.append(zr)
+                        #iRlink = rlink.GetIndex()
+                        #iLlink = llink.GetIndex()
+
+                        lsole = robot.GetLink('l_sole')
+                        zsl = lsole.GetTransform()[2,3]
+                        rsole = robot.GetLink('r_sole')
+                        zsr = rsole.GetTransform()[2,3]
+
+                        iLlink = lsole.GetIndex()
+                        iRlink = rsole.GetIndex()
+
+                        llink = robot.GetLink('l_foot')
+                        rlink = robot.GetLink('l_foot')
+                        env.DrawArrow(robot.GetLink('torso').GetGlobalCOM(), Ftorso[0:3], deleteOld=True)
+                        if zl < 0.01:
+                                Ffoot = np.array((0,0,-0,0,0,0))
+                                forcetorquemap[iLlink]=Ffoot
+                                env.DrawArrow(llink.GetGlobalCOM(), -Ffoot[0:3])
+                        else:
+                                forcetorquemap[iLlink]=np.zeros(6)
+                                env.DrawArrow(llink.GetGlobalCOM(), np.zeros(3))
+                        #        link = robot.GetLink('l_foot')
+                        #        for geom in link.GetGeometries():
+                        #                c = np.array((1,1,1))
+                        #                geom.SetAmbientColor(c) 
+                        #                geom.SetDiffuseColor(c) 
+                        #if zr < 0.01:
+                        #        forcetorquemap[iRlink]=-Ftorso
+                        #else:
+                        #        forcetorquemap[iRlink]=np.zeros(6)
+
+
+                        tdyn = time.time()
+                        robot.SetActiveDOFValues(qold)
+                        tm,tc,tg = robot.ComputeInverseDynamics([],forcetorquemap,returncomponents=True)
+
+                        qdd = (tm+tc+tg)
+                        qext = qdd*dt*dt*0.5 + qext
+
+                        robot.SetDOFValues(qext)
+                        qext_active = robot.GetActiveDOFValues()
+
+                        q = qt + qext_active
+                        robot.SetActiveDOFValues(q)
+                        qold = q
+                        ictr +=1
+                        tend = time.time()
+                        #print "time:",tend-tstart,"map:",tdyn-tstart,"invdyn:",tend-tdyn
+                        #if ictr > 30:
+                        #        plot(zlvec,'-b')
+                        #        plot(zrvec,'-r')
+                        #        plt.show()
+                tend = time.time()
+                time.sleep(dt)
+                tsleep = time.time()
+                print "time:",tsleep-t0,"sleep:",tsleep-tend,"invdyn:",tend-tdyn,"tsample:",tstart-t0,"tmutex:",tstart-tmutex
                 t=t+dt
         sys.exit(0)
         dtsleep = 0.1
 
-        #raw_input('Press <ENTER> to execute trajectory.')
+        raw_input('Press <ENTER> to execute trajectory.')
 
-        with env.env:
-                #env.env.GetPhysicsEngine().SetGravity([0,0,-0.981])
-                env.env.GetPhysicsEngine().SetGravity([0,0,0])
-                robot.GetLinks()[0].SetStatic(True)
-                #F = np.array((-1000,0,0))
-                #env.AddForceAtTorso(robot, F)
-                #robot.SetController(RaveCreateController(env.env,'odevelocity'),range(robot.GetDOF()),0)
-                env.env.StopSimulation()
-                env.env.StartSimulation(timestep=0.001)
-                #qd = np.zeros(robot.GetDOF())
-                #robot.GetController().SendCommand('setvelocity '+' '.join(str(qdi) for qdi in qd))
-
-        robot.GetController().SetPath(traj)
-        robot.WaitForController(0)
-        robot.GetController().Reset()
-        raw_input('Enter any key to quit. ')
-
-
-        #robot.GetController().SetPath(rave_path)
-        #robot.GetController().SendCommand('setvelocity '+' '.join(str(f) for f in velocities))
-        dtsleep = 0.1
-
-        def printProgress(i, d, dall):
-                t=d/dall
-                T = int(t*10)
-                print "[",i,"]",
-                for i in range(0,T):
-                        ".",
-                print
-
-        i = 3
-        q_old = np.zeros(robot.GetDOF())
-        q_next = np.zeros(robot.GetDOF())
-        q_last = np.zeros(robot.GetDOF())
-        qd = np.zeros(robot.GetDOF())
-
-        with env.env:
-                robot.SetActiveDOFValues(q_gik[:,i])
-                q_cur = robot.GetDOFValues()
-                env.env.StopSimulation()
-                env.env.StartSimulation(timestep=0.001)
-
-        while i<M:
-                ictr = 0 
-                while True:
-                        with env.env:
-                                q_cur = robot.GetDOFValues()
-
-                                robot.SetActiveDOFValues(q_gik[:,i+1])
-                                q_next = robot.GetDOFValues()
-
-                                robot.SetActiveDOFValues(q_gik[:,i])
-                                q_last = robot.GetDOFValues()
-
-                                robot.SetActiveDOFValues(q_cur)
-
-                                qd = 0.001*(q_next-q_last)/dt
-                                C = robot.GetController()
-                                dq = np.linalg.norm(qd)
-
-                                #qd = np.zeros(robot.GetDOF())
-                                #C.SendCommand('setvelocity '+' '.join(str(qdi) for qdi in qd))
-
-                                ### draw line from q_last to q_next, check q_cur
-                                ### position on this line
-                                dstart = np.linalg.norm(q_cur-q_last)
-                                dtarg = np.linalg.norm(q_cur-q_next)
-                                dline = np.linalg.norm(q_next-q_last)
-
-                                if dstart > dline:
-                                        ## overshoot
-                                        print "overshooting"
-                                        qd = np.zeros(robot.GetDOF())
-                                        robot.GetController().SendCommand('setvelocity '+' '.join(str(qdi) for qdi in qd))
-
-                                #tm,tc,tg = robot.ComputeInverseDynamics([],None,returncomponents=True)
-                                #qdd = (tm+tc+tg)
-                                #print qdd
-                                #qd = dt*qdd + (q_new-q_old)/dt
-                                #printProgress(i,d,dall)
-
-                                print ictr,"vel:",dq,"overall dist:",dline," dist from start:",dstart,"dist to targ:",dtarg
-                        time.sleep(dt)
-                        ictr+=1
-                        if ictr > 20:
-                                sys.exit(0)
-                i=i+1
-                sys.exit(0)
