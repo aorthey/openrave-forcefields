@@ -138,8 +138,8 @@ class GazeboInterface():
                 the_step.colliding = False
                 the_step.locked = False
                 the_step.modified = False
-                the_step.sway_duration = 2.0
-                the_step.step_duration = 2.0
+                the_step.sway_duration = 1.5
+                the_step.step_duration = 0.5
                 the_step.swing_height = 0.05
 
                 print "create footstep path"
