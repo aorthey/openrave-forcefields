@@ -1,0 +1,11 @@
+<KinBody name="ground_plane">
+    <Body type="dynamic">
+        <translation>0 0 -0.005</translation>
+        <!-- TODO: The ground shouldn't have to be this low -->
+        <Geom type="box">
+            <extents>3.5 3.5 0.0005</extents>
+            <diffuseColor>.6 .6 .6</diffuseColor>
+            <ambientColor>0.6 0.6 0.6</ambientColor>
+        </Geom>
+    </Body>
+</KinBody>
