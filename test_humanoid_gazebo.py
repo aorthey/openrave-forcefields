@@ -59,7 +59,7 @@ if __name__ == "__main__":
         T = arange(0,M)
         C = float(M/5)
 
-        scale=0.01
+        scale=0.5
 
         COM_offset = np.zeros((3,M))
         COM_offset += COM_linear
@@ -79,6 +79,10 @@ if __name__ == "__main__":
                 COM_project = np.zeros((3,M))
                 COM_project[0:2,:]=COM_offset[0:2,:]
                 [Lf, dLf, Rf, dRf] = GetFootPositionFromProjectedCOM( COM_project )
+                handleL = visualizeFoot( env, Lf, dLf, COLOR_LEFT_FOOT)
+                handles.append(handleL)
+                handleR = visualizeFoot( env, Rf, dRf, COLOR_RIGHT_FOOT)
+                handles.append(handleR)
 
         time.sleep(0.1)
         #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env, recompute=True)
