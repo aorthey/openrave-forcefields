@@ -81,7 +81,6 @@ if __name__ == "__main__":
                 [Lf, dLf, Rf, dRf] = GetFootPositionFromProjectedCOM( COM_project )
 
         time.sleep(0.1)
-
         #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env, recompute=True)
         #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env)
         #[q_gik, COM_gik] = GIK_from_COM( COM_zig_zag, q_original, robot, env, recompute=True)

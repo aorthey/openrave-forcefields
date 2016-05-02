@@ -9,9 +9,21 @@ from cbirrtpy import *
 COLOR_LEFT_FOOT = np.array((1.0,0.0,0.0,0.9))
 COLOR_RIGHT_FOOT = np.array((0.0,1.0,0.0,0.9))
 
+### falling for (0,0.1,9.8):
+#FOOT_SPACING = 0.35
+#MAX_FOOT_STEP_LENGTH = 0.3
+#FOOT_STEP_HEIGHT = 0.005
+
+## working for (0,0.1,9.8):
 FOOT_SPACING = 0.35
 MAX_FOOT_STEP_LENGTH = 0.03
 FOOT_STEP_HEIGHT = 0.005
+
+#FOOT_SPACING = 0.2
+#MAX_FOOT_STEP_LENGTH = 0.2
+#FOOT_STEP_HEIGHT = 0.05
+
+
 #Z_FOOT_CONTACT = 0.002
 Z_FOOT_CONTACT = 0.0001
 SURFACE_FRICTION = 0.9
@@ -60,6 +72,7 @@ def GetStepLengthFoot(sign, COM_project, nrml, startPos):
         M = COM_project.shape[1]
         i=startPos
         FOOT_STEP_LENGTH = MAX_FOOT_STEP_LENGTH
+        d = np.linalg.norm(COM_project[:,0]-COM_project[:,1])
         while d<=MAX_FOOT_STEP_LENGTH:
                 if i >= M:
                         pstart = COM_project[:,M-1] + sign*0.5*FOOT_SPACING*nrml[:,M-1]
