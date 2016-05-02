@@ -46,7 +46,6 @@ class GazeboInterface():
                 pass
 
         def executeFootStepPath(self, Lf, dLf, Rf, dRf):
-                rospy.init_node('whole_body_traj_client')
 
                 rpos = 0
                 lpos = 0
@@ -57,7 +56,8 @@ class GazeboInterface():
 
                 s = Stance(Lf[lpos,:],dLf[lpos,:],Rf[rpos,:],dRf[rpos,:])
                 path.append(s)
-                while rpos < Nr-1:
+
+                while rpos < Nr-1 and lpos < Nl-1:
                         rpos += 1
                         s = Stance(Lf[lpos,:],dLf[lpos,:],Rf[rpos,:],dRf[rpos,:])
                         path.append(s)
@@ -78,6 +78,7 @@ class GazeboInterface():
         	# foot pose. (x,y,z in meter, roll, 
         	# pitch, yaw in degrees)
         	########################################
+                rospy.init_node('whole_body_traj_client')
 
                 print "stand up"
                 self.change_mode('stand')

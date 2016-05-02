@@ -8,15 +8,18 @@ from cbirrtpy import *
 
 COLOR_LEFT_FOOT = np.array((1.0,0.0,0.0,0.9))
 COLOR_RIGHT_FOOT = np.array((0.0,1.0,0.0,0.9))
-FOOT_WIDTH = 0.07
-FOOT_LENGTH = 0.12
-FOOT_SPACING = 0.2
-MAX_FOOT_STEP_LENGTH = 0.3
-FOOT_STEP_HEIGHT = 0.05
+
+FOOT_SPACING = 0.3
+MAX_FOOT_STEP_LENGTH = 0.05
+FOOT_STEP_HEIGHT = 0.01
 #Z_FOOT_CONTACT = 0.002
 Z_FOOT_CONTACT = 0.0001
 SURFACE_FRICTION = 0.9
 np.set_printoptions(precision=2)
+
+### geometry of robot feet (escher)
+FOOT_WIDTH = 0.07
+FOOT_LENGTH = 0.12
 
 def waitrobot(robot):
     """busy wait for robot completion"""

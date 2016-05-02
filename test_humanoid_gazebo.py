@@ -73,7 +73,7 @@ if __name__ == "__main__":
         with env.env:
                 h=env.env.drawlinestrip(points=COM_offset.T,linewidth=6,colors=np.array((0,1,0)))
                 tmp_handle.append(h)
-                [COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
+                #[COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
 
                 M = COM_offset.shape[1]
                 COM_project = np.zeros((3,M))
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         time.sleep(0.1)
 
         #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env, recompute=True)
-        [q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env)
+        #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env)
         #[q_gik, COM_gik] = GIK_from_COM( COM_zig_zag, q_original, robot, env, recompute=True)
 
         gazebo = GazeboInterface()
