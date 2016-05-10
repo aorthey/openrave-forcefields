@@ -48,13 +48,12 @@ if __name__ == "__main__":
         N = len(robot.GetActiveDOFValues())
 
         [q_original, COM_original] = COM_from_path( rave_path, robot, env)
+        com_path = COMpath.from_rave(rave_path, robot, env)
 
         #######################################################################
         ### COMPUTE NEW COM
         #######################################################################
-
         COM_linear = COM_interpolate(COM_original[:,0],COM_original[:,-1],M)
-
         env.DrawAxes()
 
         tmp_handle=[]
@@ -65,10 +64,15 @@ if __name__ == "__main__":
 
         time.sleep(0.1)
 
-        [q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env, recompute=True)
-        #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env)
+        #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env, recompute=True)
+        [q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env)
         #[q_gik, COM_gik] = GIK_from_COM( COM_zig_zag, q_original, robot, env, recompute=True)
 
+        #COM_deformation
+        ## average COM -> footpos
+        ## footpos -> real COM
+        ## real COM, footpos -> GIK
+        
         #######################################################################
         ### RECOMPUTE GIK FROM NEW COM
         #######################################################################

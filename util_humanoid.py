@@ -15,17 +15,18 @@ COLOR_RIGHT_FOOT = np.array((0.0,1.0,0.0,0.9))
 #FOOT_STEP_HEIGHT = 0.005
 
 ## working for (0,0.1,9.8):
-FOOT_SPACING = 0.35
-MAX_FOOT_STEP_LENGTH = 0.03
-FOOT_STEP_HEIGHT = 0.005
+#FOOT_SPACING = 0.35
+#MAX_FOOT_STEP_LENGTH = 0.03
+#FOOT_STEP_HEIGHT = 0.005
 
-#FOOT_SPACING = 0.2
-#MAX_FOOT_STEP_LENGTH = 0.2
-#FOOT_STEP_HEIGHT = 0.05
+## standard values
+FOOT_SPACING = 0.25
+MAX_FOOT_STEP_LENGTH = 0.25
+FOOT_STEP_HEIGHT = 0.05
 
 
-#Z_FOOT_CONTACT = 0.002
-Z_FOOT_CONTACT = 0.0001
+Z_FOOT_CONTACT = 0.002
+#Z_FOOT_CONTACT = 0.0001
 SURFACE_FRICTION = 0.9
 np.set_printoptions(precision=2)
 
@@ -96,7 +97,6 @@ def GetStepLengthRightFoot(COM_project, nrml, startPos):
 def GetStepLengthLeftFoot(COM_project, nrml, startPos):
         return GetStepLengthFoot(+1, COM_project, nrml, startPos)
 
-
 def visualizeSingleFoot(env, F, dF, colorF):
 
         ndF=dF/np.linalg.norm(dF)
@@ -131,6 +131,13 @@ def interpolateFoot(N, f1, df1, f2, df2):
                 print f1,f2
                 print footstep_length,">",MAX_FOOT_STEP_LENGTH
                 sys.exit(1)
+        if N<2:
+                print "interpolateFoot was asked to interpolate ",N
+                print "waypoints. That is not enough"
+                print "start foot:",f1
+                print "goal foot :",f2
+                print "length    :",footstep_length
+                sys.exit(1)
         #######################################################
         ## PARABOLA ALONG STEP TO COMPUTE Z-COORDINATE
         #######################################################
@@ -140,6 +147,7 @@ def interpolateFoot(N, f1, df1, f2, df2):
         dftvec = []
         ictr=0
         while d <= footstep_length+1e-5:
+                print d,footstep_length,N,dstep
                 t = d/footstep_length
                 ft = (1-t)*f1 + t*f2
                 dft = (1-t)*df1 + t*df2
@@ -200,6 +208,7 @@ def GetFootPositionFromProjectedCOM( COM_project ):
         while d < MAX_FOOT_STEP_LENGTH/2:
                 d = np.linalg.norm(COM_project[:,i] - COM_project[:,0])
                 i=i+1
+
         Rf = COM_project[:,i-1] - 0.5*FOOT_SPACING*nrml[:,i-1]
         rightFoot.append(Rf)
         rightFootDer.append(der[:,i-1])
@@ -321,6 +330,7 @@ def COM_compute_zig_zag_motion(COM_linear, env):
 
         Lsupport = True
         while COMposition < M:
+                print "FOOT: [",Lposition,Rposition,"] / [",Lsteps,Rsteps,"]"
                 if Lsupport:
                         if Rposition+1 >= Rsteps:
                                 ## no more right foot steps abort

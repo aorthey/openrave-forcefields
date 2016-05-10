@@ -27,7 +27,6 @@ class Deformation():
         handle = []
         forcehandle = []
 
-
         def __init__(self, trajectory, environment):
                 self.env = environment
 
@@ -43,7 +42,6 @@ class Deformation():
         @abc.abstractmethod 
         def deform_onestep(self):
                 pass
-
 
         def deform(self, N_iter = 1):
                 computeNewCriticalPoint = True
