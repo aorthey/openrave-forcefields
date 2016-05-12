@@ -12,12 +12,12 @@ class ForceEnvironment():
         ViewerName = 'qtcoin'
         PhysicsEngineName = 'ode'
         CollisionCheckerName = 'ode'
-        FORCE_FIELD_MIN_SPACING = 0.3
-        FORCE_FIELD_MAX_SPACING = 0.4
+        FORCE_FIELD_MIN_SPACING = 0.5
+        FORCE_FIELD_MAX_SPACING = 0.8
         FORCE_FIELD_PT_SIZE = 4
         FORCE_FIELD_ARROW_SIZE = 0.02
         #FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))
-        FORCE_FIELD_COLOR = np.array((0.4,0.1,0.0,0.4))
+        FORCE_FIELD_COLOR = np.array((1.0,1.0,1.0,0.1))
         #######################################################################
         env_xml=''
         robot_xml=''
@@ -188,6 +188,40 @@ class ForceEnvironment():
                                 return True
                 return False
 
+        def DrawNormalVectors(self, posN, dirN):
+                N = posN.shape[0]
+                naxis = np.array((1,1,0))
+                lw = 0.01
+                for i in range(0,N):
+                        A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*dirN[i],linewidth=lw,color=naxis)
+                        self.static_handles.append(A)
+
+        def DrawTangentialVectors(self,posN,tN,oN):
+                N = posN.shape[0]
+                naxis = np.array((0,1,1))
+                lw = 0.01
+                for i in range(0,N):
+                        A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*tN[i],linewidth=lw,color=naxis)
+                        self.static_handles.append(A)
+                        A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*oN[i],linewidth=lw,color=naxis)
+                        self.static_handles.append(A)
+
+        def DrawFrameFromTransform(self, T, scale=0.1):
+                e0 = np.dot(T,np.array((0,0,0,1)))[0:3]
+                e1 = np.dot(T,np.array((scale,0,0,1)))[0:3]
+                e2 = np.dot(T,np.array((0,scale,0,1)))[0:3]
+                e3 = np.dot(T,np.array((0,0,scale,1)))[0:3]
+                caxis1 = np.array((1,0,0))
+                caxis2 = np.array((0,1,0))
+                caxis3 = np.array((0,0,1))
+                lw = 0.01
+                A = self.env.drawarrow(p1=e0,p2=e1,linewidth=lw,color=caxis1)
+                self.static_handles.append(A)
+                A = self.env.drawarrow(p1=e0,p2=e2,linewidth=lw,color=caxis2)
+                self.static_handles.append(A)
+                A = self.env.drawarrow(p1=e0,p2=e3,linewidth=lw,color=caxis3)
+                self.static_handles.append(A)
+
         def DrawAxes(self):
                 e0 = np.array((0,0,0))
                 e1 = np.array((1,0,0))
@@ -196,7 +230,7 @@ class ForceEnvironment():
                 caxis1 = np.array((1,0,0))
                 caxis2 = np.array((0,1,0))
                 caxis3 = np.array((0,0,1))
-                lw = 0.03
+                lw = 0.02
                 A = self.env.drawarrow(p1=e0,p2=e1,linewidth=lw,color=caxis1)
                 self.static_handles.append(A)
                 A = self.env.drawarrow(p1=e0,p2=e2,linewidth=lw,color=caxis2)

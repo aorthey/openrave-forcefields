@@ -17,29 +17,19 @@ class AttributePassthrough(object):
     def __iter__(self):
         return iter(self.getAll())
 
-
 class EnvironmentHumanoid(ForceEnvironment):
         surrender_pos = []
-        def __init__(self):
+        def __init__(self, xmlenv = 'environments/plane.env.xml'):
                 ForceEnvironment.__init__(self)
-                xmlenv='environments/plane.env.xml'
-                #xmlenv='robots/escher/ground_plane_2.xml'
                 urdf = 'robots/escher/escher_v2.kinbody.urdf'
                 srdf = 'robots/escher/escher.robot.srdf'
+                self.env_xml = xmlenv
                 with self.env:
-                        self.env_xml = xmlenv
                         self.robot_urdf = urdf
                         self.robot_srdf = srdf
-                        #self.env.Add(self.env.ReadRobotXMLFile(self.robot_xml))
+
                         module = rave.RaveCreateModule(self.env, 'urdf')
                         self.robot_name = module.SendCommand('load {} {}'.format(urdf, srdf))
-
-                        #body = self.env.GetKinBody(self.robot_name)
-                        #self.env.Remove(body)
-                        #self.robot_name = 'escher22'
-                        #body.SetName(self.robot_name)
-                        #self.env.Add(body)
-
                         self.robot = self.env.GetRobot(self.robot_name)
 
                         self.manip = AttributePassthrough(self.robot.GetManipulator, self.robot.GetManipulators)
@@ -61,6 +51,7 @@ class EnvironmentHumanoid(ForceEnvironment):
 
                         self.manip.l_leg.SetLocalToolDirection(np.array([0, 0, -1]))
                         self.manip.r_leg.SetLocalToolDirection(np.array([0, 0, -1]))
+
                         l_arm_indices = self.robot.GetManipulator('l_arm').GetArmIndices()
                         r_arm_indices = self.robot.GetManipulator('r_arm').GetArmIndices()
                         l_leg_indices = self.robot.GetManipulator('l_leg').GetArmIndices()
@@ -80,7 +71,7 @@ class EnvironmentHumanoid(ForceEnvironment):
                         self.robot.SetActiveDOFs(whole_body_indices)
                         self.robot.SetTransform(np.array([[1,0,0,0],[0,1,0,0],[0,0,1,robot_z],[0,0,0,1]]))
 
-                        # surrender posture
+                        ### surrender posture
                         DOFValues = self.robot.GetDOFValues()
                         DOFValues[6] = math.pi/4
                         DOFValues[19] = math.pi/4
@@ -91,7 +82,6 @@ class EnvironmentHumanoid(ForceEnvironment):
                         #DOFValues[24] = -math.pi/2
                         #DOFValues[37] = -math.pi/2
                         self.robot.SetDOFValues(DOFValues)
-
                         self.surrender_pos = self.robot.GetActiveDOFValues()
 
                         dof = self.robot.GetDOF()
@@ -100,12 +90,7 @@ class EnvironmentHumanoid(ForceEnvironment):
                         #self.rave.SetDOFTorqueLimits(tunings.torque_limits)
 
                         OriginalDOFValues = self.robot.GetDOFValues()
-
                         self.env.Load(self.env_xml)
-
-                        #print DOFValues
-                        #print OriginalDOFValues
-                        #sys.exit(0)
 
 
         def EnforceLimits(self, q, qlimL, qlimU):
@@ -130,8 +115,6 @@ class EnvironmentHumanoid(ForceEnvironment):
                                        sys.exit(1)
                 return q
 
-
-
         def GetCells(self):
                 C = self.GetCellsAll()
                 self.cells = C[0:2]
@@ -151,12 +134,6 @@ class EnvironmentHumanoid(ForceEnvironment):
 
         def GetRobot(self):
                 with self.env:
-                        #self.env.GetViewer().SetCamera([
-                        #    [0.31499128, 0.09759726, -0.94406317, 6.81987572],
-                        #    [0.94805905, 0.01409698, 0.31778187, -2.29564428],
-                        #    [0.04432308, -0.99512615, -0.08808754, 1.60788679],
-                        #    [0., 0., 0., 1.]
-                        #])
                         return self.robot
 
         def DisplayForces(self):
