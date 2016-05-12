@@ -3,6 +3,8 @@ import sys
 from openravepy import *
 from numpy import array,pi
 from math import cos,sin
+from util import Rz
+import math
 import numpy as np
 
 class ForceEnvironment():
@@ -196,14 +198,48 @@ class ForceEnvironment():
                         A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*dirN[i],linewidth=lw,color=naxis)
                         self.static_handles.append(A)
 
+        def DrawFootContactPatchFromTransform(self, T):
+                ### geometry of robot feet (escher)
+                FOOT_WIDTH = 0.07
+                FOOT_LENGTH = 0.12
+
+                cfoot = np.array((0,1,0))
+                e0 = np.array((0,0,0,1))
+                ex = np.array((1,0,0,1))
+                ey = np.array((0,1,0,1))
+                ez = np.array((0,0,1,1))
+
+                fpos = np.dot(T,e0)[0:3]
+                fdir1 = np.dot(T,ex)[0:3] - fpos
+                fdir2 = np.dot(T,ey)[0:3] - fpos
+                fdir3 = np.dot(T,ez)[0:3] - fpos
+
+                offset = 0.05
+                foffset = fpos + offset*fdir3
+
+                X=np.zeros((3,7))
+                X[:,0] = foffset + FOOT_LENGTH*fdir1 - FOOT_WIDTH*fdir2
+                X[:,1] = foffset + FOOT_LENGTH*fdir1 + FOOT_WIDTH*fdir2
+                X[:,2] = foffset - FOOT_LENGTH*fdir1 + FOOT_WIDTH*fdir2
+                X[:,3] = foffset - FOOT_LENGTH*fdir1 - FOOT_WIDTH*fdir2
+                X[:,4] = foffset + FOOT_LENGTH*fdir1 - FOOT_WIDTH*fdir2
+                X[:,5] = foffset + FOOT_LENGTH*fdir1
+                X[:,6] = foffset
+
+                h = self.env.drawlinestrip(points=X.T,
+                                linewidth = 8,
+                                colors=cfoot)
+                self.static_handles.append(h)
+
         def DrawTangentialVectors(self,posN,tN,oN):
                 N = posN.shape[0]
-                naxis = np.array((0,1,1))
+                ctaxis = np.array((0,1,1))
+                coaxis = np.array((1,0,1))
                 lw = 0.01
                 for i in range(0,N):
-                        A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*tN[i],linewidth=lw,color=naxis)
+                        A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*tN[i],linewidth=lw,color=ctaxis)
                         self.static_handles.append(A)
-                        A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*oN[i],linewidth=lw,color=naxis)
+                        A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*oN[i],linewidth=lw,color=coaxis)
                         self.static_handles.append(A)
 
         def DrawFrameFromTransform(self, T, scale=0.1):

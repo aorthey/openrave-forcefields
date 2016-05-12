@@ -18,6 +18,7 @@ import numpy as np
 from motion_planner_geometrical import MotionPlannerGeometrical
 from motion_planner_kinodynamic import MotionPlannerKinodynamic
 from util_humanoid import *
+from gik_interface import *
 
 #sys.path.append(os.environ["MPP_PATH"]+"mpp-robot/mpp")
 #sys.path.append(os.environ["OPENRAVE_WPI_PATH"]+"ros_msgs")
@@ -33,6 +34,7 @@ if __name__ == "__main__":
 
         env = EnvironmentHumanoidContactWorld()
         env.DrawAxes()
+        robot = env.GetRobot()
         surfaces = env.GetSurfaces()
 
         print surfaces.shape
@@ -51,15 +53,37 @@ if __name__ == "__main__":
 
         S = SurfaceModule(surfaces)
         robot = env.GetRobot()
+
         com = robot.GetCenterOfMass()
-        k = S.GetRelevantSurfaces(com)
+        #k = S.GetRelevantSurfaces(com)
         ##computeRelevantSurfaces()
-        S.SampleSurface(1000,4,env)
 
+
+        left_leg_tf = robot.GetManipulator('l_leg').GetTransform()
+        right_leg_tf = robot.GetManipulator('r_leg').GetTransform()
+        left_arm_tf = robot.GetManipulator('l_arm').GetTransform()
+        right_arm_tf = robot.GetManipulator('r_arm').GetTransform()
+
+        left_leg_tf = S.GetNearestContactTransform(env, left_leg_tf, 4)
+        right_leg_tf = S.GetNearestContactTransform(env, right_leg_tf, 4)
+        surface_hand = 15
+        left_arm_tf = S.GetNearestContactTransform(env, left_arm_tf,
+                        surface_hand)
+
+        env.DrawFootContactPatchFromTransform(left_leg_tf)
+        env.DrawFootContactPatchFromTransform(right_leg_tf)
+        env.DrawFootContactPatchFromTransform(left_arm_tf)
+
+        #S.SampleSurface(100,15,env)
+        S.SampleSurface(100,surface_hand,env)
+
+        #gik = GIKInterface(env)
+        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
+        #time.sleep(20)
+
+        #raw_input('Press <ENTER> to execute trajectory.')
+        #robot.WaitForController(0)
         #env.DisplayForces()
-        time.sleep(0.5)
-        robot = env.GetRobot()
-
-        raw_input('Press <ENTER> to execute trajectory.')
+        #time.sleep(0.5)
 
 

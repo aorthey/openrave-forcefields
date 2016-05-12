@@ -63,6 +63,13 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
                         dN5 = np.dot(T,np.array((0,0,1,1)))[0:3]-center_box
                         dN6 = np.dot(T,np.array((0,0,-(1),1)))[0:3]-center_box
 
+                        dN1 = dN1/np.linalg.norm(dN1)
+                        dN2 = dN2/np.linalg.norm(dN2)
+                        dN3 = dN3/np.linalg.norm(dN3)
+                        dN4 = dN4/np.linalg.norm(dN4)
+                        dN5 = dN5/np.linalg.norm(dN5)
+                        dN6 = dN6/np.linalg.norm(dN6)
+
                         posN = np.array((pN1,pN2,pN3,pN4,pN5,pN6))
                         dirN = np.array((dN1,dN2,dN3,dN4,dN5,dN6))
 
