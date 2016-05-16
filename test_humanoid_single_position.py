@@ -36,6 +36,7 @@ if __name__ == "__main__":
         env.DrawAxes()
         robot = env.GetRobot()
         surfaces = env.GetSurfaces()
+        time.sleep(0.5)
 
         print surfaces.shape
         for i in arange(surfaces.shape[0]):
@@ -55,9 +56,6 @@ if __name__ == "__main__":
         robot = env.GetRobot()
 
         com = robot.GetCenterOfMass()
-        #k = S.GetRelevantSurfaces(com)
-        ##computeRelevantSurfaces()
-
 
         left_leg_tf = robot.GetManipulator('l_leg').GetTransform()
         right_leg_tf = robot.GetManipulator('r_leg').GetTransform()
@@ -65,20 +63,21 @@ if __name__ == "__main__":
         right_arm_tf = robot.GetManipulator('r_arm').GetTransform()
 
         left_leg_tf = S.GetNearestContactTransform(env, left_leg_tf, 4)
+        #left_leg_tf = S.GetNearestContactTransform(env, left_leg_tf, 15)
+        #left_leg_tf = S.GetNearestContactTransform(env, left_leg_tf, 26)
         right_leg_tf = S.GetNearestContactTransform(env, right_leg_tf, 4)
         surface_hand = 15
-        left_arm_tf = S.GetNearestContactTransform(env, left_arm_tf,
-                        surface_hand)
+        left_arm_tf = S.GetNearestContactTransform(env, left_arm_tf, surface_hand)
 
         env.DrawFootContactPatchFromTransform(left_leg_tf)
         env.DrawFootContactPatchFromTransform(right_leg_tf)
         env.DrawFootContactPatchFromTransform(left_arm_tf)
 
-        #S.SampleSurface(100,15,env)
-        S.SampleSurface(100,surface_hand,env)
+        #S.SampleSurface(100,26,env)
+        #S.SampleSurface(100,surface_hand,env)
 
-        #gik = GIKInterface(env)
-        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
+        gik = GIKInterface(env)
+        q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
         #time.sleep(20)
 
         #raw_input('Press <ENTER> to execute trajectory.')

@@ -69,7 +69,7 @@ class EnvironmentHumanoid(ForceEnvironment):
                         whole_body_indices = np.concatenate((l_arm_indices, r_arm_indices, l_leg_indices, r_leg_indices, additional_active_DOF_indices),axis=0)
 
                         self.robot.SetActiveDOFs(whole_body_indices)
-                        self.robot.SetTransform(np.array([[1,0,0,0],[0,1,0,0],[0,0,1,robot_z],[0,0,0,1]]))
+                        self.robot.SetTransform(np.array([[1,0,0,-0.5],[0,1,0,0],[0,0,1,robot_z],[0,0,0,1]]))
 
                         ### surrender posture
                         DOFValues = self.robot.GetDOFValues()

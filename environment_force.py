@@ -190,14 +190,6 @@ class ForceEnvironment():
                                 return True
                 return False
 
-        def DrawNormalVectors(self, posN, dirN):
-                N = posN.shape[0]
-                naxis = np.array((1,1,0))
-                lw = 0.01
-                for i in range(0,N):
-                        A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*dirN[i],linewidth=lw,color=naxis)
-                        self.static_handles.append(A)
-
         def DrawFootContactPatchFromTransform(self, T):
                 ### geometry of robot feet (escher)
                 FOOT_WIDTH = 0.07
@@ -231,15 +223,41 @@ class ForceEnvironment():
                                 colors=cfoot)
                 self.static_handles.append(h)
 
+        def DrawNormalVectors(self, posN, dirN):
+                N = posN.shape[0]
+                naxis = np.array((0,0,1))
+                lw = 0.01
+                for i in range(0,N):
+                        A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*dirN[i],linewidth=lw,color=naxis)
+                        self.static_handles.append(A)
+
         def DrawTangentialVectors(self,posN,tN,oN):
                 N = posN.shape[0]
-                ctaxis = np.array((0,1,1))
-                coaxis = np.array((1,0,1))
+                ctaxis = np.array((0,1,0))
+                coaxis = np.array((1,0,0))
                 lw = 0.01
                 for i in range(0,N):
                         A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*tN[i],linewidth=lw,color=ctaxis)
                         self.static_handles.append(A)
                         A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*oN[i],linewidth=lw,color=coaxis)
+                        self.static_handles.append(A)
+
+        def DrawCoordinateFrame(self, Pf, Nf, Tf, Bf):
+                lw = 0.01
+                size = 0.2
+                alpha = 0.5
+                offset = 2*lw
+                nframes = Pf.shape[0]
+                cnaxis = np.array((0,0,1,alpha))
+                coaxis = np.array((0,1,0,alpha))
+                ctaxis = np.array((1,0,0,alpha))
+                for i in range(0,nframes):
+                        center = Pf[i]+offset*Nf[i]
+                        A = self.env.drawarrow(p1=center,p2=center+size*Nf[i],linewidth=lw,color=cnaxis)
+                        self.static_handles.append(A)
+                        A = self.env.drawarrow(p1=center,p2=center+size*Tf[i],linewidth=lw,color=ctaxis)
+                        self.static_handles.append(A)
+                        A = self.env.drawarrow(p1=center,p2=center+size*Bf[i],linewidth=lw,color=coaxis)
                         self.static_handles.append(A)
 
         def DrawFrameFromTransform(self, T, scale=0.1):

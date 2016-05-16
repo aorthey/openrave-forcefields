@@ -31,7 +31,7 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
                         G1 = C.GetGeometries()[0]
                         B = G1.GetBoxExtents()
                         T = G1.GetTransform()
-                        self.DrawFrameFromTransform(T)
+                        #self.DrawFrameFromTransform(T)
 
                         bx = B[0]
                         by = B[1]
@@ -73,9 +73,9 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
                         posN = np.array((pN1,pN2,pN3,pN4,pN5,pN6))
                         dirN = np.array((dN1,dN2,dN3,dN4,dN5,dN6))
 
-                        self.DrawNormalVectors(posN,dirN)
 
                         ## tangential,and orthogonal tangential vector of plane
+                        ## make sure they have right-handed orientation
                         tN1 = dN3
                         tN2 = dN3
                         tN3 = dN5
@@ -83,17 +83,20 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
                         tN5 = dN1
                         tN6 = dN1
 
-                        oN1 = dN5
-                        oN2 = dN5
-                        oN3 = dN1
-                        oN4 = dN1
-                        oN5 = dN3
-                        oN6 = dN3
+                        oN1 = np.cross(dN1,tN1)
+                        oN2 = np.cross(dN2,tN2)
+                        oN3 = np.cross(dN3,tN3)
+                        oN4 = np.cross(dN4,tN4)
+                        oN5 = np.cross(dN5,tN5)
+                        oN6 = np.cross(dN6,tN6)
 
                         tN = np.array((tN1,tN2,tN3,tN4,tN5,tN6))
                         oN = np.array((oN1,oN2,oN3,oN4,oN5,oN6))
 
-                        self.DrawTangentialVectors(posN,tN,oN)
+                        #self.DrawNormalVectors(posN,dirN)
+                        #self.DrawTangentialVectors(posN,tN,oN)
+
+                        self.DrawCoordinateFrame(posN, dirN, tN, oN)
 
                         ## extension into tN1 and oN1
                         etN1 = by
