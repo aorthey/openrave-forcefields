@@ -63,25 +63,24 @@ if __name__ == "__main__":
         right_arm_tf = robot.GetManipulator('r_arm').GetTransform()
 
         left_leg_tf = S.GetNearestContactTransform(env, left_leg_tf, 4)
-        #left_leg_tf = S.GetNearestContactTransform(env, left_leg_tf, 15)
-        #left_leg_tf = S.GetNearestContactTransform(env, left_leg_tf, 26)
         right_leg_tf = S.GetNearestContactTransform(env, right_leg_tf, 4)
-        surface_hand = 15
-        left_arm_tf = S.GetNearestContactTransform(env, left_arm_tf, surface_hand)
+        left_arm_tf = S.GetNearestContactTransform(env, left_arm_tf, 15)
+        right_arm_tf = S.GetNearestContactTransform(env, right_arm_tf, 26)
 
         env.DrawFootContactPatchFromTransform(left_leg_tf)
         env.DrawFootContactPatchFromTransform(right_leg_tf)
         env.DrawFootContactPatchFromTransform(left_arm_tf)
+        env.DrawFootContactPatchFromTransform(right_arm_tf)
 
-        #S.SampleSurface(100,26,env)
-        #S.SampleSurface(100,surface_hand,env)
+        S.SampleSurface(100,26,env)
+        S.SampleSurface(100,15,env)
+        S.SampleSurface(100,4,env)
 
         gik = GIKInterface(env)
-        q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
-        #time.sleep(20)
+        q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
 
         #raw_input('Press <ENTER> to execute trajectory.')
-        #robot.WaitForController(0)
+        robot.WaitForController(0)
         #env.DisplayForces()
         #time.sleep(0.5)
 

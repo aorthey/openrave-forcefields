@@ -76,7 +76,7 @@ class GIKInterface():
                                 F += np.array((0,0,-9.80)) ## boston-style gravity
                                 #F += np.array((0,0.01,0))
                                 q_gik = cbirrt.DoGeneralIK(
-                                                execute=False,
+                                                #execute=False,
                                                 #movecog=cog,
                                                 gravity=F.tolist(),
                                                 returnclosest=True,
@@ -95,7 +95,7 @@ class GIKInterface():
                                         print "------------------------------------------------------- "
                                         sys.exit(0)
 
-                                #robot.SetActiveDOFValues(q_gik)
+                                robot.SetActiveDOFValues(q_gik)
                                 #left_leg_tf_gik = robot.GetManipulator('l_leg').GetTransform()
                                 #right_leg_tf_gik = robot.GetManipulator('r_leg').GetTransform()
 

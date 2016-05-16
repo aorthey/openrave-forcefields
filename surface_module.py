@@ -67,31 +67,6 @@ class SurfaceModule():
 
                 return R
 
-        #def rigid_transform_3D(A, B):
-        #    
-        #    # centre the points
-        #    AA = A - tile(centroid_A, (N, 1))
-        #    BB = B - tile(centroid_B, (N, 1))
-
-        #    # dot is matrix multiplication for array
-        #    H = transpose(AA) * BB
-
-        #    U, S, Vt = linalg.svd(H)
-
-        #    R = Vt.T * U.T
-
-        #    # special reflection case
-        #    if linalg.det(R) < 0:
-        #       print "Reflection detected"
-        #       Vt[2,:] *= -1
-        #       R = Vt.T * U.T
-
-        #    t = -R*centroid_A.T + centroid_B.T
-
-        #    print t
-
-        #    return R, t
-
         def GetNearestPointOnSurface(self, p, k, env=None):
                 ### do not make a contact at the boundary
                 offset_from_boundary = 0.1
@@ -122,9 +97,9 @@ class SurfaceModule():
                 if do < -ext_o:
                         dplane = dplane - (do+ext_o)*dbinormal
 
-                A = env.env.drawarrow(p1=center+dp,p2=center+dplane,linewidth=0.01,color=np.array((1,1,1)))
-                self.handles.append(A)
-                A = env.env.drawarrow(p1=center+dplane,p2=center+dplane+dnormal,linewidth=0.01,color=np.array((1,1,1)))
+                #A = env.env.drawarrow(p1=center+dp,p2=center+dplane,linewidth=0.01,color=np.array((1,1,1)))
+                #self.handles.append(A)
+                A = env.env.drawarrow(p1=center+dplane,p2=center+dplane+dnormal,linewidth=0.01,color=np.array((1,0,1)))
                 self.handles.append(A)
 
                 return center + dplane
@@ -146,7 +121,7 @@ class SurfaceModule():
                 T[0:3,3] = c
                 T[0:3,0:3] = R
 
-                DEBUG = True
+                DEBUG = False
                 if DEBUG:
                         V0 = np.dot(T,np.array((0,0,0,1)))[0:3]
                         size = 0.5
