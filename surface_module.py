@@ -2,9 +2,14 @@ import time
 import scipy
 import sys
 import numpy as np
+from util import Rax
+from math import pi
 class SurfaceModule():
 
-
+        OFFSET_CONTACT_FROM_SURFACE_BOUNDARY = 0.05
+        #OFFSET_CONTACT_TO_PLANE = 0.008
+        OFFSET_HAND_CONTACT_TO_PLANE = 0.02
+        OFFSET_FOOT_CONTACT_TO_PLANE = 0.001
         handles = []
         ### pos of center, dir of normal, dir of tangential, dir
         ### of binormal, extension in tangential dir, extension in
@@ -67,17 +72,16 @@ class SurfaceModule():
 
                 return R
 
-        def GetNearestPointOnSurface(self, p, k, env=None):
+        def GetNearestPointOnSurface(self, dist_to_surface, p, k, env=None):
                 ### do not make a contact at the boundary
-                offset_from_boundary = 0.1
 
                 srfc = self.surfaces[k,:,:]
                 center = srfc[0,:]
                 dnormal = srfc[1,:]
                 dtangential = srfc[2,:]
                 dbinormal = srfc[3,:]
-                ext_t = srfc[4,0]-offset_from_boundary
-                ext_o = srfc[5,0]-offset_from_boundary
+                ext_t = srfc[4,0]-self.OFFSET_CONTACT_FROM_SURFACE_BOUNDARY
+                ext_o = srfc[5,0]-self.OFFSET_CONTACT_FROM_SURFACE_BOUNDARY
 
                 ### project p onto plane
                 dp = p - center
@@ -101,16 +105,45 @@ class SurfaceModule():
 
                 #A = env.env.drawarrow(p1=center+dp,p2=center+dplane,linewidth=0.01,color=np.array((1,1,1)))
                 #self.handles.append(A)
-                A = env.env.drawarrow(p1=center+dplane,p2=center+dplane+dnormal,linewidth=0.01,color=np.array((1,0,1)))
-                self.handles.append(A)
 
-                offset_plane = 0.05
-                center = center + offset_plane*dnormal
-                dplane = dplane + offset_plane*dnormal
+                ### TODO: make it a cone
+                #A = env.env.drawarrow(p1=center+dplane,p2=center+dplane+0.3*dnormal,linewidth=0.01,color=np.array((1,0,1)))
+                #self.handles.append(A)
+
+                center = center + dist_to_surface*dnormal
+                dplane = dplane + dist_to_surface*dnormal
 
                 return center + dplane
 
-        def GetNearestContactTransform(self, env, T, k):
+        def GetNearestContactTransformLeftHand(self, env, T, k):
+                return self.GetNearestContactTransformHand(env, T, k, -pi/2)
+
+        def GetNearestContactTransformRightHand(self, env, T, k):
+                return self.GetNearestContactTransformHand(env, T, k, pi/2)
+
+        def GetNearestContactTransformHand(self, env, T, k, thetaNormal):
+                dist_to_surface = self.OFFSET_HAND_CONTACT_TO_PLANE
+                T = self.GetNearestContactTransform(dist_to_surface, env, T, k)
+
+                srfc = self.surfaces[k,:,:]
+                center = srfc[0,:]
+                dnormal = srfc[1,:]
+                dtangential = srfc[2,:]
+                dbinormal = srfc[3,:]
+
+                R = T[0:3,0:3]
+                R = np.dot(Rax(pi/2, dbinormal),R)
+                R = np.dot(Rax(thetaNormal, dnormal),R)
+                T[0:3,0:3]=R
+
+                return T
+
+        def GetNearestContactTransformFoot(self, env, T, k):
+                dist_to_surface = self.OFFSET_FOOT_CONTACT_TO_PLANE
+                T = self.GetNearestContactTransform(dist_to_surface, env, T, k)
+                return T
+
+        def GetNearestContactTransform(self, dist_to_surface, env, T, k):
                 srfc = self.surfaces[k,:,:]
                 center = srfc[0,:]
                 dnormal = srfc[1,:]
@@ -121,7 +154,7 @@ class SurfaceModule():
                 ey = np.array((0,1,0))
                 ez = np.array((0,0,1))
 
-                c = self.GetNearestPointOnSurface(T[0:3,3], k, env)
+                c = self.GetNearestPointOnSurface(dist_to_surface, T[0:3,3], k, env)
                 R = self.GetRotationFromTo( ex, ey, ez, dtangential, dbinormal, dnormal)
 
                 T[0:3,3] = c

@@ -1,8 +1,9 @@
 import numpy as np
 import os.path
-from util import Rz
+from util import Rz, Rax
 import sys
 import math
+from math import pi
 import time
 from cbirrtpy import *
 from openravepy import *
@@ -43,8 +44,83 @@ class GIKInterface():
                                 print "Not valid rotation matrix in transform"
                                 print "rotation:"
                                 print T[0:3,0:3]
+                                print "det:",d
                                 sys.exit(0)
                         return
+
+        def DrawFootCone(self, p, T):
+                e0 = np.array((0,0,0,1))
+                ez = np.array((0,0,1,1))
+                ct = np.dot(T,e0)[0:3]
+                nt = np.dot(T,ez)[0:3] - ct
+                A = self.env.env.drawarrow(p1=p,p2=p + nt,linewidth=0.05,color=np.array((1,1,1)))
+                self.handles.append(A)
+                #self.env.env.drawarrow(pos=p, dir=nt,height=0.5,aperture=0.2,color=np.array((1,1,1)))
+                #self.handles.append(A)
+
+        def DrawHandCone(self, p, T, thetaNormal):
+                Thand = np.eye(4)
+                Thand[0:3,3] = T[0:3,3]
+
+                e0 = np.array((0,0,0,1))
+                ex = np.array((1,0,0,1))
+                ey = np.array((0,1,0,1))
+                ez = np.array((0,0,1,1))
+
+                fpos = np.dot(T,e0)[0:3]
+                fdir1 = np.dot(T,ex)[0:3] - fpos
+                fdir2 = np.dot(T,ey)[0:3] - fpos
+                fdir3 = np.dot(T,ez)[0:3] - fpos
+
+                R = T[0:3,0:3]
+                R = np.dot(Rax(pi/2, fdir3),R)
+                R = np.dot(Rax(thetaNormal, fdir2),R)
+                Thand[0:3,0:3]=R
+                self.DrawFootCone(p, Thand)
+
+        def DrawLeftHandCone(self, p, T):
+                self.DrawHandCone(p, T, -pi/2)
+
+        def DrawRightHandCone(self, p, T):
+                self.DrawHandCone(p, T, -pi/2)
+
+        def DrawCOM(self, com):
+                ll = 0.5
+                lw = 6
+                xl = np.array((ll,0,0))
+                yl = np.array((0,ll,0))
+                zl = np.array((0,0,ll))
+                ccom = np.array((1,0,0))
+
+                P = np.array(((com+xl),(com-xl)))
+                A=self.env.env.drawlinestrip(points=P,linewidth=lw,colors=ccom)
+                self.handles.append(A)
+                P = np.array(((com+yl),(com-yl)))
+                A=self.env.env.drawlinestrip(points=P,linewidth=lw,colors=ccom)
+                self.handles.append(A)
+                P = np.array(((com+zl),(com-zl)))
+                A=self.env.env.drawlinestrip(points=P,linewidth=lw,colors=ccom)
+                self.handles.append(A)
+
+                A = self.env.env.plot3(points=com,
+                                pointsize=0.01,
+                                colors=np.array((1,0,0)),
+                                drawstyle=1)
+                self.handles.append(A)
+
+        def VisualizeConesCOM(self, com, Cll, Crl, Cla, Cra):
+                self.DrawCOM(com)
+                self.DrawFootCone(com, Cll)
+                self.DrawFootCone(com, Crl)
+                self.DrawLeftHandCone(com, Cla)
+                self.DrawRightHandCone(com, Cra)
+
+        def VisualizeCones(self, Cll, Crl, Cla, Cra):
+                self.DrawFootCone(Cll[0:3,3], Cll)
+                self.DrawFootCone(Crl[0:3,3], Crl)
+                self.DrawLeftHandCone(Cla[0:3,3], Cla)
+                self.DrawRightHandCone(Cra[0:3,3], Cra)
+
 
         def fromContactTransform( self, robot, Cll, Crl, Cla, Cra): 
                 print "--------------------------------------------------"
@@ -120,10 +196,10 @@ class GIKInterface():
 
 
                                 robot.SetActiveDOFValues(q_gik)
-
                                 self.env.env.GetCollisionChecker().SetCollisionOptions(CollisionOptions.Contacts)
                                 report = CollisionReport()
                                 ret = self.env.env.CheckCollision(robot, report=report)
+
                                 if ret:
                                         print "------------------------------------------------------- "
                                         print "GIK found solution, but solution is in collision"
@@ -146,6 +222,9 @@ class GIKInterface():
                                 Crl = robot.GetManipulator('r_leg').GetTransform()
                                 Cla = robot.GetManipulator('l_arm').GetTransform()
                                 Cra = robot.GetManipulator('r_arm').GetTransform()
+
+                                self.VisualizeCones(Cll, Crl, Cla, Cra)
+                                self.VisualizeConesCOM(robot.GetCenterOfMass(), Cll, Crl, Cla, Cra)
                                 #left_leg_tf_gik = robot.GetManipulator('l_leg').GetTransform()
                                 #right_leg_tf_gik = robot.GetManipulator('r_leg').GetTransform()
                                 print "LEFT FOOT  : ", 

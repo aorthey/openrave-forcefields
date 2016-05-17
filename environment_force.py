@@ -3,7 +3,7 @@ import sys
 from openravepy import *
 from numpy import array,pi
 from math import cos,sin
-from util import Rz
+from util import Rz, Rax
 import math
 import numpy as np
 
@@ -15,7 +15,7 @@ class ForceEnvironment():
         PhysicsEngineName = 'ode'
         #CollisionCheckerName = 'ode'
         #PhysicsEngineName = 'bullet'
-        CollisionCheckerName = 'ode'
+        CollisionCheckerName = 'fcl'
         FORCE_FIELD_MIN_SPACING = 0.5
         FORCE_FIELD_MAX_SPACING = 0.8
         FORCE_FIELD_PT_SIZE = 4
@@ -51,7 +51,7 @@ class ForceEnvironment():
                 self.env.Reset()
                 with self.env:
                         self.physics = RaveCreatePhysicsEngine(self.env, self.PhysicsEngineName)
-                        self.physics.SetGravity(array((0,0,-9.81)))
+                        self.physics.SetGravity(array((0,0,-9.80)))
                         self.env.SetPhysicsEngine(self.physics)
                         self.cc = RaveCreateCollisionChecker(self.env, self.CollisionCheckerName)
                         self.env.SetCollisionChecker(self.cc)
@@ -88,18 +88,18 @@ class ForceEnvironment():
         @abc.abstractmethod
         def RobotGetGoalPosition(self):
                 pass
+        def MakeRobotTransparent(self, alpha):
+                assert( 0 <= alpha <= 1)
+                with self.env:
+                        self.robot = self.env.GetRobots()[0]
+                        for link in self.robot.GetLinks():
+                                for geom in link.GetGeometries():
+                                        geom.SetTransparency(1.0-alpha)
+
         def MakeRobotInvisible(self):
-                with self.env:
-                        self.robot = self.env.GetRobots()[0]
-                        for link in self.robot.GetLinks():
-                                for geom in link.GetGeometries():
-                                        geom.SetTransparency(1.0) 
+                MakeRobotTransparent(0.0)
         def MakeRobotVisible(self):
-                with self.env:
-                        self.robot = self.env.GetRobots()[0]
-                        for link in self.robot.GetLinks():
-                                for geom in link.GetGeometries():
-                                        geom.SetTransparency(0.0) 
+                MakeRobotTransparent(1.0)
 
         def GetRobot(self):
                 with self.env:
@@ -191,6 +191,29 @@ class ForceEnvironment():
                                 print "COLLISION:",X[0:2],outercells[i]
                                 return True
                 return False
+
+        def DrawHandContactPatchFromTransform(self, T):
+
+                Thand = np.eye(4)
+                Thand[0:3,3] = T[0:3,3]
+
+                e0 = np.array((0,0,0,1))
+                ex = np.array((1,0,0,1))
+                ey = np.array((0,1,0,1))
+                ez = np.array((0,0,1,1))
+
+                fpos = np.dot(T,e0)[0:3]
+                fdir1 = np.dot(T,ex)[0:3] - fpos
+                fdir2 = np.dot(T,ey)[0:3] - fpos
+                fdir3 = np.dot(T,ez)[0:3] - fpos
+
+                R = T[0:3,0:3]
+                R = np.dot(Rax(pi/2, fdir3),R)
+                R = np.dot(Rax(-pi/2, fdir2),R)
+                Thand[0:3,0:3]=R
+
+                self.DrawFootContactPatchFromTransform(Thand)
+
 
         def DrawFootContactPatchFromTransform(self, T):
                 ### geometry of robot feet (escher)

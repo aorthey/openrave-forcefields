@@ -35,6 +35,7 @@ if __name__ == "__main__":
         env = EnvironmentHumanoidContactWorld()
         env.DrawAxes()
         robot = env.GetRobot()
+        env.MakeRobotTransparent(alpha=1.0)
         surfaces = env.GetSurfaces()
         time.sleep(0.5)
 
@@ -65,39 +66,41 @@ if __name__ == "__main__":
         foot_surface = 4
         left_hand_surface = 13
         right_hand_surface = 26
+        #right_hand_surface = 19
+        #S.SampleSurface(100,19,env)
 
-        left_leg_tf = S.GetNearestContactTransform(env, 
+        left_leg_tf = S.GetNearestContactTransformFoot(env, 
                         left_leg_tf, 
                         foot_surface)
-        right_leg_tf = S.GetNearestContactTransform(env, 
+        right_leg_tf = S.GetNearestContactTransformFoot(env, 
                         right_leg_tf, 
                         foot_surface)
-        left_arm_tf = S.GetNearestContactTransform(env, 
+
+        left_arm_tf = S.GetNearestContactTransformLeftHand(env, 
                         left_arm_tf,
                         left_hand_surface)
-        right_arm_tf = S.GetNearestContactTransform(env, 
+        right_arm_tf = S.GetNearestContactTransformRightHand(env, 
                         right_arm_tf,
                         right_hand_surface)
 
         env.DrawFootContactPatchFromTransform(left_leg_tf)
         env.DrawFootContactPatchFromTransform(right_leg_tf)
-        env.DrawFootContactPatchFromTransform(left_arm_tf)
-        env.DrawFootContactPatchFromTransform(right_arm_tf)
+        env.DrawHandContactPatchFromTransform(left_arm_tf)
+        env.DrawHandContactPatchFromTransform(right_arm_tf)
 
         #S.SampleSurface(100,right_hand_surface,env)
         #S.SampleSurface(100,left_hand_surface,env)
-        #S.SampleSurface(100,foot_surface,env)
 
         with env.env:
-                #env.env.GetPhysicsEngine().SetGravity([0,0,-9.81])
                 robot.GetLinks()[0].SetStatic(True)
                 gik = GIKInterface(env)
-                q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
-                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, right_arm_tf)
+                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
+                q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, right_arm_tf)
+                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, right_arm_tf)
                 #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
                 #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
 
-        #robot.WaitForController(0)
+        robot.WaitForController(0)
         #time.sleep(20)
 
 

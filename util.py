@@ -40,16 +40,33 @@ def Ry(t):
 def Rx(t):
         return np.array([[1,0,0],[0,cos(t),-sin(t)],[0,sin(t),cos(t)]])
 
-def Rax(theta, u):
-    return [[cos(theta) + u[0]**2 * (1-cos(theta)), 
-             u[0] * u[1] * (1-cos(theta)) - u[2] * sin(theta), 
-             u[0] * u[2] * (1 - cos(theta)) + u[1] * sin(theta)],
-            [u[0] * u[1] * (1-cos(theta)) - u[2] * sin(theta),
-             cos(theta) + u[1]**2 * (1-cos(theta)),
-             u[1] * u[2] * (1 - cos(theta)) + u[0] * sin(theta)],
-            [u[0] * u[2] * (1-cos(theta)) - u[1] * sin(theta),
-             u[1] * u[2] * (1-cos(theta)) - u[0] * sin(theta),
-             cos(theta) + u[2]**2 * (1-cos(theta))]]
+def Rax(theta, axis):
+#def rotation_matrix(axis, theta):
+    """
+    Return the rotation matrix associated with counterclockwise rotation about
+    the given axis by theta radians.
+    """
+    axis = np.asarray(axis)
+    theta = np.asarray(theta)
+    axis = axis/math.sqrt(np.dot(axis, axis))
+    a = math.cos(theta/2.0)
+    b, c, d = -axis*math.sin(theta/2.0)
+    aa, bb, cc, dd = a*a, b*b, c*c, d*d
+    bc, ad, ac, ab, bd, cd = b*c, a*d, a*c, a*b, b*d, c*d
+    return np.array([[aa+bb-cc-dd, 2*(bc+ad), 2*(bd-ac)],
+                     [2*(bc-ad), aa+cc-bb-dd, 2*(cd+ab)],
+                     [2*(bd+ac), 2*(cd-ab), aa+dd-bb-cc]])
+
+#def Rax(theta, u):
+#    return [[cos(theta) + u[0]**2 * (1-cos(theta)), 
+#             u[0] * u[1] * (1-cos(theta)) - u[2] * sin(theta), 
+#             u[0] * u[2] * (1 - cos(theta)) + u[1] * sin(theta)],
+#            [u[0] * u[1] * (1-cos(theta)) - u[2] * sin(theta),
+#             cos(theta) + u[1]**2 * (1-cos(theta)),
+#             u[1] * u[2] * (1 - cos(theta)) + u[0] * sin(theta)],
+#            [u[0] * u[2] * (1-cos(theta)) - u[1] * sin(theta),
+#             u[1] * u[2] * (1-cos(theta)) - u[0] * sin(theta),
+#             cos(theta) + u[2]**2 * (1-cos(theta))]]
 
 def HTT(T):
         I=np.identity(3)
