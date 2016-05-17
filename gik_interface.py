@@ -53,9 +53,9 @@ class GIKInterface():
                 ez = np.array((0,0,1,1))
                 ct = np.dot(T,e0)[0:3]
                 nt = np.dot(T,ez)[0:3] - ct
-                A = self.env.env.drawarrow(p1=p,p2=p + nt,linewidth=0.05,color=np.array((1,1,1)))
-                self.handles.append(A)
-                #self.env.env.drawarrow(pos=p, dir=nt,height=0.5,aperture=0.2,color=np.array((1,1,1)))
+                #A = self.env.env.drawarrow(p1=p,p2=p + 0.2*nt,linewidth=0.01,color=np.array((1,1,1)))
+                #self.handles.append(A)
+                #self.env.env.drawcone(pos=p, direction=nt,height=0.5,aperture=0.2,color=np.array((1,1,1)))
                 #self.handles.append(A)
 
         def DrawHandCone(self, p, T, thetaNormal):

@@ -33,6 +33,7 @@ def waitrobot(robot):
 if __name__ == "__main__":
 
         env = EnvironmentHumanoidContactWorld()
+
         env.DrawAxes()
         robot = env.GetRobot()
         env.MakeRobotTransparent(alpha=1.0)
