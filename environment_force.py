@@ -13,6 +13,8 @@ class ForceEnvironment():
         ZPOS_ARROW = 0.1
         ViewerName = 'qtcoin'
         PhysicsEngineName = 'ode'
+        #CollisionCheckerName = 'ode'
+        #PhysicsEngineName = 'bullet'
         CollisionCheckerName = 'ode'
         FORCE_FIELD_MIN_SPACING = 0.5
         FORCE_FIELD_MAX_SPACING = 0.8
@@ -194,6 +196,7 @@ class ForceEnvironment():
                 ### geometry of robot feet (escher)
                 FOOT_WIDTH = 0.07
                 FOOT_LENGTH = 0.12
+                lw = 8
 
                 cfoot = np.array((0,1,0))
                 e0 = np.array((0,0,0,1))
@@ -206,7 +209,7 @@ class ForceEnvironment():
                 fdir2 = np.dot(T,ey)[0:3] - fpos
                 fdir3 = np.dot(T,ez)[0:3] - fpos
 
-                offset = 0.05
+                offset = 0.001*lw
                 foffset = fpos + offset*fdir3
 
                 X=np.zeros((3,7))
@@ -219,7 +222,7 @@ class ForceEnvironment():
                 X[:,6] = foffset
 
                 h = self.env.drawlinestrip(points=X.T,
-                                linewidth = 8,
+                                linewidth = lw,
                                 colors=cfoot)
                 self.static_handles.append(h)
 

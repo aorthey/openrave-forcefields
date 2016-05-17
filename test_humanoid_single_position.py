@@ -62,26 +62,42 @@ if __name__ == "__main__":
         left_arm_tf = robot.GetManipulator('l_arm').GetTransform()
         right_arm_tf = robot.GetManipulator('r_arm').GetTransform()
 
-        left_leg_tf = S.GetNearestContactTransform(env, left_leg_tf, 4)
-        right_leg_tf = S.GetNearestContactTransform(env, right_leg_tf, 4)
-        left_arm_tf = S.GetNearestContactTransform(env, left_arm_tf, 15)
-        right_arm_tf = S.GetNearestContactTransform(env, right_arm_tf, 26)
+        foot_surface = 4
+        left_hand_surface = 13
+        right_hand_surface = 26
+
+        left_leg_tf = S.GetNearestContactTransform(env, 
+                        left_leg_tf, 
+                        foot_surface)
+        right_leg_tf = S.GetNearestContactTransform(env, 
+                        right_leg_tf, 
+                        foot_surface)
+        left_arm_tf = S.GetNearestContactTransform(env, 
+                        left_arm_tf,
+                        left_hand_surface)
+        right_arm_tf = S.GetNearestContactTransform(env, 
+                        right_arm_tf,
+                        right_hand_surface)
 
         env.DrawFootContactPatchFromTransform(left_leg_tf)
         env.DrawFootContactPatchFromTransform(right_leg_tf)
         env.DrawFootContactPatchFromTransform(left_arm_tf)
         env.DrawFootContactPatchFromTransform(right_arm_tf)
 
-        S.SampleSurface(100,26,env)
-        S.SampleSurface(100,15,env)
-        S.SampleSurface(100,4,env)
+        #S.SampleSurface(100,right_hand_surface,env)
+        #S.SampleSurface(100,left_hand_surface,env)
+        #S.SampleSurface(100,foot_surface,env)
 
-        gik = GIKInterface(env)
-        q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
+        with env.env:
+                #env.env.GetPhysicsEngine().SetGravity([0,0,-9.81])
+                robot.GetLinks()[0].SetStatic(True)
+                gik = GIKInterface(env)
+                q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
+                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, right_arm_tf)
+                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
+                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
 
-        #raw_input('Press <ENTER> to execute trajectory.')
-        robot.WaitForController(0)
-        #env.DisplayForces()
-        #time.sleep(0.5)
+        #robot.WaitForController(0)
+        #time.sleep(20)
 
 

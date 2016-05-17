@@ -70,7 +70,6 @@ if __name__ == "__main__":
                 COM_offset[1,:]+=-scale*exp(-(T-M/2)**2/(2*C*C))
                 COM_offset[2,:]+=-scale*0.1*exp(-(T-M/2)**2/(2*C*C))
 
-
                 tmp_handle=[]
 
                 [COM_zig_zag, footpos, dfootpos] = COM_compute_zig_zag_motion(COM_offset, env)
@@ -86,7 +85,7 @@ if __name__ == "__main__":
 
         print "done"
 
-        sys.exit(0)
+        #sys.exit(0)
         #[q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env, recompute=True)
         [q_gik, COM_gik] = GIK_from_COM_and_FOOTPOS( COM_zig_zag, footpos, dfootpos, robot, env)
 

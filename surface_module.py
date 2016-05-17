@@ -84,6 +84,8 @@ class SurfaceModule():
                 dn = np.dot(dp, dnormal)
                 dplane = dp - dn*dnormal
 
+                ### add small offset to not be exactly in the plane (otherwise
+                ### there will be a collision between robot and env)
                 dt = np.dot(dplane,dtangential)
                 do = np.dot(dplane,dbinormal)
 
@@ -101,6 +103,10 @@ class SurfaceModule():
                 #self.handles.append(A)
                 A = env.env.drawarrow(p1=center+dplane,p2=center+dplane+dnormal,linewidth=0.01,color=np.array((1,0,1)))
                 self.handles.append(A)
+
+                offset_plane = 0.05
+                center = center + offset_plane*dnormal
+                dplane = dplane + offset_plane*dnormal
 
                 return center + dplane
 
