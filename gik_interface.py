@@ -53,10 +53,11 @@ class GIKInterface():
                 ez = np.array((0,0,1,1))
                 ct = np.dot(T,e0)[0:3]
                 nt = np.dot(T,ez)[0:3] - ct
-                #A = self.env.env.drawarrow(p1=p,p2=p + 0.2*nt,linewidth=0.01,color=np.array((1,1,1)))
-                #self.handles.append(A)
-                #self.env.env.drawcone(pos=p, direction=nt,height=0.5,aperture=0.2,color=np.array((1,1,1)))
-                #self.handles.append(A)
+                A = self.env.env.drawarrow(p1=p,p2=p + 0.2*nt,linewidth=0.01,color=np.array((1,1,1)))
+                self.handles.append(A)
+                A = self.env.env.drawcone(pos=p,
+                                direction=nt,height=0.4,aperture=0.1,color=np.array((0.6,0.3,0,0.5)))
+                self.handles.append(A)
 
         def DrawHandCone(self, p, T, thetaNormal):
                 Thand = np.eye(4)
@@ -213,7 +214,8 @@ class GIKInterface():
                                                                    colors=np.array(((1.0,0.0,0.0,0.8))),
                                                                    drawstyle=1))
                                         print positions
-                                        sys.exit(0)
+                                        return None
+                                        #sys.exit(0)
 
                                 print "------------------------------------------------------- "
                                 print "GIK found solution"

@@ -9,7 +9,7 @@ class SurfaceModule():
         OFFSET_CONTACT_FROM_SURFACE_BOUNDARY = 0.05
         #OFFSET_CONTACT_TO_PLANE = 0.008
         OFFSET_HAND_CONTACT_TO_PLANE = 0.02
-        OFFSET_FOOT_CONTACT_TO_PLANE = 0.001
+        OFFSET_FOOT_CONTACT_TO_PLANE = 0.005
         handles = []
         ### pos of center, dir of normal, dir of tangential, dir
         ### of binormal, extension in tangential dir, extension in
@@ -115,16 +115,13 @@ class SurfaceModule():
 
                 return center + dplane
 
-        def GetNearestContactTransformLeftHand(self, env, T, k):
-                return self.GetNearestContactTransformHand(env, T, k, -pi/2)
 
-        def GetNearestContactTransformRightHand(self, env, T, k):
-                return self.GetNearestContactTransformHand(env, T, k, pi/2)
+        def ConvertTransformLeftHand(self, T, k):
+                return self.ConvertTransformHand(T, k, -pi/2)
+        def ConvertTransformRightHand(self, T, k):
+                return self.ConvertTransformHand(T, k, pi/2)
 
-        def GetNearestContactTransformHand(self, env, T, k, thetaNormal):
-                dist_to_surface = self.OFFSET_HAND_CONTACT_TO_PLANE
-                T = self.GetNearestContactTransform(dist_to_surface, env, T, k)
-
+        def ConvertTransformHand(self, T, k, thetaNormal):
                 srfc = self.surfaces[k,:,:]
                 center = srfc[0,:]
                 dnormal = srfc[1,:]
@@ -135,7 +132,18 @@ class SurfaceModule():
                 R = np.dot(Rax(pi/2, dbinormal),R)
                 R = np.dot(Rax(thetaNormal, dnormal),R)
                 T[0:3,0:3]=R
+                return T
 
+        def GetNearestContactTransformLeftHand(self, env, T, k):
+                dist_to_surface = self.OFFSET_HAND_CONTACT_TO_PLANE
+                T = self.GetNearestContactTransform(dist_to_surface, env, T, k)
+                T = self.ConvertTransformLeftHand(T,k)
+                return T
+
+        def GetNearestContactTransformRightHand(self, env, T, k):
+                dist_to_surface = self.OFFSET_HAND_CONTACT_TO_PLANE
+                T = self.GetNearestContactTransform(dist_to_surface, env, T, k)
+                T = self.ConvertTransformRightHand(T,k)
                 return T
 
         def GetNearestContactTransformFoot(self, env, T, k):
@@ -186,7 +194,7 @@ class SurfaceModule():
 
                 return T
 
-        def SampleSurface(self, M, k, env):
+        def SampleContactLeftHand(self, k, env):
                 srfc = self.surfaces[k,:,:]
                 center = srfc[0,:]
                 dnormal = srfc[1,:]
@@ -195,20 +203,52 @@ class SurfaceModule():
                 ext_t = srfc[4,0]
                 ext_o = srfc[5,0]
 
-                k = 0
-                while k < M:
+                ex = np.array((1,0,0))
+                ey = np.array((0,1,0))
+                ez = np.array((0,0,1))
 
-                        rt = np.random.uniform(-ext_t,ext_t)
-                        ro = np.random.uniform(-ext_o,ext_o)
-                        p = rt*dtangential + ro*dbinormal + center
+                p = self.GetRandomPointOnSurface(k)
+                R = self.GetRotationFromTo( ex, ey, ez, dtangential, dbinormal, dnormal)
+
+
+                T = np.eye(4)
+                T[0:3,3] = p
+                T[0:3,0:3] = R
+
+                T = self.ConvertTransformLeftHand(T,k)
+
+                trandom = np.random.uniform(-pi,pi)
+                T[0:3,0:3] = np.dot(Rax( trandom, dnormal),T[0:3,0:3])
+
+                return T
+
+        def SampleSurface(self, M, k, env):
+                srfc = self.surfaces[k,:,:]
+                center = srfc[0,:]
+                dnormal = srfc[1,:]
+
+                j = 0
+                while j < M:
+                        p = self.GetRandomPointOnSurface(k)
                         pn = p + 0.2*dnormal
+
 
                         A = env.env.drawarrow(p1=p,p2=pn,linewidth=0.005,color=np.array((1,0.5,0)))
                         self.handles.append(A)
-                        #self.handles.append(env.env.plot3(points=p,
-                        #                   pointsize=0.05,
-                        #                   colors=np.array(((1.0,0.0,0.0,0.8))),
-                        #                   drawstyle=1))
-                        k = k+1
+                        j = j+1
+
+
+        def GetRandomPointOnSurface(self, k):
+                srfc = self.surfaces[k,:,:]
+                center = srfc[0,:]
+                dtangential = srfc[2,:]
+                dbinormal = srfc[3,:]
+                ext_t = srfc[4,0]-self.OFFSET_CONTACT_FROM_SURFACE_BOUNDARY
+                ext_o = srfc[5,0]-self.OFFSET_CONTACT_FROM_SURFACE_BOUNDARY
+
+                rt = np.random.uniform(-ext_t,ext_t)
+                ro = np.random.uniform(-ext_o,ext_o)
+                p = rt*dtangential + ro*dbinormal + center
+                return p
 
 

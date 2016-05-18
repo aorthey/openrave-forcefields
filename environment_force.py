@@ -12,10 +12,9 @@ class ForceEnvironment():
         #######################################################################
         ZPOS_ARROW = 0.1
         ViewerName = 'qtcoin'
-        PhysicsEngineName = 'ode'
-        #CollisionCheckerName = 'ode'
-        #PhysicsEngineName = 'bullet'
-        CollisionCheckerName = 'fcl'
+        ##'bullet', 'ode', 'pqp'
+        PhysicsEngineName = 'bullet'
+        CollisionCheckerName = 'pqp'
         FORCE_FIELD_MIN_SPACING = 0.5
         FORCE_FIELD_MAX_SPACING = 0.8
         FORCE_FIELD_PT_SIZE = 4
@@ -55,7 +54,7 @@ class ForceEnvironment():
                         self.env.SetPhysicsEngine(self.physics)
                         self.cc = RaveCreateCollisionChecker(self.env, self.CollisionCheckerName)
                         self.env.SetCollisionChecker(self.cc)
-                        self.env.SetForces( self.GetForces() )
+                        #self.env.SetForces( self.GetForces() )
                         #self.recorder = RaveCreateModule(self.env,'viewerrecorder')
                         #self.env.AddModule(self.recorder,'')
 
@@ -192,7 +191,12 @@ class ForceEnvironment():
                                 return True
                 return False
 
-        def DrawHandContactPatchFromTransform(self, T):
+        def DrawLeftHandContactPatchFromTransform(self, T):
+                self.DrawHandContactPatchFromTransform(T, -pi/2)
+        def DrawRightHandContactPatchFromTransform(self, T):
+                self.DrawHandContactPatchFromTransform(T, pi/2)
+
+        def DrawHandContactPatchFromTransform(self, T, thetaNormal):
 
                 Thand = np.eye(4)
                 Thand[0:3,3] = T[0:3,3]
@@ -209,7 +213,7 @@ class ForceEnvironment():
 
                 R = T[0:3,0:3]
                 R = np.dot(Rax(pi/2, fdir3),R)
-                R = np.dot(Rax(-pi/2, fdir2),R)
+                R = np.dot(Rax(thetaNormal, fdir2),R)
                 Thand[0:3,0:3]=R
 
                 self.DrawFootContactPatchFromTransform(Thand)

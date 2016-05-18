@@ -86,22 +86,31 @@ if __name__ == "__main__":
 
         env.DrawFootContactPatchFromTransform(left_leg_tf)
         env.DrawFootContactPatchFromTransform(right_leg_tf)
-        env.DrawHandContactPatchFromTransform(left_arm_tf)
-        env.DrawHandContactPatchFromTransform(right_arm_tf)
+        env.DrawLeftHandContactPatchFromTransform(left_arm_tf)
+        env.DrawRightHandContactPatchFromTransform(right_arm_tf)
 
         #S.SampleSurface(100,right_hand_surface,env)
         #S.SampleSurface(100,left_hand_surface,env)
+        #sys.exit(0)
 
-        with env.env:
-                robot.GetLinks()[0].SetStatic(True)
-                gik = GIKInterface(env)
-                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
-                q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, right_arm_tf)
-                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, right_arm_tf)
-                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
-                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
+        gik = GIKInterface(env)
+        for i in range(0,10):
+                with env.env:
+                        q = None
+                        while q is None:
+                                left_arm_tf = S.SampleContactLeftHand(left_hand_surface, env)
+                                env.DrawLeftHandContactPatchFromTransform(left_arm_tf)
+                #        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
+                                q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, right_arm_tf)
+
+                #        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, right_arm_tf)
+                #        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
+                #        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
+
 
         robot.WaitForController(0)
-        #time.sleep(20)
 
 
+        #env.env.GetPhysicsEngine().SetGravity(array((0,0,-9.80)))
+        #env.env.StopSimulation() 
+        #env.env.StartSimulation(0.00005)
