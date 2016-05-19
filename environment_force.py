@@ -12,15 +12,17 @@ class ForceEnvironment():
         #######################################################################
         ZPOS_ARROW = 0.1
         ViewerName = 'qtcoin'
-        ##'bullet', 'ode', 'pqp'
+        ##'bullet', 'ode'
         PhysicsEngineName = 'bullet'
-        CollisionCheckerName = 'pqp'
+        ##'bullet', 'ode', 'pqp', 'fcl_'
+        CollisionCheckerName = 'fcl_'
         FORCE_FIELD_MIN_SPACING = 0.5
         FORCE_FIELD_MAX_SPACING = 0.8
         FORCE_FIELD_PT_SIZE = 4
         FORCE_FIELD_ARROW_SIZE = 0.02
         #FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))
         FORCE_FIELD_COLOR = np.array((1.0,1.0,1.0,0.1))
+        COLOR_CONTACT_PATCH = np.array((0,1,0,1))
         #######################################################################
         env_xml=''
         robot_xml=''
@@ -49,6 +51,7 @@ class ForceEnvironment():
                 self.env.SetViewer(self.ViewerName)
                 self.env.Reset()
                 with self.env:
+                        self.env.StopSimulation() 
                         self.physics = RaveCreatePhysicsEngine(self.env, self.PhysicsEngineName)
                         self.physics.SetGravity(array((0,0,-9.80)))
                         self.env.SetPhysicsEngine(self.physics)
@@ -191,12 +194,12 @@ class ForceEnvironment():
                                 return True
                 return False
 
-        def DrawLeftHandContactPatchFromTransform(self, T):
-                self.DrawHandContactPatchFromTransform(T, -pi/2)
-        def DrawRightHandContactPatchFromTransform(self, T):
-                self.DrawHandContactPatchFromTransform(T, pi/2)
+        def DrawLeftHandContactPatchFromTransform(self, T, cpatch=None):
+                self.DrawHandContactPatchFromTransform(T, -pi/2, cpatch)
+        def DrawRightHandContactPatchFromTransform(self, T, cpatch=None):
+                self.DrawHandContactPatchFromTransform(T, pi/2, cpatch)
 
-        def DrawHandContactPatchFromTransform(self, T, thetaNormal):
+        def DrawHandContactPatchFromTransform(self, T, thetaNormal, cpatch=None):
 
                 Thand = np.eye(4)
                 Thand[0:3,3] = T[0:3,3]
@@ -216,16 +219,15 @@ class ForceEnvironment():
                 R = np.dot(Rax(thetaNormal, fdir2),R)
                 Thand[0:3,0:3]=R
 
-                self.DrawFootContactPatchFromTransform(Thand)
+                self.DrawFootContactPatchFromTransform(Thand, cpatch)
 
 
-        def DrawFootContactPatchFromTransform(self, T):
+        def DrawFootContactPatchFromTransform(self, T, cpatch=None):
                 ### geometry of robot feet (escher)
                 FOOT_WIDTH = 0.07
                 FOOT_LENGTH = 0.12
                 lw = 8
 
-                cfoot = np.array((0,1,0))
                 e0 = np.array((0,0,0,1))
                 ex = np.array((1,0,0,1))
                 ey = np.array((0,1,0,1))
@@ -236,8 +238,9 @@ class ForceEnvironment():
                 fdir2 = np.dot(T,ey)[0:3] - fpos
                 fdir3 = np.dot(T,ez)[0:3] - fpos
 
-                offset = 0.001*lw
-                foffset = fpos + offset*fdir3
+                #offset = 0.001*lw
+                #foffset = fpos + offset*fdir3
+                foffset = fpos
 
                 X=np.zeros((3,7))
                 X[:,0] = foffset + FOOT_LENGTH*fdir1 - FOOT_WIDTH*fdir2
@@ -248,9 +251,12 @@ class ForceEnvironment():
                 X[:,5] = foffset + FOOT_LENGTH*fdir1
                 X[:,6] = foffset
 
+                if cpatch is None:
+                        cpatch = self.COLOR_CONTACT_PATCH
+
                 h = self.env.drawlinestrip(points=X.T,
                                 linewidth = lw,
-                                colors=cfoot)
+                                colors=cpatch)
                 self.static_handles.append(h)
 
         def DrawNormalVectors(self, posN, dirN):

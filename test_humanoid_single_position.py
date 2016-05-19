@@ -94,23 +94,19 @@ if __name__ == "__main__":
         #sys.exit(0)
 
         gik = GIKInterface(env)
-        for i in range(0,10):
-                with env.env:
-                        q = None
-                        while q is None:
-                                left_arm_tf = S.SampleContactLeftHand(left_hand_surface, env)
-                                env.DrawLeftHandContactPatchFromTransform(left_arm_tf)
-                #        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
-                                q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, right_arm_tf)
+        
+        with env.env:
+                q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
+                env.DrawLeftHandContactPatchFromTransform(left_arm_tf)
 
-                #        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, right_arm_tf)
-                #        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
-                #        #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, None, None)
+                robot.GetLinks()[0].SetStatic(True)
+                env.env.StopSimulation() 
+                env.env.StartSimulation(0.0001)
 
+
+        while True:
+                torques = 0*(numpy.random.rand(robot.GetDOF())-0.5)
+                robot.SetJointTorques(torques,True)
+                time.sleep(0.001)
 
         robot.WaitForController(0)
-
-
-        #env.env.GetPhysicsEngine().SetGravity(array((0,0,-9.80)))
-        #env.env.StopSimulation() 
-        #env.env.StartSimulation(0.00005)

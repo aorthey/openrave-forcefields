@@ -7,8 +7,9 @@ from math import pi
 class SurfaceModule():
 
         OFFSET_CONTACT_FROM_SURFACE_BOUNDARY = 0.05
-        #OFFSET_CONTACT_TO_PLANE = 0.008
-        OFFSET_HAND_CONTACT_TO_PLANE = 0.02
+        #OFFSET_HAND_CONTACT_TO_PLANE = 0.02
+        OFFSET_HAND_CONTACT_TO_PLANE = 0.03
+        #OFFSET_FOOT_CONTACT_TO_PLANE = 0.005
         OFFSET_FOOT_CONTACT_TO_PLANE = 0.005
         handles = []
         ### pos of center, dir of normal, dir of tangential, dir
@@ -194,7 +195,26 @@ class SurfaceModule():
 
                 return T
 
+        def SampleContactRightHand(self, k, env):
+                srfc = self.surfaces[k,:,:]
+                dnormal = srfc[1,:]
+                T = self.SampleContactHand(k, env)
+                T = self.ConvertTransformRightHand(T,k)
+                trandom = np.random.uniform(-pi,pi)
+                T[0:3,0:3] = np.dot(Rax( trandom, dnormal),T[0:3,0:3])
+                return T
+
         def SampleContactLeftHand(self, k, env):
+                srfc = self.surfaces[k,:,:]
+                dnormal = srfc[1,:]
+                T = self.SampleContactHand(k, env)
+                T = self.ConvertTransformLeftHand(T,k)
+                trandom = np.random.uniform(-pi,pi)
+                T[0:3,0:3] = np.dot(Rax( trandom, dnormal),T[0:3,0:3])
+                return T
+
+
+        def SampleContactHand(self, k, env):
                 srfc = self.surfaces[k,:,:]
                 center = srfc[0,:]
                 dnormal = srfc[1,:]
@@ -207,18 +227,13 @@ class SurfaceModule():
                 ey = np.array((0,1,0))
                 ez = np.array((0,0,1))
 
-                p = self.GetRandomPointOnSurface(k)
+                p = self.GetRandomPointOnSurface(k, self.OFFSET_HAND_CONTACT_TO_PLANE)
                 R = self.GetRotationFromTo( ex, ey, ez, dtangential, dbinormal, dnormal)
 
 
                 T = np.eye(4)
                 T[0:3,3] = p
                 T[0:3,0:3] = R
-
-                T = self.ConvertTransformLeftHand(T,k)
-
-                trandom = np.random.uniform(-pi,pi)
-                T[0:3,0:3] = np.dot(Rax( trandom, dnormal),T[0:3,0:3])
 
                 return T
 
@@ -238,9 +253,10 @@ class SurfaceModule():
                         j = j+1
 
 
-        def GetRandomPointOnSurface(self, k):
+        def GetRandomPointOnSurface(self, k, dist_to_surface=0.0):
                 srfc = self.surfaces[k,:,:]
                 center = srfc[0,:]
+                dnormal = srfc[1,:]
                 dtangential = srfc[2,:]
                 dbinormal = srfc[3,:]
                 ext_t = srfc[4,0]-self.OFFSET_CONTACT_FROM_SURFACE_BOUNDARY
@@ -248,7 +264,7 @@ class SurfaceModule():
 
                 rt = np.random.uniform(-ext_t,ext_t)
                 ro = np.random.uniform(-ext_o,ext_o)
-                p = rt*dtangential + ro*dbinormal + center
+                p = rt*dtangential + ro*dbinormal + center + dist_to_surface*dnormal
                 return p
 
 

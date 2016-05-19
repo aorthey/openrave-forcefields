@@ -49,6 +49,8 @@ class GIKInterface():
                         return
 
         def DrawFootCone(self, p, T):
+                if T is None:
+                        return
                 e0 = np.array((0,0,0,1))
                 ez = np.array((0,0,1,1))
                 ct = np.dot(T,e0)[0:3]
@@ -60,6 +62,8 @@ class GIKInterface():
                 self.handles.append(A)
 
         def DrawHandCone(self, p, T, thetaNormal):
+                if T is None:
+                        return
                 Thand = np.eye(4)
                 Thand[0:3,3] = T[0:3,3]
 
@@ -117,10 +121,14 @@ class GIKInterface():
                 self.DrawRightHandCone(com, Cra)
 
         def VisualizeCones(self, Cll, Crl, Cla, Cra):
-                self.DrawFootCone(Cll[0:3,3], Cll)
-                self.DrawFootCone(Crl[0:3,3], Crl)
-                self.DrawLeftHandCone(Cla[0:3,3], Cla)
-                self.DrawRightHandCone(Cra[0:3,3], Cra)
+                if Cll is not None:
+                        self.DrawFootCone(Cll[0:3,3], Cll)
+                if Crl is not None:
+                        self.DrawFootCone(Crl[0:3,3], Crl)
+                if Cla is not None:
+                        self.DrawLeftHandCone(Cla[0:3,3], Cla)
+                if Cra is not None:
+                        self.DrawRightHandCone(Cra[0:3,3], Cra)
 
 
         def fromContactTransform( self, robot, Cll, Crl, Cla, Cra): 
@@ -179,7 +187,7 @@ class GIKInterface():
                                 q_gik = cbirrt.DoGeneralIK(
                                                 movecog=cog,
                                                 gravity=F.tolist(),
-                                                returnclosest=True,
+                                                returnclosest=False,
                                                 #checkcollisionlink=['l_foot','r_foot'],
                                                 #obstacles=obstacle_list,
                                                 maniptm=maniptm_list,
@@ -193,7 +201,8 @@ class GIKInterface():
                                         print "LEFT FOOT POS     :",Cll[0:3,3]
                                         print "RIGHT FOOT POS    :",Crl[0:3,3]
                                         print "------------------------------------------------------- "
-                                        sys.exit(0)
+                                        return None
+                                        #sys.exit(0)
 
 
                                 robot.SetActiveDOFValues(q_gik)
@@ -220,23 +229,15 @@ class GIKInterface():
                                 print "------------------------------------------------------- "
                                 print "GIK found solution"
                                 print "------------------------------------------------------- "
-                                Cll = robot.GetManipulator('l_leg').GetTransform()
-                                Crl = robot.GetManipulator('r_leg').GetTransform()
-                                Cla = robot.GetManipulator('l_arm').GetTransform()
-                                Cra = robot.GetManipulator('r_arm').GetTransform()
 
-                                self.VisualizeCones(Cll, Crl, Cla, Cra)
-                                self.VisualizeConesCOM(robot.GetCenterOfMass(), Cll, Crl, Cla, Cra)
-                                #left_leg_tf_gik = robot.GetManipulator('l_leg').GetTransform()
-                                #right_leg_tf_gik = robot.GetManipulator('r_leg').GetTransform()
-                                print "LEFT FOOT  : ", 
-                                self.printFromToContact(Cll_old,Cll)
-                                print "RIGHT FOOT : ", 
-                                self.printFromToContact(Crl_old, Crl)
-                                print "LEFT HAND  : ",
-                                self.printFromToContact(Cla_old,Cla)
-                                print "RIGHT HAND : ", 
-                                self.printFromToContact(Cra_old,Cra)
+                                #print "LEFT FOOT  : ", 
+                                #self.printFromToContact(Cll_old,Cll_gik)
+                                #print "RIGHT FOOT : ", 
+                                #self.printFromToContact(Crl_old, Crl_gik)
+                                #print "LEFT HAND  : ",
+                                #self.printFromToContact(Cla_old,Cla_gik)
+                                #print "RIGHT HAND : ", 
+                                #self.printFromToContact(Cra_old,Cra_gik)
 
                         except Exception as e:
                                 print "Exception in GIK fromContactTransform"
@@ -244,3 +245,21 @@ class GIKInterface():
                                 sys.exit(0)
                 print "return"
                 return q_gik
+
+        def VisualizeFrictionCone(robot):
+                Cll_gik = robot.GetManipulator('l_leg').GetTransform()
+                Crl_gik = robot.GetManipulator('r_leg').GetTransform()
+                Cla_gik = robot.GetManipulator('l_arm').GetTransform()
+                Cra_gik = robot.GetManipulator('r_arm').GetTransform()
+
+                if Cll is None:
+                        Cll_gik=None
+                if Crl is None:
+                        Crl_gik=None
+                if Cla is None:
+                        Cla_gik=None
+                if Cra is None:
+                        Cra_gik=None
+
+                self.VisualizeCones(Cll_gik, Crl_gik, Cla_gik, Cra_gik)
+                self.VisualizeConesCOM(robot.GetCenterOfMass(), Cll_gik, Crl_gik, Cla_gik, Cra_gik)
