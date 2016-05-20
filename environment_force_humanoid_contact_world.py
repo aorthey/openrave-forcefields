@@ -1,12 +1,11 @@
 from environment_force_humanoid import *
 
 class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
-        def __init__(self):
-                xmlenv='environments/contactworld.env.xml'
+        def __init__(self, xmlenv='environments/contactworld.env.xml'):
                 EnvironmentHumanoid.__init__(self, xmlenv)
 
         def GetCells(self):
-                C = self.GetCellsAll()
+                C = self.GetCellsAll(verbose=False)
                 self.cells = C[0:6]
                 return self.cells
 
@@ -20,18 +19,14 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
                 return self.forces
 
-        def GetSurfaces(self):
-                if self.cells is None:
-                        self.cells = self.GetCells()
-
-                S = []
-                for i in range(0,len(self.cells)):
-                        print i
-                        C = self.cells[i]
-                        G1 = C.GetGeometries()[0]
+        def GetSurfaces(self, updateEnv = True):
+                S = None
+                for link in self.GetCells():
+                        Tall = link.GetTransform()
+                        G1 = link.GetGeometries()[0]
                         B = G1.GetBoxExtents()
                         T = G1.GetTransform()
-                        #self.DrawFrameFromTransform(T)
+                        T = np.dot(Tall,T)
 
                         bx = B[0]
                         by = B[1]
@@ -96,7 +91,7 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
                         #self.DrawNormalVectors(posN,dirN)
                         #self.DrawTangentialVectors(posN,tN,oN)
 
-                        self.DrawCoordinateFrame(posN, dirN, tN, oN)
+                        #self.DrawCoordinateFrame(posN, dirN, tN, oN)
 
                         ## extension into tN1 and oN1
                         etN1 = by
@@ -124,7 +119,7 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
                         Si[4,:,:] = np.array((pN5,dN5,tN5,oN5,np.array((etN5,0,0)),np.array((eoN5,0,0))))
                         Si[5,:,:] = np.array((pN6,dN6,tN6,oN6,np.array((etN6,0,0)),np.array((eoN6,0,0))))
 
-                        if i==0:
+                        if S is None:
                                 S = Si
                         else:
                                 S = np.vstack((S,Si))

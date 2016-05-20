@@ -29,9 +29,15 @@ def rand_interval_NM( a, b, n, m):
         return rab
 
 
-ze = np.array((0,0,1))
-ye = np.array((0,1,0))
+red=np.array((1,0,0))
+green=np.array((0,1,0))
+blue=np.array((0,0,1))
 xe = np.array((1,0,0))
+ye = np.array((0,1,0))
+ze = np.array((0,0,1))
+ex = np.array((1,0,0))
+ey = np.array((0,1,0))
+ez = np.array((0,0,1))
 
 def Rz(t):
         return np.array([[cos(t),-sin(t),0],[sin(t),cos(t),0],[0,0,1]])

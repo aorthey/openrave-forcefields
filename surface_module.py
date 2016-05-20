@@ -135,6 +135,67 @@ class SurfaceModule():
                 T[0:3,0:3]=R
                 return T
 
+
+        def AdjustToNewSurfaceTransform(self, dist_to_surface, S_to_C, k, env):
+
+                srfc = self.surfaces[k,:,:]
+                center = srfc[0,:]
+                dnormal = srfc[1,:]
+                dtangential = srfc[2,:]
+                dbinormal = srfc[3,:]
+
+                ex = np.array((1,0,0))
+                ey = np.array((0,1,0))
+                ez = np.array((0,0,1))
+
+                R = self.GetRotationFromTo( ex, ey, ez, dtangential, dbinormal, dnormal)
+                W_to_Snew = np.eye(4)
+                W_to_Snew[0:3,3] = center
+                W_to_Snew[0:3,0:3] = R
+
+                #T = np.dot(S_to_C, W_to_Snew)
+                T = W_to_Snew
+                T = np.dot(W_to_Snew, S_to_C)
+
+                #T = self.ConvertTransformLeftHand(T, k)
+                return T
+
+        def GetContactRelativeToSurfaceTransform(self, W_to_C, k):
+                W_to_S = self.GetCenterTransform(k)
+
+                #S_to_W = np.eye(4)
+                #S_to_W[0:3,0:3] = W_to_S[0:3,0:3].T
+                #S_to_W[0:3,3] = -np.dot(W_to_S[0:3,0:3].T,W_to_S[0:3,3])
+                #S_to_C = np.dot(W_to_C,S_to_W)
+                S_to_W = np.eye(4)
+                S_to_W[0:3,0:3] = W_to_S[0:3,0:3].T
+                S_to_W[0:3,3] = -np.dot(W_to_S[0:3,0:3].T,W_to_S[0:3,3])
+                #S_to_C = np.dot(W_to_C,S_to_W)
+                S_to_C = np.dot(S_to_W,W_to_C)
+
+                return S_to_C
+
+
+        def GetCenterTransform(self, k):
+                srfc = self.surfaces[k,:,:]
+                center = srfc[0,:]
+                dnormal = srfc[1,:]
+                dtangential = srfc[2,:]
+                dbinormal = srfc[3,:]
+
+                ex = np.array((1,0,0))
+                ey = np.array((0,1,0))
+                ez = np.array((0,0,1))
+
+                R = self.GetRotationFromTo( ex, ey, ez, dtangential, dbinormal, dnormal)
+
+                T = np.eye(4)
+                T[0:3,3] = center
+                T[0:3,0:3] = R
+                return T
+
+
+
         def GetNearestContactTransformLeftHand(self, env, T, k):
                 dist_to_surface = self.OFFSET_HAND_CONTACT_TO_PLANE
                 T = self.GetNearestContactTransform(dist_to_surface, env, T, k)
@@ -213,8 +274,18 @@ class SurfaceModule():
                 T[0:3,0:3] = np.dot(Rax( trandom, dnormal),T[0:3,0:3])
                 return T
 
-
         def SampleContactHand(self, k, env):
+                return self.SampleContact(self.OFFSET_HAND_CONTACT_TO_PLANE, k, env)
+
+        def SampleContactFoot(self, k, env):
+                srfc = self.surfaces[k,:,:]
+                dnormal = srfc[1,:]
+                T = self.SampleContact(self.OFFSET_FOOT_CONTACT_TO_PLANE, k, env)
+                trandom = np.random.uniform(-pi,pi)
+                T[0:3,0:3] = np.dot(Rax( trandom, dnormal),T[0:3,0:3])
+                return T
+
+        def SampleContact(self, dist_to_surface, k, env):
                 srfc = self.surfaces[k,:,:]
                 center = srfc[0,:]
                 dnormal = srfc[1,:]
@@ -227,9 +298,8 @@ class SurfaceModule():
                 ey = np.array((0,1,0))
                 ez = np.array((0,0,1))
 
-                p = self.GetRandomPointOnSurface(k, self.OFFSET_HAND_CONTACT_TO_PLANE)
+                p = self.GetRandomPointOnSurface(k, dist_to_surface)
                 R = self.GetRotationFromTo( ex, ey, ez, dtangential, dbinormal, dnormal)
-
 
                 T = np.eye(4)
                 T[0:3,3] = p
@@ -252,7 +322,6 @@ class SurfaceModule():
                         self.handles.append(A)
                         j = j+1
 
-
         def GetRandomPointOnSurface(self, k, dist_to_surface=0.0):
                 srfc = self.surfaces[k,:,:]
                 center = srfc[0,:]
@@ -266,5 +335,14 @@ class SurfaceModule():
                 ro = np.random.uniform(-ext_o,ext_o)
                 p = rt*dtangential + ro*dbinormal + center + dist_to_surface*dnormal
                 return p
+
+        def DrawCoordinateFrames(self, env):
+                for i in range(0,self.surfaces.shape[0]):
+                        srfc = self.surfaces[i,:,:]
+                        center = srfc[0,:]
+                        dnormal = srfc[1,:]
+                        dtangential = srfc[2,:]
+                        dbinormal = srfc[3,:]
+                        env.DrawSingleCoordinateFrame( center, dnormal, dtangential, dbinormal)
 
 

@@ -15,7 +15,7 @@ class ForceEnvironment():
         ##'bullet', 'ode'
         PhysicsEngineName = 'bullet'
         ##'bullet', 'ode', 'pqp', 'fcl_'
-        CollisionCheckerName = 'fcl_'
+        CollisionCheckerName = 'ode'
         FORCE_FIELD_MIN_SPACING = 0.5
         FORCE_FIELD_MAX_SPACING = 0.8
         FORCE_FIELD_PT_SIZE = 4
@@ -102,6 +102,20 @@ class ForceEnvironment():
                 MakeRobotTransparent(0.0)
         def MakeRobotVisible(self):
                 MakeRobotTransparent(1.0)
+
+        def AddRandomDisturbance(self):
+                maxforce = 10
+                r = (numpy.random.rand(2)-0.5)
+                F = np.array((r[0]*maxforce,r[1]*maxforce,0))
+                self.AddForceToWorld(F)
+
+        def AddForceToWorld(self, F):
+                zero = np.array((0,0,0))
+                W = self.env.GetKinBody('world')
+                for link in W.GetLinks():
+                        P = link.GetLocalCOM()
+                        link.SetForce(F,P,False)
+                        link.SetTorque(zero, False)
 
         def GetRobot(self):
                 with self.env:
@@ -278,7 +292,7 @@ class ForceEnvironment():
                         A = self.env.drawarrow(p1=posN[i],p2=posN[i]+0.2*oN[i],linewidth=lw,color=coaxis)
                         self.static_handles.append(A)
 
-        def DrawCoordinateFrame(self, Pf, Nf, Tf, Bf):
+        def DrawSingleCoordinateFrame(self, Pf, Nf, Tf, Bf):
                 lw = 0.01
                 size = 0.2
                 alpha = 0.5
@@ -287,14 +301,18 @@ class ForceEnvironment():
                 cnaxis = np.array((0,0,1,alpha))
                 coaxis = np.array((0,1,0,alpha))
                 ctaxis = np.array((1,0,0,alpha))
+                center = Pf+offset*Nf
+                A = self.env.drawarrow(p1=center,p2=center+size*Nf,linewidth=lw,color=cnaxis)
+                self.static_handles.append(A)
+                A = self.env.drawarrow(p1=center,p2=center+size*Tf,linewidth=lw,color=ctaxis)
+                self.static_handles.append(A)
+                A = self.env.drawarrow(p1=center,p2=center+size*Bf,linewidth=lw,color=coaxis)
+                self.static_handles.append(A)
+
+        def DrawCoordinateFrame(self, Pf, Nf, Tf, Bf):
+                nframes = Pf.shape[0]
                 for i in range(0,nframes):
-                        center = Pf[i]+offset*Nf[i]
-                        A = self.env.drawarrow(p1=center,p2=center+size*Nf[i],linewidth=lw,color=cnaxis)
-                        self.static_handles.append(A)
-                        A = self.env.drawarrow(p1=center,p2=center+size*Tf[i],linewidth=lw,color=ctaxis)
-                        self.static_handles.append(A)
-                        A = self.env.drawarrow(p1=center,p2=center+size*Bf[i],linewidth=lw,color=coaxis)
-                        self.static_handles.append(A)
+                        self.DrawSingleCoordinateFrame(Pf[i], Nf[i], Tf[i], Bf[i])
 
         def DrawFrameFromTransform(self, T, scale=0.1):
                 e0 = np.dot(T,np.array((0,0,0,1)))[0:3]

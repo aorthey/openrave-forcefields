@@ -14,6 +14,10 @@ class GIKInterface():
 
         env = []
         handles = []
+        contact_la = False
+        contact_ra = False
+        contact_ll = False
+        contact_rl = False
         def __init__(self, env_in):
                 self.env = env_in
                 pass
@@ -171,15 +175,19 @@ class GIKInterface():
                                 if Cll is not None:
                                         maniptm_list.append(('l_leg',Cll))
                                         support_list.append(('l_leg',SURFACE_FRICTION))
+                                        self.contact_ll = True
                                 if Crl is not None:
                                         maniptm_list.append(('r_leg',Crl))
                                         support_list.append(('r_leg',SURFACE_FRICTION))
+                                        self.contact_rl = True
                                 if Cla is not None:
                                         maniptm_list.append(('l_arm',Cla))
                                         support_list.append(('l_arm',SURFACE_FRICTION))
+                                        self.contact_la = True
                                 if Cra is not None:
                                         maniptm_list.append(('r_arm',Cra))
                                         support_list.append(('r_arm',SURFACE_FRICTION))
+                                        self.contact_ra = True
 
                                 print "SUPPORT       :",support_list
                                 F = np.zeros((3))
@@ -187,7 +195,7 @@ class GIKInterface():
                                 q_gik = cbirrt.DoGeneralIK(
                                                 movecog=cog,
                                                 gravity=F.tolist(),
-                                                returnclosest=False,
+                                                #returnclosest=False,
                                                 #checkcollisionlink=['l_foot','r_foot'],
                                                 #obstacles=obstacle_list,
                                                 maniptm=maniptm_list,
@@ -246,20 +254,20 @@ class GIKInterface():
                 print "return"
                 return q_gik
 
-        def VisualizeFrictionCone(robot):
-                Cll_gik = robot.GetManipulator('l_leg').GetTransform()
-                Crl_gik = robot.GetManipulator('r_leg').GetTransform()
-                Cla_gik = robot.GetManipulator('l_arm').GetTransform()
-                Cra_gik = robot.GetManipulator('r_arm').GetTransform()
+        def VisualizeFrictionCone(self, robot):
+                Cll_gik=None
+                Crl_gik=None
+                Cla_gik=None
+                Cra_gik=None
 
-                if Cll is None:
-                        Cll_gik=None
-                if Crl is None:
-                        Crl_gik=None
-                if Cla is None:
-                        Cla_gik=None
-                if Cra is None:
-                        Cra_gik=None
+                if self.contact_ll:
+                        Cll_gik = robot.GetManipulator('l_leg').GetTransform()
+                if self.contact_rl:
+                        Crl_gik = robot.GetManipulator('r_leg').GetTransform()
+                if self.contact_la:
+                        Cla_gik = robot.GetManipulator('l_arm').GetTransform()
+                if self.contact_ra:
+                        Cra_gik = robot.GetManipulator('r_arm').GetTransform()
 
                 self.VisualizeCones(Cll_gik, Crl_gik, Cla_gik, Cra_gik)
                 self.VisualizeConesCOM(robot.GetCenterOfMass(), Cll_gik, Crl_gik, Cla_gik, Cra_gik)
