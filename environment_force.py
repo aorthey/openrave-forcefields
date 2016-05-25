@@ -99,9 +99,9 @@ class ForceEnvironment():
                                         geom.SetTransparency(1.0-alpha)
 
         def MakeRobotInvisible(self):
-                MakeRobotTransparent(0.0)
+                self.MakeRobotTransparent(0.0)
         def MakeRobotVisible(self):
-                MakeRobotTransparent(1.0)
+                self.MakeRobotTransparent(1.0)
 
         def AddRandomDisturbance(self):
                 maxforce = 10

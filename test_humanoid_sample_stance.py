@@ -86,14 +86,16 @@ if __name__ == "__main__":
         right_arm_tf = S.GetNearestContactTransformRightHand(env, 
                         right_arm_tf,
                         right_hand_surface)
+        S.DrawCoordinateFrames(env)
 
         #env.DrawFootContactPatchFromTransform(left_leg_tf)
         #env.DrawFootContactPatchFromTransform(right_leg_tf)
         #env.DrawLeftHandContactPatchFromTransform(left_arm_tf)
         #env.DrawRightHandContactPatchFromTransform(right_arm_tf)
 
-        #S.SampleSurface(100,right_hand_surface,env)
-        #S.SampleSurface(100,left_hand_surface,env)
+        S.SampleSurface(100,right_hand_surface,env)
+        S.SampleSurface(100,left_hand_surface,env)
+
         #sys.exit(0)
         with env.env:
                 robot.GetLinks()[0].SetStatic(True)
@@ -108,7 +110,7 @@ if __name__ == "__main__":
         np.random.seed(2)
         gik = GIKInterface(env)
         
-        #raw_input('Press <ENTER> to sample stances.')
+        ictr = 0
         q = None
         while q is None:
                 with env.env:
@@ -119,8 +121,8 @@ if __name__ == "__main__":
                                 #right_leg_tf = S.SampleContactFoot(right_leg_surface, env)
                                 left_arm_tf = S.SampleContactLeftHand(left_hand_surface, env)
                                 #right_arm_tf = S.SampleContactRightHand(right_hand_surface, env)
-                                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, right_arm_tf)
-                                q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
+                                q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, right_arm_tf)
+                                #q = gik.fromContactTransform(robot, left_leg_tf, right_leg_tf, left_arm_tf, None)
 
                                 red=np.array((1,0,0))
                                 green=np.array((0,1,0))
@@ -128,14 +130,17 @@ if __name__ == "__main__":
                                         #env.DrawFootContactPatchFromTransform(left_leg_tf, cpatch=red)
                                         #env.DrawFootContactPatchFromTransform(right_leg_tf, cpatch=red)
                                         env.DrawLeftHandContactPatchFromTransform(left_arm_tf, cpatch=red)
-                                        env.DrawRightHandContactPatchFromTransform(right_arm_tf, cpatch=red)
+                                        #env.DrawRightHandContactPatchFromTransform(right_arm_tf, cpatch=red)
                                 else:
-                                        #env.DrawFootContactPatchFromTransform(left_leg_tf, cpatch=green)
-                                        #env.DrawFootContactPatchFromTransform(right_leg_tf, cpatch=green)
+                                        env.DrawFootContactPatchFromTransform(left_leg_tf, cpatch=green)
+                                        env.DrawFootContactPatchFromTransform(right_leg_tf, cpatch=green)
                                         env.DrawLeftHandContactPatchFromTransform(left_arm_tf, cpatch = green)
                                         env.DrawRightHandContactPatchFromTransform(right_arm_tf, cpatch=green)
                         q = None
                         env.env.StartSimulation(0.000000001)
+                if ictr == 0:
+                        raw_input('Press <ENTER> to sample stances.')
+                ictr += 1
                 time.sleep(0.0001)
                 #env.env.StepSimulation(0.01)
 

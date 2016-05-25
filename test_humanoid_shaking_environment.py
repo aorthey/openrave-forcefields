@@ -90,7 +90,7 @@ if __name__ == "__main__":
         while True:
                 with env.env:
                         #env.AddRandomDisturbance()
-                        if ictr%100==0:
+                        if ictr%20==0:
                                 maxforce = 10
                                 r = (numpy.random.rand(2)-0.5)
                                 F = np.array((r[0]*maxforce,r[1]*maxforce,0))
