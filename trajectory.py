@@ -40,7 +40,7 @@ class Trajectory():
         lw_tangent = 3
         FONT_SIZE = 20
         dVECTOR_LENGTH = 0.5
-        trajectory_tangent_color = np.array((0.9,0.2,0.9,0.9))
+        trajectory_tangent_color = np.array((0.9,0.2,0.9,0.3))
         trajectory_color_deformation = np.array((0.9,0.2,0.9,0.9))
 
         trajectory_color_feasible = np.array((0.2,0.9,0.2,0.9))
@@ -82,6 +82,8 @@ class Trajectory():
                         return [f,df,ddf]
                 else:
                         return [f,df]
+
+        #def ForwardSimulate(self, dt = 0.01):
 
         def prettify(self, W):
                 if W.ndim <= 1:
@@ -478,10 +480,14 @@ class Trajectory():
 
                 return tmp_handle
 
-        def draw(self, env, keep_handle=True):
+        def draw(self, env, keep_handle=True, critical_pt = None):
                 [W,dW,ddW] = self.get_waypoints_second_order()
                 t1 = time.time()
-                N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
+                if critical_pt == None:
+                        N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
+                else:
+                        N = critical_pt
+
                 t2 = time.time()
                 tmp_handle = []
 

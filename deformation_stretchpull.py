@@ -95,7 +95,7 @@ def A1matrix(traj, Ncritical, W):
         while i > 0:
                 #if abs(i-Ncritical)<M and i<Nwaypoints:
                 if i<Nwaypoints-1:
-                        A1[i] = avalue(Ncritical, i, k*50.0)
+                        A1[i] = avalue(Ncritical, i, k*10.0)
                 i -= 1
         return A1
 
@@ -207,7 +207,6 @@ class DeformationStretchPull(Deformation):
                 ###############################################################
                 ## for all points where dF = 0, we can say that lambda_1 = lambda_2 = 0
                 ###############################################################
-                #[lambda_1, lambda_2] = compute_lambda_updates(Wori[:,Nc], dWori[:,Nc], ddWori[:,Nc], F[:,Nc], amax, dt)
 
                 ###############################################################
                 ## update trajectory into lambda directions
@@ -233,7 +232,8 @@ class DeformationStretchPull(Deformation):
                 ###############################################################
                 lambda_1 = 0.001
                 lambda_2 = 0.00
-                lambda_3 = 0.0001
+                #lambda_3 = 0.0001
+                lambda_3 = 0.00
                 lambda_6 = 0.00
                 #lambda_1 = 0.001
                 #lambda_2 = 0.000

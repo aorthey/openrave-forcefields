@@ -16,6 +16,7 @@ from environment_periodic_force_crossroad_stream import *
 from deformation_naive import *
 from deformation_potentials import *
 from deformation_stretchpull import *
+from deformation_reachableset import *
 from trajectory_bspline import *
 import numpy as np
 from motion_planner_geometrical import MotionPlannerGeometrical
@@ -44,21 +45,14 @@ if __name__ == "__main__":
         traj = Trajectory.from_ravetraj(rave_path)
         traj.info()
         traj.draw(env)
-        #traj.PlotParametrization(env)
         traj.draw_delete()
-        td = DeformationStretchPull(traj, env)
+
+        td = DeformationReachableSet(traj, env)
 
         Nd = 5
-        raw_input('Press <ENTER> to start.')
+        #raw_input('Press <ENTER> to start.')
 
         td.deform(N_iter=100)
-        #for i in range(Nd):
-        #        print "DEFORMATION:",i,"/",Nd
-        #        if td.deform(N_iter=10):
-        #                td.draw_deformation() 
-        #        else:
-        #                td.draw_deformation() 
-        #                break
 
         xt = td.traj_current.topp.traj0
         env.MakeRobotVisible()

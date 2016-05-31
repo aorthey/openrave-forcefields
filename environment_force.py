@@ -16,12 +16,12 @@ class ForceEnvironment():
         PhysicsEngineName = 'bullet'
         ##'bullet', 'ode', 'pqp', 'fcl_'
         CollisionCheckerName = 'ode'
-        FORCE_FIELD_MIN_SPACING = 0.5
+        FORCE_FIELD_MIN_SPACING = 0.3
         FORCE_FIELD_MAX_SPACING = 0.8
         FORCE_FIELD_PT_SIZE = 4
         FORCE_FIELD_ARROW_SIZE = 0.02
         #FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))
-        FORCE_FIELD_COLOR = np.array((1.0,1.0,1.0,0.1))
+        FORCE_FIELD_COLOR = np.array((1.0,1.0,1.0,0.4))
         COLOR_CONTACT_PATCH = np.array((0,1,0,1))
         #######################################################################
         env_xml=''
@@ -195,18 +195,30 @@ class ForceEnvironment():
         def GetZeroForce(self):
                 return np.zeros(self.forces[0].shape)
 
+        collision_handler = []
+
         def CheckCollisionAtX(self, X):
                 self.robot.SetDOFValues(X)
 
                 floorDim = len(self.cells)
                 outercells = self.GetCellsAll(verbose=False)[floorDim:]
 
+                #self.collision_handler = []
                 for i in range(0,len(outercells)):
                         robotIsInCollision = self.env.CheckCollision(self.robot, outercells[i])
                         if robotIsInCollision:
-                                print "COLLISION:",X[0:2],outercells[i]
+                                print "COLLISION:",X[0:3],outercells[i]
+                                A = self.DrawCollision(X[0:3])
+                                self.collision_handler.append(A)
                                 return True
                 return False
+
+        def DrawCollision(self, X):
+                return self.env.plot3(points=X,
+                                   pointsize=0.05,
+                                   colors=array(((1.0,0.0,0.0,1.0))),
+                                   drawstyle=1)
+
 
         def DrawLeftHandContactPatchFromTransform(self, T, cpatch=None):
                 self.DrawHandContactPatchFromTransform(T, -pi/2, cpatch)
