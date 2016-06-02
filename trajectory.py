@@ -38,8 +38,10 @@ class Trajectory():
         critical_pt_size = 0.07
         lw_path = 5
         lw_tangent = 3
+        lw_orientation = 3
         FONT_SIZE = 20
         dVECTOR_LENGTH = 0.5
+        trajectory_orientation_color = np.array((0.9,0.9,0.9,0.3))
         trajectory_tangent_color = np.array((0.9,0.2,0.9,0.3))
         trajectory_color_deformation = np.array((0.9,0.2,0.9,0.9))
 
@@ -297,6 +299,20 @@ class Trajectory():
                 else:
                         print "Trajectory has no ReParameterization"
 
+        def getVelocityIntervalWithoutForceField(self, env, W, dW, ddW):
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                Fzero = np.zeros((Ndim, Nwaypoints))
+                [R,amin,amax] = self.getControlMatrix(W)
+
+                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, -Fzero,R,amin,amax,W,dW)
+                if self.topp.ReparameterizeTrajectory():
+                        return self.topp.traj0
+                else:
+                        print "ERROR: without force field, TOPP couldn't find a valid \
+                        velocity profile. The system is likely not STLC"
+                        sys.exit(1)
+
+
         def getCriticalPointFromWaypoints(self, env, W, dW, ddW, oldNc = 0):
 
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
@@ -367,6 +383,7 @@ class Trajectory():
                         dt = self.DISCRETIZATION_TIME_STEP
                         L = self.get_length()
                         N = int(L/dt)
+                        #print N,"WAYPOINTS <<<<<<<<<<<"
                 ###############################################################
                 K = self.get_dimension()
                 pts = np.zeros((K,N))
@@ -462,6 +479,7 @@ class Trajectory():
                                 #        tmp_handle.append(h)
 
                                 Wext = np.zeros((3, 2*Nwaypoints))
+                                Wtheta = np.zeros((3, 2*Nwaypoints))
 
                                 zoffset=0.01
                                 for i in range(0,Nwaypoints):
@@ -471,12 +489,22 @@ class Trajectory():
                                         Wext[:,2*i] = pt
                                         Wext[:,2*i+1] = np.array( (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2]) )
 
+                                        #### orientation of system
+                                        theta = W[3,i]
+                                        etheta = np.dot(Rz(theta),ex)
+                                        Wtheta[:,2*i] = pt
+                                        Wtheta[:,2*i+1] = np.array( (pt[0]+etheta[0],pt[1]+etheta[1],pt[2]+etheta[2]) )
+
                                 #Wext = np.array(zip(W[0:3,:],Wdir)).flatten().reshape(Ndim,2*Nwaypoints)
                                 h=env.env.drawlinestrip(points=Wext.T,linewidth=self.lw_tangent,colors=self.trajectory_tangent_color)
                                 tmp_handle.append(h)
 
+                                h=env.env.drawlinestrip(points=Wtheta.T,linewidth=self.lw_orientation,colors=self.trajectory_orientation_color)
+                                tmp_handle.append(h)
+
                                 h=env.env.drawlinestrip(points=W[0:3,:].T,linewidth=self.lw_path,colors=self.trajectory_color)
                                 tmp_handle.append(h)
+
 
                 return tmp_handle
 
