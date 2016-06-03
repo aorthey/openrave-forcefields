@@ -201,7 +201,7 @@ class DeformationReachableSet(Deformation):
         ###############################################################
         #lambda_1 = 0.001
         #lambda_1 = 0.0005
-        lambda_1 = 0.000
+        lambda_1 = 0.0005
         lambda_2 = 1e-3
         lambda_3 = 0.2
 
@@ -367,6 +367,11 @@ class DeformationReachableSet(Deformation):
 
                         dqxy = dWori[0:2,i]/np.linalg.norm(dWori[0:2,i])
                         thetapath = acos(np.dot(dqxy,ex[0:2]))
+
+                        #######################
+                        ### align 45 degree to force field
+                        #thetapath = acos(np.dot(F[0:2,i],dqxy[0:2]))
+                        #######################
 
                         d1 = abs(theta-thetapath)
                         d2 = 2*pi-abs(theta-thetapath)

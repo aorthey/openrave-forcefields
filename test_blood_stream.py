@@ -53,20 +53,18 @@ if __name__ == "__main__":
         td.deform(N_iter=100)
         td.traj_deformed.PlotParametrization(env)
 
-        xt = td.traj_current.topp.traj0
+        xt = td.traj_deformed.topp.traj0
 
         with env.env:
                 robot.GetLinks()[0].SetStatic(True)
                 env.env.StopSimulation() 
 
         t = 0.0
-        tstep = 0.01
-
+        tstep = 0.05
         robot.SetDOFValues(xt.Eval(t))
         env.MakeRobotVisible()
 
         while t < xt.duration:
-
                 q = xt.Eval(t)
                 dq = xt.Evald(t)
                 ddq = xt.Evaldd(t)
@@ -75,10 +73,11 @@ if __name__ == "__main__":
                 robot.SetDOFValues(qn)
 
                 env.env.StepSimulation(tstep)
-                time.sleep(0.01)
+                time.sleep(tstep)
                 t += tstep
 
         robot.WaitForController(0)
+        print "xt = td.traj_current.topp.traj0"
 
         #raw_input('Press <ENTER> to execute trajectory.')
         #RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug
