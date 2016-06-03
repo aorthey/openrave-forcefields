@@ -133,8 +133,8 @@ class Trajectory():
                 #amin = np.array((-5,-5,-5))
                 #amax = np.array((5,5,5))
                 AM = 5
-                amin = np.array((-AM,-AM,-AM))
-                amax = np.array((AM,AM,AM))
+                amin = np.array((-AM,-AM,-0.5))
+                amax = np.array((AM,AM,0.5))
                 #amin = np.array((-1,-1,-1))
                 #amax = np.array((1,1,1))
 
@@ -491,7 +491,7 @@ class Trajectory():
 
                                         #### orientation of system
                                         theta = W[3,i]
-                                        etheta = np.dot(Rz(theta),ex)
+                                        etheta = self.dVECTOR_LENGTH*np.dot(Rz(theta),ex)
                                         Wtheta[:,2*i] = pt
                                         Wtheta[:,2*i+1] = np.array( (pt[0]+etheta[0],pt[1]+etheta[1],pt[2]+etheta[2]) )
 

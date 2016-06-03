@@ -191,7 +191,7 @@ class TOPPInterface():
                 self.PlotPrettifiedAxes(ax2, fs)
 
                 ax3 = subplot(4,1,3)
-                ylabel('Acceleration $\\left(\\frac{m}{s^2}\\right)$', fontsize=fs)
+                ylabel('Acceleration $\\left(\\frac{m^2}{s^2}\\right)$', fontsize=fs)
                 plot(tvect, qddvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\ddot{x}$")
                 plot(tvect, qddvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\ddot{y}$")
                 plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
@@ -203,7 +203,7 @@ class TOPPInterface():
 
                 if env is not None:
                         ax4 = subplot(4,1,4)
-                        ylabel('Control $\\left(\\frac{m}{s^2}\\right)$', fontsize=fs)
+                        ylabel('Control $\\left(\\frac{m^2}{s^2}\\right)$', fontsize=fs)
                         plot(tvect, a[0,:], color = color_a1_coordinate, linewidth = lw, label = "${a_1}(Thruster)$")
                         plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
                         plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")

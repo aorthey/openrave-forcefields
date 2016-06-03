@@ -51,7 +51,7 @@ class Deformation():
                 for i in range(0,N_iter):
                         res = self.deform_onestep(computeNewCriticalPoint)
                         self.traj_current = copy.copy(self.traj_deformed)
-                        self.draw_deformation(self.critical_pt) 
+                        self.draw_deformation()
                         if res == DEFORM_NONE:
                                 print "DEFORM_NONE"
                                 return False
@@ -64,6 +64,9 @@ class Deformation():
                         elif res== DEFORM_NOPROGRESS:
                                 print "DEFORM_NOPROGRESS"
                                 computeNewCriticalPoint=True
+                        else:
+                                print "DEFORM_UNKNOWN"
+                                return False
 
                 return True
 
@@ -91,7 +94,7 @@ class Deformation():
                         self.forcehandle.append(h)
 
 
-        def draw_deformation(self, critical_pt=None):
+        def draw_deformation(self):
                 ## visualize linear homotopy between two trajectories
 
                 [W0,dW] = self.traj_display.get_waypoints() 
@@ -99,7 +102,7 @@ class Deformation():
                 [W1,dW] = self.traj_current.get_waypoints(Nwaypoints) 
 
                 self.forcehandle = []
-                if np.linalg.norm(W0-W1)<0.001:
+                if np.linalg.norm(W0-W1)<1e-10:
                         print "No deformation"
                         self.handle = self.traj_current.draw(self.env, keep_handle=False)
                         return
@@ -114,17 +117,15 @@ class Deformation():
                 for i in range(0,self.DEFORMATION_STEPS):
                         k = float(i)/float(self.DEFORMATION_STEPS)
                         Wk = (1-k)*W0 + k*W1
-                        if self.traj_current.IsInCollision(self.env, Wk):
-                                break
-                        else:
-                                self.traj_current.new_from_waypoints(Wk)
-                                #self.handle = self.traj_current.draw_nocritical(self.env, keep_handle=False)
-                                ti1 = time.time()
-                                self.handle = self.traj_current.draw(self.env, keep_handle=False, critical_pt = critical_pt)
-                                ti2 = time.time()
-                                #if i == 0:
-                                        #raw_input('Press <ENTER> to draw deformation.')
-                                #time.sleep(0.001)
+                        #if self.traj_current.IsInCollision(self.env, Wk):
+                                #break
+                        #else:
+                        self.traj_current.new_from_waypoints(Wk)
+                        #self.handle = self.traj_current.draw_nocritical(self.env, keep_handle=False)
+
+                        ti1 = time.time()
+                        self.handle = self.traj_current.draw(self.env, keep_handle=False, critical_pt = self.critical_pt)
+                        ti2 = time.time()
                         tdraw += ti2-ti1
                 sys.stdout.write("DONE\n")
                 t2 = time.time()
