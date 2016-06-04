@@ -56,17 +56,18 @@ class Deformation():
                                 print "DEFORM_NONE"
                                 return False
                         elif res== DEFORM_OK:
-                                print "DEFORM_OK"
+                                print "DEFORM_OK",
                                 computeNewCriticalPoint=False
                         elif res== DEFORM_COLLISION:
-                                print "DEFORM_COLLISION"
+                                print "DEFORM_COLLISION",
                                 computeNewCriticalPoint=False
                         elif res== DEFORM_NOPROGRESS:
-                                print "DEFORM_NOPROGRESS"
+                                print "DEFORM_NOPROGRESS",
                                 computeNewCriticalPoint=True
                         else:
                                 print "DEFORM_UNKNOWN"
                                 return False
+                        print "(Iteration:",i,")"
 
                 return True
 
@@ -93,6 +94,50 @@ class Deformation():
                         h=self.env.env.drawlinestrip(points=P,linewidth=ls,colors=np.array(((0.8,0.2,0.2,0.9))))
                         self.forcehandle.append(h)
 
+        def InterpolateWaypoints(self, W0, W1, k):
+                ### k: between [0,1]
+                Ndim = W0.shape[0]
+                Nwaypoints = W0.shape[1]
+                Wk = np.zeros((Ndim,Nwaypoints))
+                Wk[0:3,:] = (1-k)*W0[0:3,:] + k*W1[0:3,:]
+
+                for i in range(0,Nwaypoints):
+                        t0 = W0[3,i]
+                        t1 = W1[3,i]
+
+                        d1 = abs(t1-t0)
+                        d2 = 2*pi-abs(t1-t0)
+
+                        if d1 > d2:
+                                ### interpolation needs to cross boundary
+                                ### between charts!
+                                if t1 > t0:
+                                        ## going into minus direction
+                                        if k*d2 < abs(t0+pi):
+                                                ## before chart boundary
+                                                tnew = t0 - k*d2
+                                        else:
+                                                ## after chart boundary
+                                                tnew = t1 + (d2-k*d2)
+                                else:
+                                        ### t0 > t1
+                                        ## going into plus direction
+                                        if k*d2 < abs(t0-pi):
+                                                ## before chart boundary
+                                                tnew = t0 + k*d2
+                                        else:
+                                                ## after chart boundary
+                                                tnew = t1 - (d2-k*d2)
+
+                                Wk[3,i] = tnew
+                                #print "k:","t0:",t0,"t1:",t1,"d2:",d2,"tnew:",tnew
+                        else:
+                        #        print ">",d1,t1,t0
+                                Wk[3,i] = (1-k)*W0[3,i] + k*W1[3,i]
+                #sys.exit(0)
+                return Wk
+
+
 
         def draw_deformation(self):
                 ## visualize linear homotopy between two trajectories
@@ -116,6 +161,8 @@ class Deformation():
                 tdraw = 0.0
                 for i in range(0,self.DEFORMATION_STEPS):
                         k = float(i)/float(self.DEFORMATION_STEPS)
+
+                        #Wk = self.InterpolateWaypoints(W0,W1,k)
                         Wk = (1-k)*W0 + k*W1
                         #if self.traj_current.IsInCollision(self.env, Wk):
                                 #break

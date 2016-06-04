@@ -470,27 +470,6 @@ class Trajectory():
                 tmp_handle = []
                 if Nwaypoints > 0:
                         with env.env:
-                                #for i in range(0,Nwaypoints):
-                                #        pt = np.array(((W[0,i],W[1,i],W[2,i])))
-                                #        dpt = np.array(((dW[0,i],dW[1,i],dW[2,i])))
-                                #        dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
-                                #        P = np.array(((pt[0],pt[1],pt[2]),
-                                #                (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
-                                #        tmp_handle.append(h)
-                                #        #P = np.array(((pt[0],pt[1],pt[2]),
-                                #        #        (pt[0]+ddpt[0],pt[1]+ddpt[1],pt[2]+ddpt[2])))
-                                #        #h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=np.array(((0.9,0.9,0.9,0.9))))
-                                #        #tmp_handle.append(h)
-
-                                #for i in range(0,Nwaypoints):
-                                #        zoffset=0.05
-                                #        pt = np.array(((W[0,i],W[1,i],W[2,i]-zoffset)))
-                                #        dpt = np.array(((dW[0,i],dW[1,i],dW[2,i]-zoffset)))
-                                #        dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
-                                #        P = np.array(((pt[0],pt[1],pt[2]), (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2])))
-                                #        h=env.env.drawlinestrip(points=P,linewidth=self.linsize,colors=self.trajectory_tangent_color)
-                                #        tmp_handle.append(h)
-
                                 Wext = np.zeros((3, 2*Nwaypoints))
                                 Wtheta = np.zeros((3, 2*Nwaypoints))
 
@@ -498,6 +477,7 @@ class Trajectory():
                                         pt = np.array(((W[0,i],W[1,i],W[2,i]+self.tangent_zoffset)))
                                         dpt = np.array(((dW[0,i],dW[1,i],dW[2,i]+self.tangent_zoffset)))
                                         dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
+
                                         Wext[:,2*i] = pt
                                         Wext[:,2*i+1] = np.array( (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2]) )
 

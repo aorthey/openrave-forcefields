@@ -1,9 +1,10 @@
 import abc
+import copy
 import sys
 from openravepy import *
 from numpy import array,pi
 from math import cos,sin
-from util import Rz, Rax
+from util import Rz, Rax, green, red
 import math
 import numpy as np
 
@@ -90,11 +91,17 @@ class ForceEnvironment():
         @abc.abstractmethod
         def RobotGetGoalPosition(self):
                 pass
+
         def MakeRobotTransparent(self, alpha):
                 assert( 0 <= alpha <= 1)
                 with self.env:
                         self.robot = self.env.GetRobots()[0]
-                        for link in self.robot.GetLinks():
+                        self.ChangeTransparencyRobot(self.robot, alpha)
+
+        def ChangeTransparencyRobot(self, robot, alpha):
+                assert( 0 <= alpha <= 1)
+                with self.env:
+                        for link in robot.GetLinks():
                                 for geom in link.GetGeometries():
                                         geom.SetTransparency(1.0-alpha)
 
@@ -117,6 +124,32 @@ class ForceEnvironment():
                         link.SetForce(F,P,False)
                         link.SetTorque(zero, False)
 
+        def DrawRobot(self,color):
+                for link in self.robot.GetLinks():
+                        for geom in link.GetGeometries():
+                                t = geom.GetType()
+                                if t == GeometryType.Box:
+                                        print "BOX"
+                                        B = geom.GetBoxExtents()
+                                        T = link.GetTransform()
+                                        TG = geom.GetTransform()
+                                        T = np.dot(TG,T)
+
+                                        h = self.DrawBoxMesh(T,B,color)
+                                        self.static_handles.append(h)
+
+                                elif t == GeometryType.Cylinder:
+                                        print "CYLINDER"
+                                        T = link.GetTransform()
+                                        TG = geom.GetTransform()
+
+                                        print geom.GetCylinderRadius()
+                                        print T[0:3,3]
+                                        h = self.env.plot3(points=T[0:3,3],pointsize=0.1,colors=color,drawstyle=1)
+                                        self.static_handles.append(h)
+                                else:
+                                        print "[WARNING]: Unknown geometry type in URDF -- cannot draw robot"
+
         def GetRobot(self):
                 with self.env:
                         self.robot = self.env.GetRobots()[0]
@@ -132,23 +165,33 @@ class ForceEnvironment():
                         self.robot.SetDOFAccelerationLimits([5.0,5.0,0.0,5.0])
 
 
-                        self.handles.append(self.env.plot3(points=array(((xg,yg,zg))),
-                                           pointsize=0.08,
-                                           colors=array(((1.0,0.0,0.0,0.8))),
-                                           drawstyle=1))
+                        ### TODO: draw real robot instead
+                        #self.robot.SetDOFValues((xg,yg,zg,tg))
+                        #self.ChangeTransparencyRobot(self.startrobot, 0.5)
+                        #self.ChangeTransparencyRobot(self.startrobot, 0.5)
+                        self.DrawRobot(green)
 
-                        self.handles.append(self.env.plot3(points=array(((xi,yi,zg))),
-                                           pointsize=0.08,
-                                           colors=array(((0.0,1.0,0.0,0.8))),
-                                           drawstyle=1))
+                        self.robot.SetDOFValues((xg,yg,zg,tg))
 
-                        d = 0.3
-                        self.handles.append(self.env.drawlinestrip(points=np.array(((xi,yi,zi),(xi+d*cos(ti),yi+d*sin(ti),zi))),
-                                           linewidth=5,
-                                           colors=np.array(((0.0,0.0,0.0,0.8)))))
-                        self.handles.append(self.env.drawlinestrip(points=np.array(((xg,yg,zg),(xg+d*cos(tg),yg+d*sin(tg),zg))),
-                                           linewidth=5,
-                                           colors=np.array(((0.0,0.0,0.0,0.8)))))
+                        self.DrawRobot(red)
+                        
+                        #self.handles.append(self.env.plot3(points=array(((xg,yg,zg))),
+                        #                   pointsize=0.08,
+                        #                   colors=array(((1.0,0.0,0.0,0.8))),
+                        #                   drawstyle=1))
+
+                        #self.handles.append(self.env.plot3(points=array(((xi,yi,zg))),
+                        #                   pointsize=0.08,
+                        #                   colors=array(((0.0,1.0,0.0,0.8))),
+                        #                   drawstyle=1))
+
+                        #d = 0.3
+                        #self.handles.append(self.env.drawlinestrip(points=np.array(((xi,yi,zi),(xi+d*cos(ti),yi+d*sin(ti),zi))),
+                        #                   linewidth=5,
+                        #                   colors=np.array(((0.0,0.0,0.0,0.8)))))
+                        #self.handles.append(self.env.drawlinestrip(points=np.array(((xg,yg,zg),(xg+d*cos(tg),yg+d*sin(tg),zg))),
+                        #                   linewidth=5,
+                        #                   colors=np.array(((0.0,0.0,0.0,0.8)))))
                         return self.robot
 
         def DrawBorderAroundCell(self, cell):
@@ -163,33 +206,35 @@ class ForceEnvironment():
 
         ### transform matrix T \in [3x3]
         ### box extend vector B \in [3x1]
-        def DrawBoxMesh(self, T, B):
+        def DrawBoxMesh(self, T, B, color=np.array((0.5,0.5,0.5,0.5))):
                         ########################################################
                         ## visualize extend of force constraint box
                         ########################################################
-                        P = array(((T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+0.01), \
-                                (T[0,3]+B[0],T[1,3]-B[1],B[2]+T[2,3]+0.01), \
-                                (T[0,3]+B[0],T[1,3]+B[1],B[2]+T[2,3]+0.01), \
-                                (T[0,3]-B[0],T[1,3]+B[1],B[2]+T[2,3]+0.01),\
-                                (T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+0.01),\
+                        zoffset=0.05
+                        P = array(((T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset), \
+                                (T[0,3]+B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset), \
+                                (T[0,3]+B[0],T[1,3]+B[1],B[2]+T[2,3]+zoffset), \
+                                (T[0,3]-B[0],T[1,3]+B[1],B[2]+T[2,3]+zoffset),\
+                                (T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset),\
                                 ## go up
-                                (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+0.01), \
+                                (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset), \
                                 ## next point
-                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+0.01), \
-                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]+B[2]+0.01), \
-                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+0.01), \
+                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset), \
+                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]+B[2]+zoffset), \
+                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset), \
                                 ## next point
-                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+0.01), \
-                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]+B[2]+0.01), \
-                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+0.01), \
+                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset), \
+                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]+B[2]+zoffset), \
+                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset), \
                                 ## next point
-                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+0.01),\
-                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]+B[2]+0.01),\
-                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+0.01),\
+                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset),\
+                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]+B[2]+zoffset),\
+                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset),\
                                 ## back start
-                                (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+0.01)))
+                                (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset)))
 
-                        h=self.env.drawlinestrip(points=P,linewidth=5.0,colors=array(((0.5,0.5,0.5,0.5))))
+                        h=self.env.drawlinestrip(points=P,linewidth=100.0,colors=color)
+                        #h=self.env.drawtrimesh(points=P,indices=None,colors=color)
                         return h
 
         def GetZeroForce(self):
