@@ -36,7 +36,11 @@ class Trajectory():
         ##drawing parameters
         ptsize = 0.03
         critical_pt_size = 0.07
-        lw_path = 5
+
+        show_tangent_vector = False
+        show_orientation_vector = True
+
+        lw_path = 10
         lw_tangent = 3
         lw_orientation = 3
         FONT_SIZE = 20
@@ -44,6 +48,8 @@ class Trajectory():
         trajectory_orientation_color = np.array((0.9,0.9,0.9,0.3))
         trajectory_tangent_color = np.array((0.9,0.2,0.9,0.3))
         trajectory_color_deformation = np.array((0.9,0.2,0.9,0.9))
+
+        tangent_zoffset = -0.02
 
         trajectory_color_feasible = np.array((0.2,0.9,0.2,0.9))
         trajectory_color_infeasible = np.array((0.9,0.2,0.2,0.9))
@@ -133,8 +139,8 @@ class Trajectory():
                 #amin = np.array((-5,-5,-5))
                 #amax = np.array((5,5,5))
                 AM = 5
-                amin = np.array((-AM,-AM,-0.5))
-                amax = np.array((AM,AM,0.5))
+                amin = np.array((-AM,-AM,-AM))
+                amax = np.array((AM,AM,AM))
                 #amin = np.array((-1,-1,-1))
                 #amax = np.array((1,1,1))
 
@@ -246,6 +252,13 @@ class Trajectory():
                 pt = np.array(((W[0],W[1],-0.1,0.001)))
                 F = np.zeros((Ndims))
                 F[0:3] = env.GetForceAtX(pt)
+                r = 0.5
+
+                theta = W[3]
+                rcom = r * np.dot(Rz(theta),ex)
+                torque = np.cross(rcom,F[0:2])
+
+                F[3] = np.sign(torque[2])*np.linalg.norm(torque)
                 return F
         
         def IsInCollision(self, env, W):
@@ -481,10 +494,9 @@ class Trajectory():
                                 Wext = np.zeros((3, 2*Nwaypoints))
                                 Wtheta = np.zeros((3, 2*Nwaypoints))
 
-                                zoffset=0.01
                                 for i in range(0,Nwaypoints):
-                                        pt = np.array(((W[0,i],W[1,i],W[2,i]-zoffset)))
-                                        dpt = np.array(((dW[0,i],dW[1,i],dW[2,i]-zoffset)))
+                                        pt = np.array(((W[0,i],W[1,i],W[2,i]+self.tangent_zoffset)))
+                                        dpt = np.array(((dW[0,i],dW[1,i],dW[2,i]+self.tangent_zoffset)))
                                         dpt = self.dVECTOR_LENGTH*dpt/np.linalg.norm(dpt)
                                         Wext[:,2*i] = pt
                                         Wext[:,2*i+1] = np.array( (pt[0]+dpt[0],pt[1]+dpt[1],pt[2]+dpt[2]) )
@@ -492,15 +504,18 @@ class Trajectory():
                                         #### orientation of system
                                         theta = W[3,i]
                                         etheta = self.dVECTOR_LENGTH*np.dot(Rz(theta),ex)
+                                        etheta[2] += self.tangent_zoffset
                                         Wtheta[:,2*i] = pt
                                         Wtheta[:,2*i+1] = np.array( (pt[0]+etheta[0],pt[1]+etheta[1],pt[2]+etheta[2]) )
 
                                 #Wext = np.array(zip(W[0:3,:],Wdir)).flatten().reshape(Ndim,2*Nwaypoints)
-                                h=env.env.drawlinestrip(points=Wext.T,linewidth=self.lw_tangent,colors=self.trajectory_tangent_color)
-                                tmp_handle.append(h)
+                                if self.show_tangent_vector:
+                                        h=env.env.drawlinestrip(points=Wext.T,linewidth=self.lw_tangent,colors=self.trajectory_tangent_color)
+                                        tmp_handle.append(h)
 
-                                h=env.env.drawlinestrip(points=Wtheta.T,linewidth=self.lw_orientation,colors=self.trajectory_orientation_color)
-                                tmp_handle.append(h)
+                                if self.show_orientation_vector:
+                                        h=env.env.drawlinestrip(points=Wtheta.T,linewidth=self.lw_orientation,colors=self.trajectory_orientation_color)
+                                        tmp_handle.append(h)
 
                                 h=env.env.drawlinestrip(points=W[0:3,:].T,linewidth=self.lw_path,colors=self.trajectory_color)
                                 tmp_handle.append(h)

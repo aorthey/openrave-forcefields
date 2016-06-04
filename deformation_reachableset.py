@@ -110,20 +110,6 @@ def A2matrix(traj, Ncritical, W):
                 i -= 1
         return A2
 
-def AReachMatrix(traj, Ncritical, W):
-        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
-        A = np.zeros(Nwaypoints)
-
-        assert(Ncritical<Nwaypoints)
-        i = Nwaypoints-1
-        while i > 0:
-                if i>Ncritical:
-                        A[i] = avalue(Ncritical, i, k*10.0)
-                else:
-                        A[i] = 2.0*(Ncritical-i)
-                        #A[i] = 2.0**(Ncritical-i)
-                i -= 1
-        return A
 def A3matrix(traj, Ncritical, W):
         [Ndim, Nwaypoints] = traj.getWaypointDim(W)
         A3 = np.zeros(Nwaypoints)
@@ -142,25 +128,57 @@ def A3matrix(traj, Ncritical, W):
                         #A3[i] = 1.0+0.1*(Ncritical-i)
                 i -= 1
         return A3
-def A4matrix(traj, W):
+def ABackwardMatrix(traj, Ncritical, W):
+        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
+        A = np.zeros(Nwaypoints)
+
+        assert(Ncritical<Nwaypoints)
+        i = Nwaypoints-1
+        while i > 0:
+                if i>Ncritical:
+                        #A[i] = avalue(Ncritical, i, k*20.0)
+                        A[i] = (i-Ncritical+1)*traj.DISCRETIZATION_TIME_STEP
+                else:
+                        A[i] = 0.0
+                        #A[i] = 2.0*(Ncritical-i)
+                        #A[i] = 2.0**(Ncritical-i)
+                i -= 1
+        return A
+def AForwardMatrix(traj, Ncritical, W):
+        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
+        A = np.zeros(Nwaypoints)
+
+        assert(Ncritical<Nwaypoints)
+        i = Nwaypoints-1
+        while i > 0:
+                if i>Ncritical:
+                        #A[i] = avalue(Ncritical, i, k*20.0)
+                        A[i] = 0.0
+                else:
+                        #A[i] = 2.0*(Ncritical-i)
+                        A[i] = (Ncritical-i+1)*traj.DISCRETIZATION_TIME_STEP
+                        #A[i] = 2.0**(Ncritical-i)
+                i -= 1
+        return A
+def AEndMatrix(traj, W):
         [Ndim, Nwaypoints] = traj.getWaypointDim(W)
         A4 = np.zeros(Nwaypoints)
 
         #M = 100
         i = Nwaypoints-1
-        while i > 0:
-                A4[i] = avalue(Nwaypoints-1, i, k*10.0)
+        while i >= 0:
+                A4[i] = avalue(Nwaypoints-1, i, k*20.0)
                 i -= 1
         return A4
 
-def A5matrix(traj, W):
+def AStartMatrix(traj, W):
         [Ndim, Nwaypoints] = traj.getWaypointDim(W)
         A5 = np.zeros(Nwaypoints)
 
         #M = 100
         i = Nwaypoints-1
-        while i > 0:
-                A5[i] = avalue(0, i, k*40.0)
+        while i >= 0:
+                A5[i] = avalue(0, i, k*20.0)
                 i -= 1
         return A5
 
@@ -177,17 +195,16 @@ class DeformationReachableSet(Deformation):
                         FN[:,i] = np.dot(F[:,i].flatten().T, trajNormal)*trajNormal
                 return FN
 
-        def getTorqueComponent(self, F, Wori, dWori):
+        def getTorqueNormalComponent(self, F, Wori, dWori):
                 Nwaypoints = Wori.shape[1]
-                FN = np.zeros((F.shape))
+                FNtorque = np.zeros((F.shape))
                 for i in range(0,Nwaypoints):
-                        trajNormal = np.array((-dWori[1,i],dWori[0,i],0,0))
-                        trajNormal = trajNormal/np.linalg.norm(trajNormal)
-                        FN[:,i] = np.dot(F[:,i].flatten().T, trajNormal)*trajNormal
-                        df = np.dot(F[:,i].flatten().T, trajNormal)
-                        #if df > 0:
+                        #trajNormal = np.array((-dWori[1,i],dWori[0,i],0,0))
+                        #trajNormal = trajNormal/np.linalg.norm(trajNormal)
+                        FNtorque[3,i] = F[3,i]
+                        #FNtorque[:,i] = np.dot(F[:,i].flatten().T, trajNormal)*trajNormal
 
-                return FN
+                return FNtorque
 
 
 
@@ -201,9 +218,9 @@ class DeformationReachableSet(Deformation):
         ###############################################################
         #lambda_1 = 0.001
         #lambda_1 = 0.0005
-        lambda_1 = 0.0005
-        lambda_2 = 1e-3
-        lambda_3 = 0.2
+        lambda_1 = 0.001
+        lambda_2 = 1.0
+        lambda_3 = 0.0
 
         def deform_onestep(self, computeNewCriticalPoint = True):
                 COLLISION_ENABLED = True
@@ -247,7 +264,7 @@ class DeformationReachableSet(Deformation):
 
                 ### get forces in normal direction to trajectory
                 FNxy = self.getForceNormalComponent(F, dWori)
-
+                FNtorque = self.getTorqueNormalComponent(F, Wori, dWori)
 
                 self.traj_velprofile = traj.getVelocityIntervalWithoutForceField(self.env, Wori, dWori, ddWori)
                 Tend = self.traj_velprofile.duration
@@ -281,8 +298,9 @@ class DeformationReachableSet(Deformation):
                 #################################################################
                 dUtmp = np.zeros((Ndim,Nwaypoints))
                 for i in range(0,Nwaypoints):
-                        B1 = B1matrix(traj,i,Wori)
-                        dUtmp[:,i] += np.dot(B1,( -lambda_1 * FNxy.T))
+                        A = A1matrix(traj,i,Wori)
+                        dUtmp[:,i] += np.dot(A,( -lambda_1 * FNxy.T))
+                        dUtmp[:,i] += np.dot(A,( -lambda_1 * FNtorque.T))
 
                 Wnext = Wori + eta*dUtmp
                 if COLLISION_ENABLED:
@@ -309,8 +327,8 @@ class DeformationReachableSet(Deformation):
                         p = Wori[:,i]
                         dp = dWori[:,i]
                         pnext = Wori[:,i+1]
-                        #smax = dpmax[:,i]/2
-                        smax = 0
+                        smax = dpmax[:,i]/4
+                        #smax = 0
 
                         if np.linalg.norm(F[:,i])>1e-3:
                                 qnext = np.zeros((Ndim))
@@ -322,28 +340,20 @@ class DeformationReachableSet(Deformation):
                                         dt2 = dt*dt/2
                                         qnext = p + dt*smax*dp + dt2*F[:,i]
 
-                                #print "found qnext at :",qnext-p,"time",dt
-                                #print "ds:",ds, \
-                                        #"d(p,pnext):",np.linalg.norm(p-pnext), \
-                                        #"d(qnext,pnext):",np.linalg.norm(pnext-qnext)
-                                #sys.exit(0)
                                 dpq = np.dot(np.linalg.norm(qnext),np.linalg.norm(pnext))
                                 if dpq < 0.1:
                                         print "WaRNING: dpq:",dpq
                                         sys.exit(0)
 
                                 ## project onto orthogonal direction to path
-                                dw = qnext - pnext
+                                dp = qnext - pnext
                                 #dw = dw - np.dot(dw,pnext-p)*(pnext-p)
-                                Wmove[:,i+1] = dw
+                                #print dw
+                                Wmove[:,i] = dp
 
 
                 for i in range(0,Nwaypoints):
-                        A = AReachMatrix(traj,i,Wori)
-                        #dUtmp[:,i+1] = np.dot(A3, (lambda_2 * Wmove.T))
-                        #if i==int(Nwaypoints/2):
-                                #print i,np.around(A,decimals=2)
-                                #sys.exit(0)
+                        A = AForwardMatrix(traj,i,Wori)
                         dUtmp[:,i] = np.dot(A, (lambda_2 * Wmove.T))
 
                 Wnext = Wori + eta*dUtmp
@@ -353,6 +363,9 @@ class DeformationReachableSet(Deformation):
                                 dU += dUtmp
                         else:
                                 print "## $> lambda2 collision (reachable-set projection)"
+                                ### make lambda smaller to see if step size is
+                                ### an issue
+                                self.lambda_2 /= 2.0
                 else:
                         dU += dUtmp
                 print "## LAMBDAS: ",lambda_1,lambda_2
@@ -398,13 +411,20 @@ class DeformationReachableSet(Deformation):
                 #################################################################
                 dEnd = dU[:,-1]
                 dStart = dU[:,0]
-                A4 = A4matrix(traj, Wori)
-                A5 = A5matrix(traj, Wori)
+                A4 = AEndMatrix(traj, Wori)
+                A5 = AStartMatrix(traj, Wori)
                 for i in range(0,Nwaypoints):
                         dU[:,i] += -A4[i]*dEnd
                         dU[:,i] += -A5[i]*dStart
 
                 Wnext = Wori + eta*dU
+
+                if not (dU[:,0]==0).all():
+                        print "ERROR: start point deformation -> not allowed"
+                        sys.exit(1)
+                if not (dU[:,-1]==0).all():
+                        print "ERROR: end point deformation -> not allowed"
+                        sys.exit(1)
 
                 if np.linalg.norm(Wori-Wnext)<1e-10:
                         print "no deformation achieved with current critical point"

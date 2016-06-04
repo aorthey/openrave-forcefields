@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
         td = DeformationReachableSet(traj, env)
         Nd = 5
-        raw_input('Press <ENTER> to start.')
+        #raw_input('Press <ENTER> to start.')
 
         td.deform(N_iter=100)
         td.traj_deformed.PlotParametrization(env)
