@@ -139,8 +139,8 @@ class Trajectory():
                 #amin = np.array((-5,-5,-5))
                 #amax = np.array((5,5,5))
                 AM = 5
-                amin = np.array((-AM,-AM,-AM))
-                amax = np.array((AM,AM,AM))
+                amin = np.array((0,0,-AM))
+                amax = np.array((AM,0,AM))
                 #amin = np.array((-1,-1,-1))
                 #amax = np.array((1,1,1))
 
@@ -242,6 +242,27 @@ class Trajectory():
                 for tt in np.linspace(0,1,10):
                         [f,df]=self.evaluate_at(tt)
                         print "             [ ",np.around(tt,1)," ] ",np.around(f,decimals=2)
+
+
+        def plot_reachableset(self, env):
+                thetavec = [-pi/2,-pi/4,0,pi/4,pi/2]
+                #thetavec = [0]
+                for theta in thetavec:
+                        p = np.array((0,0,0,theta))
+
+                        #dp = np.array((1,0.1,0,0))
+                        #force = np.array((0,-6.5,0,0))
+                        dp = np.array((1,0.1,0,0))
+                        force = np.array((0,-3.5,0,0))
+                        smax = 0.1
+                        s = 0.0
+
+                        [R,amin,amax] = self.getControlMatrix(p)
+
+                        from reachable_set import ReachableSet
+                        self.reach = ReachableSet( p, s, dp, force, R[:,:,0], amin, amax)
+                        self.reach.Plot()
+
 
         def get_dimension(self):
                 [F,dF] = self.evaluate_at(0)
