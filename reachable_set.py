@@ -85,20 +85,34 @@ class ReachableSet():
                 self.image.plot(p[0], p[1], 'ok', markersize=30)
                 self.image.plot(pnext[0],pnext[1], 'ok', markersize=10)
 
-                self.image.plot([p[0]+dt*1.5*s*dp[0],p[0]-0.2*dt*s*dp[0]],[p[1]+dt*1.5*s*dp[1],p[1]-0.2*dt*s*dp[1]],'-k',linewidth=self.path_lw)
-
                 dori = np.dot(Rz(p[3]),ex)[0:2]
                 dori = 0.5*(dori/np.linalg.norm(dori))
 
-                arrow0 = self.PlotArrow(p, dt*s*dori, self.orientation_color)
-                arrow1 = self.PlotArrow(p, dt*s*dp, self.tangent_color)
-                arrow2 = self.PlotArrow(dt*s*dp, dt2*force, self.force_color)
+                if s < 0.001:
+                        dnf = np.linalg.norm(force)
+                        nforce = force/dnf
+                        si = np.linalg.norm(dt2*dnf/(dt*np.linalg.norm(dp)))
+                        self.image.plot([p[0]+dt*1.5*si*dp[0],p[0]-0.2*dt*si*dp[0]],[p[1]+dt*1.5*si*dp[1],p[1]-0.2*dt*si*dp[1]],'-k',linewidth=self.path_lw)
 
-                arrow0 = self.PlotArrow(pnext, dt*s*dori, self.orientation_color)
-                arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
+                        arrow0 = self.PlotArrow(p, dt*si*dori, self.orientation_color)
 
-                plt.legend([arrow0,arrow1,arrow2,],
-                                ['Orientation','Velocity/Tangent Path','Force',],fontsize=self.fs)
+                        arrow0 = self.PlotArrow(pnext, dt*si*dori, self.orientation_color)
+                        arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
+
+                        plt.legend([arrow0,arrow2,],
+                                        ['Orientation','Force',],fontsize=self.fs)
+                else:
+                        self.image.plot([p[0]+dt*1.5*s*dp[0],p[0]-0.2*dt*s*dp[0]],[p[1]+dt*1.5*s*dp[1],p[1]-0.2*dt*s*dp[1]],'-k',linewidth=self.path_lw)
+
+                        arrow0 = self.PlotArrow(p, dt*s*dori, self.orientation_color)
+                        arrow1 = self.PlotArrow(p, dt*s*dp, self.tangent_color)
+                        arrow2 = self.PlotArrow(dt*s*dp, dt2*force, self.force_color)
+
+                        arrow0 = self.PlotArrow(pnext, dt*s*dori, self.orientation_color)
+                        arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
+
+                        plt.legend([arrow0,arrow1,arrow2,],
+                                        ['Orientation','Velocity/Tangent Path','Force',],fontsize=self.fs)
                 plt.tight_layout()
                 plt.axis('equal')
 

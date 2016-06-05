@@ -253,7 +253,7 @@ class Trajectory():
                         #dp = np.array((1,0.1,0,0))
                         #force = np.array((0,-6.5,0,0))
                         dp = np.array((1,0.1,0,0))
-                        force = np.array((0,-3.5,0,0))
+                        force = np.array((0,-2.5,0,0))
                         smax = 0.1
                         s = 0.0
 
