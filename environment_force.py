@@ -24,6 +24,8 @@ class ForceEnvironment():
         #FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))
         FORCE_FIELD_COLOR = np.array((1.0,1.0,1.0,0.4))
         COLOR_CONTACT_PATCH = np.array((0,1,0,1))
+        COLOR_GOAL_POS = np.array((1,0.5,0.5,0.9))
+        COLOR_START_POS = np.array((0.5,1,0.5,0.9))
         #######################################################################
         env_xml=''
         robot_xml=''
@@ -124,7 +126,9 @@ class ForceEnvironment():
                         link.SetForce(F,P,False)
                         link.SetTorque(zero, False)
 
+
         def DrawRobot(self,color):
+                zpos = 0.01
                 for link in self.robot.GetLinks():
                         for geom in link.GetGeometries():
                                 t = geom.GetType()
@@ -134,8 +138,9 @@ class ForceEnvironment():
                                         T = link.GetTransform()
                                         TG = geom.GetTransform()
                                         T = np.dot(TG,T)
+                                        T[2,3] = zpos
 
-                                        h = self.DrawBoxMesh(T,B,color)
+                                        h = self.DrawBox(T,B,color)
                                         self.static_handles.append(h)
 
                                 elif t == GeometryType.Cylinder:
@@ -143,9 +148,14 @@ class ForceEnvironment():
                                         T = link.GetTransform()
                                         TG = geom.GetTransform()
 
-                                        print geom.GetCylinderRadius()
-                                        print T[0:3,3]
-                                        h = self.env.plot3(points=T[0:3,3],pointsize=0.1,colors=color,drawstyle=1)
+                                        T[2,3] = zpos
+                                        #h = self.env.plot3(points=T[0:3,3],pointsize=0.1,colors=color,drawstyle=1)
+                                        h = self.env.drawcone(pos=T[0:3,3],
+                                                        direction=np.array((0,0,1)),
+                                                        color=color,
+                                                        height=0.0,
+                                                        aperture=geom.GetCylinderRadius())
+
                                         self.static_handles.append(h)
                                 else:
                                         print "[WARNING]: Unknown geometry type in URDF -- cannot draw robot"
@@ -169,11 +179,11 @@ class ForceEnvironment():
                         #self.robot.SetDOFValues((xg,yg,zg,tg))
                         #self.ChangeTransparencyRobot(self.startrobot, 0.5)
                         #self.ChangeTransparencyRobot(self.startrobot, 0.5)
-                        self.DrawRobot(green)
+                        self.DrawRobot(self.COLOR_START_POS)
 
                         self.robot.SetDOFValues((xg,yg,zg,tg))
 
-                        self.DrawRobot(red)
+                        self.DrawRobot(self.COLOR_GOAL_POS)
                         
                         #self.handles.append(self.env.plot3(points=array(((xg,yg,zg))),
                         #                   pointsize=0.08,
@@ -204,38 +214,45 @@ class ForceEnvironment():
                         handle.append(h)
                         return handle
 
+        def GetBoxCoords(self, T,B):
+                ########################################################
+                ## visualize extend of force constraint box
+                ########################################################
+                zoffset=0.05
+                P = array(((T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset), \
+                        (T[0,3]+B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset), \
+                        (T[0,3]+B[0],T[1,3]+B[1],B[2]+T[2,3]+zoffset), \
+                        (T[0,3]-B[0],T[1,3]+B[1],B[2]+T[2,3]+zoffset),\
+                        (T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset),\
+                        ## go up
+                        (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset), \
+                        ## next point
+                        (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset), \
+                        (T[0,3]+B[0],T[1,3]-B[1],T[2,3]+B[2]+zoffset), \
+                        (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset), \
+                        ## next point
+                        (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset), \
+                        (T[0,3]+B[0],T[1,3]+B[1],T[2,3]+B[2]+zoffset), \
+                        (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset), \
+                        ## next point
+                        (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset),\
+                        (T[0,3]-B[0],T[1,3]+B[1],T[2,3]+B[2]+zoffset),\
+                        (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset),\
+                        ## back start
+                        (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset)))
+                return P
+
         ### transform matrix T \in [3x3]
         ### box extend vector B \in [3x1]
         def DrawBoxMesh(self, T, B, color=np.array((0.5,0.5,0.5,0.5))):
-                        ########################################################
-                        ## visualize extend of force constraint box
-                        ########################################################
-                        zoffset=0.05
-                        P = array(((T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset), \
-                                (T[0,3]+B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset), \
-                                (T[0,3]+B[0],T[1,3]+B[1],B[2]+T[2,3]+zoffset), \
-                                (T[0,3]-B[0],T[1,3]+B[1],B[2]+T[2,3]+zoffset),\
-                                (T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset),\
-                                ## go up
-                                (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset), \
-                                ## next point
-                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset), \
-                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]+B[2]+zoffset), \
-                                (T[0,3]+B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset), \
-                                ## next point
-                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset), \
-                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]+B[2]+zoffset), \
-                                (T[0,3]+B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset), \
-                                ## next point
-                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset),\
-                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]+B[2]+zoffset),\
-                                (T[0,3]-B[0],T[1,3]+B[1],T[2,3]-B[2]+zoffset),\
-                                ## back start
-                                (T[0,3]-B[0],T[1,3]-B[1],T[2,3]-B[2]+zoffset)))
+                P=self.GetBoxCoords(T,B)
+                h=self.env.drawlinestrip(points=P,linewidth=100.0,colors=color)
+                return h
 
-                        h=self.env.drawlinestrip(points=P,linewidth=100.0,colors=color)
-                        #h=self.env.drawtrimesh(points=P,indices=None,colors=color)
-                        return h
+        def DrawBox(self, T, B, color=np.array((0.5,0.5,0.5,0.5))):
+                P=self.GetBoxCoords(T,B)
+                h=self.env.drawlinestrip(points=P,linewidth=100.0,colors=color)
+                return h
 
         def GetZeroForce(self):
                 return np.zeros(self.forces[0].shape)

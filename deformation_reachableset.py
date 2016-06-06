@@ -4,74 +4,25 @@ from util_mvc import *
 import sys
 
 DEBUG = 0
-def computeCostFunction(q, dq, ddq, F, amax, l1, l2, dt):
-        dt2 = dt*dt*0.5
-        trajNormal = np.array((-q[1],q[0],0.0,0.0))
-        trajNormal = trajNormal/np.linalg.norm(trajNormal)
-        Fproj = np.dot(F.flatten().T, trajNormal)
-        Qlambda1 = -l1*Fproj*trajNormal
-        Qlambda2 = sqrt(l2*amax[0]*2)*dt*dq
-        qt = q + dt2*F.flatten() + Qlambda1 + Qlambda2
-
-        try:
-                L = dq/np.linalg.norm(dq)
-                Q = (qt-q)/np.linalg.norm(qt-q)
-                dtravel = np.dot((qt-q),L)
-                dangle = acos(np.dot(L,Q))
-                        
-        except ValueError as e:
-                print "#######################################"
-                print "ValueError:",e
-                print "#######################################"
-                print "Q    = ",Q
-                print "qt   = ",qt
-                print "q    = ",q
-                print "L    = ", L
-                print "qt-q = ",qt-q
-                sys.exit(1)
-
-        d = 1*dangle-0.1*dtravel
-        d=dtravel
-        return d
-
-
-def compute_lambda_updates(q,dq,ddq,F,amax,dt):
-
-        ### compute minimal direction in l1/l2 direction
-
-        dold=10000+1
-        d = 10000
-
-        theta = 0.0
-        thetaBest = 0.0
-        tstep = 0.01
-        epsilon = 0.05
-        while d<dold:
-                dold = d
-                l1 = epsilon*cos(theta+tstep)
-                l2 = epsilon*sin(theta+tstep)
-                dplus = computeCostFunction( q, dq, ddq, F, amax, l1, l2, dt)
-                l1 = epsilon*cos(theta-tstep)
-                l2 = epsilon*sin(theta-tstep)
-                dminus = computeCostFunction( q, dq, ddq, F, amax, l1, l2, dt)
-
-                if dplus > dminus:
-                        d = dminus
-                        thetaBest = theta
-                        theta = theta - tstep
-                else:
-                        d = dplus
-                        thetaBest = theta
-                        theta = theta + tstep
-
-        return [epsilon*cos(thetaBest),epsilon*sin(thetaBest)]
-
-
 k = 0.5
+
 def avalue(Ncritical, i, c=k*20.0):
         return np.exp(-((Ncritical-i)*(Ncritical-i))/(2*c*c))
 
-def B1matrix(traj, Ncritical, W):
+def A1matrix(traj, Ncritical, W):
+        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
+        A1 = np.zeros(Nwaypoints)
+
+        assert(Ncritical<Nwaypoints)
+
+        i = Nwaypoints
+        while i > 0:
+                #if abs(i-Ncritical)<M and i<Nwaypoints:
+                if i<Nwaypoints-1:
+                        A1[i] = avalue(Ncritical, i,k*30.0)
+                i -= 1
+        return A1
+def AOrientationMatrix(traj, Ncritical, W):
         [Ndim, Nwaypoints] = traj.getWaypointDim(W)
         A1 = np.zeros(Nwaypoints)
 
@@ -85,48 +36,6 @@ def B1matrix(traj, Ncritical, W):
                 i -= 1
         return A1
 
-def A1matrix(traj, Ncritical, W):
-        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
-        A1 = np.zeros(Nwaypoints)
-
-        assert(Ncritical<Nwaypoints)
-
-        i = Nwaypoints-1
-        while i > 0:
-                #if abs(i-Ncritical)<M and i<Nwaypoints:
-                A1[i] = avalue(Ncritical, i, k*5.0)
-                i -= 1
-        return A1
-
-def A2matrix(traj, Ncritical, W):
-        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
-        A2 = np.zeros(Nwaypoints)
-        assert(Ncritical<Nwaypoints)
-
-        i = Ncritical-1
-        while i > 0:
-                A2[i] = avalue(Ncritical, i)
-                i -= 1
-        return A2
-
-def A3matrix(traj, Ncritical, W):
-        [Ndim, Nwaypoints] = traj.getWaypointDim(W)
-        A3 = np.zeros(Nwaypoints)
-
-        assert(Ncritical<Nwaypoints)
-
-        #M = 100
-        i = Nwaypoints-1
-        while i > 0:
-                #if abs(i-Ncritical)<M and i<Nwaypoints:
-                if i>Ncritical:
-                        #A3[i] = avalue(Ncritical, i, k*20.0)
-                        A3[i] = avalue(Ncritical, i, k*10.0)
-                else:
-                        A3[i] = 1.0
-                        #A3[i] = 1.0+0.1*(Ncritical-i)
-                i -= 1
-        return A3
 def ABackwardMatrix(traj, Ncritical, W):
         [Ndim, Nwaypoints] = traj.getWaypointDim(W)
         A = np.zeros(Nwaypoints)
@@ -181,7 +90,6 @@ def AStartMatrix(traj, W):
                 i -= 1
         return A5
 
-DEBUG=0
 
 class DeformationReachableSet(Deformation):
 
@@ -205,21 +113,9 @@ class DeformationReachableSet(Deformation):
 
                 return FNtorque
 
-
-        def CheckOrientation(self, W):
-                Nwaypoints = W.shape[1]
-                #for i in range(0,Nwaypoints):
-                #        if W[3,i] < -pi:
-                #                W[3,i]+=2*pi
-                #        if W[3,i] > pi:
-                #                W[3,i]-=2*pi
-                return W
-        
         def ComputeNextWaypoints(self, Wori, eta, dUtmp):
                 Wnext = Wori + eta*dUtmp
-                #Wnext = self.CheckOrientation(Wnext)
                 return Wnext
-
 
         ## change only traj_deformed here
         Nc_handle = []
@@ -231,11 +127,13 @@ class DeformationReachableSet(Deformation):
         #lambda_1 = 0.001
         #lambda_1 = 0.0005
         lambda_1 = 0.0005
-        lambda_2 = 1
-        lambda_3 = 0.0
+        lambda_2 = 0.5
+        lambda_3 = 0.5*1e-2
 
         def deform_onestep(self, computeNewCriticalPoint = True):
+
                 COLLISION_ENABLED = True
+
                 eta = 1.0
 
                 traj = self.traj_deformed
@@ -278,29 +176,37 @@ class DeformationReachableSet(Deformation):
                 FNxy = self.getForceNormalComponent(F, dWori)
                 FNtorque = self.getTorqueNormalComponent(F, Wori, dWori)
 
-                self.traj_velprofile = traj.getVelocityIntervalWithoutForceField(self.env, Wori, dWori, ddWori)
-                Tend = self.traj_velprofile.duration
-                Tstart = 0.0
-                Tstep = Tend/1e3
+                #### compute min/max velocity profile from path without forces
+                #### (if available). otherwise use [0,0]
 
+                self.traj_velprofile = traj.getVelocityIntervalWithoutForceField(self.env, Wori, dWori, ddWori)
                 dpmin = np.zeros((1,Nwaypoints))
                 dpmax = np.zeros((1,Nwaypoints))
-                for i in range(0,Nwaypoints):
-                        Tcur =Tstart
-                        p = Wori[:,i]
-                        q = self.traj_velprofile.Eval(Tcur)
-                        while np.linalg.norm(p-q)>2*Tstep:
-                                Tcur += Tstep
+                if self.traj_velprofile is not None:
+                        Tend = self.traj_velprofile.duration
+                        Tstart = 0.0
+                        Tstep = Tend/1e4
+
+                        for i in range(0,Nwaypoints):
+                                Tcur =Tstart
+                                p = Wori[:,i]
                                 q = self.traj_velprofile.Eval(Tcur)
-                        dq = self.traj_velprofile.Evald(Tcur)
-                        dpmax[:,i] = np.linalg.norm(dq)
-                        Tstart = Tcur
+
+                                dold = 1e5
+                                dnew = np.linalg.norm(p-q)
+                                while dnew < dold:
+                                        dold = dnew
+                                        Tcur += Tstep
+                                        q = self.traj_velprofile.Eval(Tcur)
+                                        dnew = np.linalg.norm(p-q)
+
+                                dq = self.traj_velprofile.Evald(Tcur)
+                                dpmax[:,i] = np.linalg.norm(dq)
+                                Tstart = Tcur
+
 
                 #Tz = self.getTorqueComponent(F, Wori, dWori)
-                lambda_1 = self.lambda_1
-                lambda_2 = self.lambda_2
-                lambda_3 = self.lambda_3
-                print "## LAMBDAS: ",lambda_1,lambda_2
+                print "## LAMBDAS: ",self.lambda_1,self.lambda_2,self.lambda_3
 
                 dU = np.zeros((Ndim,Nwaypoints))
 
@@ -310,11 +216,9 @@ class DeformationReachableSet(Deformation):
                 #################################################################
                 dUtmp = np.zeros((Ndim,Nwaypoints))
                 for i in range(0,Nwaypoints):
-                        A = B1matrix(traj,i,Wori)
-                        dUtmp[:,i] += np.dot(A,( -lambda_1 * FNxy.T))
-                        dUtmp[:,i] += np.dot(A,( -lambda_1 * FNtorque.T))
-
-                #Wnext = self.ComputeNextWaypoints(Wori, eta, dUtmp)
+                        A = A1matrix(traj,i,Wori)
+                        dUtmp[:,i] += np.dot(A,( -self.lambda_1 * FNxy.T))
+                        dUtmp[:,i] += np.dot(A,( -self.lambda_1 * FNtorque.T))
 
                 Wnext = Wori + eta*dUtmp
                 if COLLISION_ENABLED:
@@ -326,7 +230,6 @@ class DeformationReachableSet(Deformation):
                 else:
                         dU += dUtmp
 
-                print "## LAMBDAS: ",lambda_1,lambda_2
                 #################################################################
                 ## lambda 2 update
                 ## project onto reachable set
@@ -350,10 +253,15 @@ class DeformationReachableSet(Deformation):
                                 qnext = p
                                 tstep = 1e-4
                                 dt = 0.0
-                                while abs(np.linalg.norm(p-qnext) - ds) > 4*tstep:
+
+                                dold = 1e5
+                                dnew = abs(np.linalg.norm(p-qnext) - ds)
+                                while dnew < dold:
+                                        dold = dnew
                                         dt += tstep
                                         dt2 = dt*dt/2
                                         qnext = p + dt*smax*dp + dt2*F[:,i]
+                                        dnew = abs(np.linalg.norm(p-qnext) - ds)
 
                                 dpq = np.dot(np.linalg.norm(qnext),np.linalg.norm(pnext))
                                 if dpq < 0.1:
@@ -369,9 +277,7 @@ class DeformationReachableSet(Deformation):
 
                 for i in range(0,Nwaypoints):
                         A = AForwardMatrix(traj,i,Wori)
-                        dUtmp[:,i] = np.dot(A, (lambda_2 * Wmove.T))
-                        #A = AForwardMatrixModi(traj,i,Wori)
-                        #dUtmp[3,i] = np.dot(A, (lambda_2 * Wmove[3,:].T))
+                        dUtmp[:,i] = np.dot(A, (self.lambda_2 * Wmove.T))
 
                 Wnext = self.ComputeNextWaypoints(Wori, eta, dUtmp)
 
@@ -385,7 +291,6 @@ class DeformationReachableSet(Deformation):
                                 self.lambda_2 /= 2.0
                 else:
                         dU += dUtmp
-                print "## LAMBDAS: ",lambda_1,lambda_2
 
                 #################################################################
                 ## lambda 3 update
@@ -393,54 +298,80 @@ class DeformationReachableSet(Deformation):
                 #################################################################
                 Tdir = np.zeros((1,Nwaypoints))
                 dUtmp = np.zeros((Ndim,Nwaypoints))
-                for i in range(0,Nwaypoints):
-                        theta = Wori[3,i]
-                        #if theta < -pi-1e-5:
-                                #print "theta out of bounds:",theta,"<",-pi
-                                #sys.exit(0)
-                        #if theta > pi+1e-5:
-                                #print "theta out of bounds:",theta,">",pi
-                                #sys.exit(0)
 
-                        dqxy = dWori[0:2,i]/np.linalg.norm(dWori[0:2,i])
+                for i in range(0,Nwaypoints-1):
+                        p = Wori[:,i]
+                        theta = p[3]
+                        dp = dWori[:,i]
+                        pnext = Wori[:,i+1]
+                        smax = dpmax[:,i]/2
 
-                        theta_des= acos(np.dot(dqxy,ex[0:2]))
+                        if np.linalg.norm(F[:,i])>1e-3:
+                                qnext = np.zeros((Ndim))
+                                qnext = p
+                                tstep = 1e-4
+                                dt = 0.0
 
-                        d1 = abs(theta_des-theta)
-                        d2 = 2*pi-abs(theta_des-theta)
+                                dold = 1e5
+                                dnew = abs(np.linalg.norm(p-qnext) - ds)
+                                while dnew < dold:
+                                        dold = dnew
+                                        dt += tstep
+                                        dt2 = dt*dt/2
+                                        qnext = p + dt*smax*dp + dt2*F[:,i]
+                                        dnew = abs(np.linalg.norm(p-qnext) - ds)
 
-                        thetanew = min(d1,d2)
 
+                                pori = np.zeros((Ndim))
+                                dline = np.zeros((Ndim))
+                                pori[0:3] = p[0:3]
 
-                        if theta >= theta_des:
-                                if d1 < d2:
-                                        ### fastest way is on chart
-                                        Tdir[:,i] = -thetanew
+                                dline[0:3] = np.dot(Rz(pi/2),(dWori[:,i])[0:3])
+                                theta_step = 1e-2
+
+                                pori[3] = p[3]+theta_step
+                                [R,atmp,a2tmp] = self.traj_deformed.getControlMatrix(pori)
+                                R = R[:,:,0]
+                                #qnext1 = pori + dt*smax*dp + dt2*F[:,i]
+                                qproj_f1 = np.dot(np.dot(Rz(pori[3]),ex),FNxy[0:3,i])
+                                vol1 = self.GetReachableSetProjectedVolume( dt, ds, qnext, dline, pori, smax, dp, F[:,i], R,amin, amax)
+
+                                pori[3] = p[3]-theta_step
+                                [R,atmp,a2tmp] = self.traj_deformed.getControlMatrix(pori)
+                                R = R[:,:,0]
+                                #qnext2 = pori + dt*smax*dp + dt2*F[:,i]
+                                qproj_f2 = np.dot(np.dot(Rz(pori[3]),ex),FNxy[0:3,i])
+                                vol2 = self.GetReachableSetProjectedVolume( dt, ds, qnext, dline, pori, smax, dp, F[:,i], R,amin, amax)
+
+                                pori[3] = p[3]
+                                [R,atmp,a2tmp] = self.traj_deformed.getControlMatrix(pori)
+                                R = R[:,:,0]
+                                vol3 = self.GetReachableSetProjectedVolume( dt, ds, qnext, dline, pori, smax, dp, F[:,i], R,amin, amax)
+
+                                if vol1 <= vol3 and vol2 <= vol3:
+                                        Tdir[:,i]=0
                                 else:
-                                        Tdir[:,i] = thetanew
-                        else:
-                                if d1 < d2:
-                                        ### fastest way is on chart
-                                        Tdir[:,i] = thetanew
-                                else:
-                                        ### jump over chart boundary
-                                        Tdir[:,i] = -thetanew
+                                        if vol1 > vol3 and vol2 > vol3:
+                                                ## both directions are good, so
+                                                ## go against force field to
+                                                ## increase reachability
+                                                if qproj_f1 > qproj_f2:
+                                                        ## move to v2
+                                                        Tdir[:,i] = -1
+                                                else:
+                                                        Tdir[:,i] = 1
 
-                        #print "theta:",theta,"theta dir:",Tdir[:,i],"theta_des:",theta_des
-
-
-                        #Tdir[:,i] = thetanew
+                                        elif vol1 > vol2:
+                                                ##move into + direction
+                                                Tdir[:,i] = 1
+                                        else:
+                                                Tdir[:,i] = -1
 
                 for i in range(0,Nwaypoints):
-                        A1 = A1matrix(traj,i,Wori)
-                        #dUtmp[3,i] = np.dot(A1, (lambda_3 * Tdir.T))
-                        dUtmp[3,i] = lambda_3*Tdir[:,i]
-                        #np.dot(A1, (lambda_3 * Tdir.T))
+                        A1 = AOrientationMatrix(traj,i,Wori)
+                        dUtmp[3,i] = np.dot(A1, (self.lambda_3*Tdir.T))
 
                 Wnext = self.ComputeNextWaypoints(Wori, eta, dUtmp)
-
-                #for i in range(0,Nwaypoints):
-                        #print "theta:",Wnext[3,i],"Tdir:",Tdir[:,i]
 
                 if COLLISION_ENABLED:
                         if not self.traj_deformed.IsInCollision(self.env, Wnext):
@@ -482,3 +413,47 @@ class DeformationReachableSet(Deformation):
 
                 self.traj_deformed.new_from_waypoints(Wnext)
                 return DEFORM_OK
+
+        def GetReachableSetVerticesSE2(self, dt, p, s, dp, F, R, amin, amax):
+                Ndim = p.shape[0]
+                dt2 = dt*dt*0.5
+                a = np.zeros((amin.shape))
+
+                rs_vertices = np.zeros((Ndim,4))
+
+                ## create ordered set (clockwise)
+                a[0] = amin[0]
+                a[1] = amin[1]
+                rs_vertices[:,0] = p + dt*s*dp + dt2*F + dt2*np.dot(R,a)
+                a[0] = amin[0]
+                a[1] = amax[1]
+                rs_vertices[:,1] = p + dt*s*dp + dt2*F + dt2*np.dot(R,a)
+                a[0] = amax[0]
+                a[1] = amax[1]
+                rs_vertices[:,2] = p + dt*s*dp + dt2*F + dt2*np.dot(R,a)
+                a[0] = amax[0]
+                a[1] = amin[1]
+                rs_vertices[:,3] = p + dt*s*dp + dt2*F + dt2*np.dot(R,a)
+
+                return rs_vertices
+
+        def GetReachableSetProjectedVolume( self, dt, ds, pline, dline, p, smax, dp, F, R, amin, amax):
+
+                rs_vertices = self.GetReachableSetVerticesSE2( dt, p, smax, dp, F, R, amin, amax)
+                Nvertices = rs_vertices.shape[1]
+
+                ##project onto ds-ball around p
+
+                rs_vertices_proj = np.zeros(rs_vertices.shape)
+
+                dline = dline/np.linalg.norm(dline)
+
+                dp = np.zeros(Nvertices)
+
+                for i in range(0,Nvertices):
+                        pvertex = rs_vertices[:,i]-pline
+                        dp[i] = np.dot(pvertex[0:2], dline[0:2])
+
+                mindp = np.min(dp)
+                maxdp = np.max(dp)
+                return maxdp - mindp

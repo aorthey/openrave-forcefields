@@ -136,13 +136,15 @@ class Trajectory():
 
         ### SYSTEM DYNAMICS
         def getControlMatrix(self, W):
-                #amin = np.array((-5,-5,-5))
-                #amax = np.array((5,5,5))
                 AM = 5
-                amin = np.array((0,0,-AM))
-                amax = np.array((AM,0,AM))
-                #amin = np.array((-1,-1,-1))
-                #amax = np.array((1,1,1))
+
+                ### car/sailboat
+                amin = np.array((-AM,-AM,-3))
+                amax = np.array((AM,AM,3))
+
+                ### bacteriophage
+                #amin = np.array((0,0,-AM))
+                #amax = np.array((AM,0,AM))
 
                 [Ndim,Nwaypoints] = self.getWaypointDim(W)
                 assert(Ndim==4)
@@ -153,6 +155,7 @@ class Trajectory():
                                 t = W[3,i]
                         else:
                                 t = W[3]
+
                         R[0,:,i] = np.array((cos(t),-sin(t),0.0))
                         R[1,:,i] = np.array((sin(t),cos(t),0.0))
                         R[2,:,i] = np.array((0.0,0.0,0.0))
@@ -251,11 +254,11 @@ class Trajectory():
                         p = np.array((0,0,0,theta))
 
                         #dp = np.array((1,0.1,0,0))
-                        #force = np.array((0,-6.5,0,0))
+                        force = np.array((0,-6.5,0,0))
                         dp = np.array((1,0.1,0,0))
-                        force = np.array((0,-2.5,0,0))
+                        #force = np.array((0,-2.5,0,0))
                         smax = 0.1
-                        s = 0.0
+                        s = 0.1
 
                         [R,amin,amax] = self.getControlMatrix(p)
 
@@ -342,9 +345,10 @@ class Trajectory():
                 if self.topp.ReparameterizeTrajectory():
                         return self.topp.traj0
                 else:
-                        print "ERROR: without force field, TOPP couldn't find a valid \
+                        print "WARNING: without force field, TOPP couldn't find a valid \
                         velocity profile. The system is likely not STLC"
-                        sys.exit(1)
+                        return None
+                        #sys.exit(1)
 
 
         def getCriticalPointFromWaypoints(self, env, W, dW, ddW, oldNc = 0):
@@ -492,7 +496,7 @@ class Trajectory():
                 if Nwaypoints > 0:
                         with env.env:
                                 Wext = np.zeros((3, 2*Nwaypoints))
-                                Wtheta = np.zeros((3, 2*Nwaypoints))
+                                Wtheta = np.zeros((3, 3*Nwaypoints))
 
                                 for i in range(0,Nwaypoints):
                                         pt = np.array(((W[0,i],W[1,i],W[2,i]+self.tangent_zoffset)))
@@ -506,8 +510,9 @@ class Trajectory():
                                         theta = W[3,i]
                                         etheta = self.dVECTOR_LENGTH*np.dot(Rz(theta),ex)
                                         etheta[2] += self.tangent_zoffset
-                                        Wtheta[:,2*i] = pt
-                                        Wtheta[:,2*i+1] = np.array( (pt[0]+etheta[0],pt[1]+etheta[1],pt[2]+etheta[2]) )
+                                        Wtheta[:,3*i] = pt
+                                        Wtheta[:,3*i+1] = np.array( (pt[0]+etheta[0],pt[1]+etheta[1],pt[2]+etheta[2]) )
+                                        Wtheta[:,3*i+2] = pt
 
                                 #Wext = np.array(zip(W[0:3,:],Wdir)).flatten().reshape(Ndim,2*Nwaypoints)
                                 if self.show_tangent_vector:

@@ -24,10 +24,10 @@ class EnvironmentTheCounterStream(ForceEnvironment):
                 return self.forces
 
         def RobotGetInitialPosition(self):
-                return [-2.0,1.0,0.15,0,0,0,0,0]
+                return [-4.0,1.0,0.1,-pi,0,0,0,0]
 
         def RobotGetGoalPosition(self):
-                return [5.0,-3.0,0.15,-pi/2,0,0,0,0]
+                return [5.0,-3.0,0.1,-pi/2,0,0,0,0]
 
 
 

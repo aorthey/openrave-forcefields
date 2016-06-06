@@ -28,6 +28,8 @@ if __name__ == "__main__":
 
         #######################################################################
         env = EnvironmentBloodStream()
+        #env = EnvironmentTheCounterStream()
+        #env = EnvironmentTheStream()
         #######################################################################
 
         robot = env.GetRobot()
@@ -40,15 +42,14 @@ if __name__ == "__main__":
 
         rave_path = planner.GetPath()
 
-        #trajectory = MotionPlannerDeformation(path, robot, env)
         traj = Trajectory.from_ravetraj(rave_path)
         traj.info()
         traj.draw(env)
+        #raw_input('Press <ENTER> to start.')
         traj.draw_delete()
 
         td = DeformationReachableSet(traj, env)
         Nd = 5
-        #raw_input('Press <ENTER> to start.')
 
         td.deform(N_iter=100)
         td.traj_deformed.PlotParametrization(env)

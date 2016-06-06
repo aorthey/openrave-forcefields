@@ -55,10 +55,10 @@ class Deformation():
                         if res == DEFORM_NONE:
                                 print "DEFORM_NONE"
                                 return False
-                        elif res== DEFORM_OK:
+                        elif res == DEFORM_OK:
                                 print "DEFORM_OK",
                                 computeNewCriticalPoint=False
-                        elif res== DEFORM_COLLISION:
+                        elif res == DEFORM_COLLISION:
                                 print "DEFORM_COLLISION",
                                 computeNewCriticalPoint=False
                         elif res== DEFORM_NOPROGRESS:

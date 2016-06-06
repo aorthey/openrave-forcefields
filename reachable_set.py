@@ -3,9 +3,12 @@ import re
 import os
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
+from os.path import basename
 
 import subprocess 
 from matplotlib.collections import LineCollection
+import matplotlib.ticker as mtick
+import matplotlib
 from scipy.spatial import ConvexHull
 from shapely.geometry import Polygon
 from scipy.spatial import Delaunay
@@ -33,7 +36,9 @@ class ReachableSet():
         force_color = np.array((1.0,0,0))
         tangent_color = np.array((0,0,0))
         orientation_color = np.array((0.9,0.0,0.5))
-        fs = 22
+        fs = 28
+        fs_label = 38
+        fs_title = 46
         image = None
 
         def __init__(self, p, s, dp, force, R, amin, amax):
@@ -44,8 +49,8 @@ class ReachableSet():
                 self.image = self.fig.gca()
 
 
-                plt.xlabel('X-Position [m]', fontsize=self.fs)
-                plt.ylabel('Y-Position [m]', fontsize=self.fs)
+                plt.xlabel('X-Position [m]', fontsize=self.fs_label)
+                plt.ylabel('Y-Position [m]', fontsize=self.fs_label)
 
                 
                 M = 10000
@@ -65,17 +70,16 @@ class ReachableSet():
                                 ar = np.random.uniform(amin, amax)
                                 control = np.dot(R,ar)
                                 q[:,i] = p + dt*s*dp + dt2 * force + dt2 * control
-                                #print q[:,i]
 
                         self.add_points( q[0:2,:].T )
 
 
                 tstring = 'Reachable Set (<T='+str(dt)+')'
-                self.filename = 'images/reachableset_ori'+str(np.around(p[3],decimals=2))
+                self.filename = 'images/reachableset_car_ori'+str(np.around(p[3],decimals=2))
                 self.filename = re.sub('[.]', '-', self.filename)
                 self.filename += '.png'
 
-                plt.title(tstring, fontsize=self.fs)
+                plt.title(tstring, fontsize=self.fs_title, y=1.05)
                 self.arrow_head_size = np.linalg.norm(dt2*force)/5
                 self.hw = 0.5*self.arrow_head_size
                 self.lw = 0.2*self.arrow_head_size
@@ -182,15 +186,25 @@ class ReachableSet():
                                 linewidth=self.rs_boundary_thickness,
                                 linestyle="dashed",
                                 zorder=1)
-                #plt.show()
-                self.fig.set_size_inches(18.5, 10.5, forward=True)
+
+                self.image.xaxis.get_major_formatter().set_powerlimits((0, 2))
+                self.image.yaxis.get_major_formatter().set_powerlimits((0, 2))
+
+                self.image.tick_params(axis='both', which='major', pad=15)
+                self.image.tick_params(axis='both', which='minor', pad=15)
+
+                self.image.yaxis.get_offset_text().set_size(self.fs)
+                self.image.xaxis.get_offset_text().set_size(self.fs)
+
+                for tick in self.image.xaxis.get_major_ticks():
+                        tick.label.set_fontsize(self.fs) 
+
+                for tick in self.image.yaxis.get_major_ticks():
+                        tick.label.set_fontsize(self.fs) 
+
+                self.fig.set_size_inches(18.5, 15.5, forward=True)
                 plt.savefig(self.filename,format='svg', dpi=1200)
 
-                #syscmd = 'svg2pdf '+self.filename+' `basename '+self.filename+' .png`.pdf'
-                #drawing = svg2rlg(self.filename)
-
-
-                from os.path import basename
 
                 svgname = self.filename
                 pdfname = os.path.splitext(self.filename)[0]+'.pdf'

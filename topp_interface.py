@@ -10,6 +10,10 @@ from TOPP import Trajectory
 from TOPP import TOPPopenravepy
 
 class TOPPInterface():
+        fs_title = 40
+        fs_label = 30
+
+
         #DURATION_DISCRETIZATION = 0.0001
         #DURATION_DISCRETIZATION = 1
         DURATION_DISCRETIZATION = 0.001
@@ -62,6 +66,7 @@ class TOPPInterface():
                 self.topp_inst = TOPP.QuadraticConstraints(self.traj0, durationQ, vmax, list(a), list(b), list(c))
 
         def __init__(self, trajectoryclass, durationVector, trajectorystring, F, R, amin, amax, W, dW):
+
                 self.trajectoryclass_ = trajectoryclass
                 self.path_length = trajectoryclass.get_length()
                 self.F_ = F
@@ -108,6 +113,17 @@ class TOPPInterface():
                 box = ax.get_position()
                 ax.set_position([box.x0, box.y0, box.width * 0.9, box.height])
                 ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=fs)
+                ax.tick_params(axis='both', which='major', pad=15)
+                ax.tick_params(axis='both', which='minor', pad=15)
+                ax.yaxis.get_offset_text().set_size(fs)
+                ax.xaxis.get_offset_text().set_size(fs)
+
+                for tick in ax.xaxis.get_major_ticks():
+                        tick.label.set_fontsize(fs) 
+                for tick in ax.yaxis.get_major_ticks():
+                        tick.label.set_fontsize(fs) 
+                ax.xaxis.labelpad = 20
+                ax.yaxis.labelpad = 20
 
         def PlotVerticalLineOverSubplots(self, x, ax1, ax2, ax3, ax4):
                 ax1.axvline(x=x,ymin=-1.2,ymax=1  ,c="k",ls='--',linewidth=3,zorder=0, clip_on=False)
@@ -161,40 +177,44 @@ class TOPPInterface():
                 tavect = np.linspace(0,self.traj0.duration, self.Nwaypoints)
                 
                 fig=figure(facecolor='white')
+
+
                 ax1 = subplot(4,1,1)
                 plot(twvect, self.W_[0,:], '--', color = color_x_coordinate, linewidth = lw)
                 plot(twvect, self.W_[1,:], '--', color = color_y_coordinate, linewidth = lw)
-                plot(twvect, self.W_[2,:], '--', color = color_z_coordinate, linewidth = lw)
+                #plot(twvect, self.W_[2,:], '--', color = color_z_coordinate, linewidth = lw)
                 plot(twvect, self.W_[3,:], '--', color = color_t_coordinate, linewidth = lw)
                 plot(tvect, qvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$x$")
                 plot(tvect, qvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$y$")
-                plot(tvect, qvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$z$")
+                #plot(tvect, qvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$z$")
                 plot(tvect, qvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\\theta$")
                 #plot(tvect, qdvect, f, linewidth=2)
                 #plot(tvect, qddvect, f, linewidth=2)
-                title('TOPP-Profile Trajectory', fontsize=fs)
-                ylabel('Position $(m)$', fontsize=fs)
+                title('TOPP-Profile Path', fontsize=self.fs_title, y=1.05)
+                ylabel('Position \n$\\left(m\\right)$,$\\left(rad\\right)$', fontsize=self.fs_label)
                 ax1.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax1, fs)
 
                 ax2 = subplot(4,1,2)
-                ylabel('Velocity $\\left(\\frac{m}{s}\\right)$', fontsize=fs)
-                plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
-                plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
-                plot(twvect, self.dW_[2,:], '--', color = color_z_coordinate, linewidth = lw)
-                plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
+                ylabel('Velocity\n$\\left(\\frac{m}{s}\\right)$, $\\left(\\frac{rad}{s}\\right)$', fontsize=self.fs_label)
+                #plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
+                #plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
+                #plot(twvect, self.dW_[2,:], '--', color = color_z_coordinate, linewidth = lw)
+                #plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
+
                 plot(tvect, qdvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\dot x$")
                 plot(tvect, qdvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\dot y$")
-                plot(tvect, qdvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\dot z$")
+                #plot(tvect, qdvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\dot z$")
                 plot(tvect, qdvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\dot \\theta$")
                 ax2.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax2, fs)
 
                 ax3 = subplot(4,1,3)
-                ylabel('Acceleration $\\left(\\frac{m^2}{s^2}\\right)$', fontsize=fs)
+                ylabel('Acceleration\n$\\left(\\frac{m^2}{s^2}\\right)$,$\\left(\\frac{rad^2}{s^2}\\right)$',
+                                fontsize=self.fs_label)
                 plot(tvect, qddvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\ddot{x}$")
                 plot(tvect, qddvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\ddot{y}$")
-                plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
+                #plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
                 plot(tvect, qddvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\ddot{\\theta}$")
                 plot(tvect, F[0,:], color = color_fx_coordinate, linewidth = lw, label = "$F_{x}$")
                 plot(tvect, F[1,:], color = color_fy_coordinate, linewidth = lw, label = "$F_{y}$")
@@ -208,13 +228,15 @@ class TOPPInterface():
                         plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
                         plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")
 
-                        plot(tvect, np.repeat(amin[2]-offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
-                        plot(tvect, np.repeat(amax[2]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
+                        plot(tvect, np.repeat(2*pi*amin[2]-offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
+                        plot(tvect, np.repeat(2*pi*amax[2]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a3_coordinate)
+
                         plot(tvect, np.repeat(amin[1]-offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a2_coordinate)
                         plot(tvect, np.repeat(amax[1]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a2_coordinate)
+
                         plot(tvect, np.repeat(amin[0]-offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
                         plot(tvect, np.repeat(amax[0]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
-                        xlabel('Time ($s$)',fontsize=fs)
+                        xlabel('Time ($s$)',fontsize=self.fs_label)
                         self.PlotPrettifiedAxes(ax4, fs)
                         self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3, ax4)
                         self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3, ax4)
