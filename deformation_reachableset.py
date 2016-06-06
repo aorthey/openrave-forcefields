@@ -210,6 +210,27 @@ class DeformationReachableSet(Deformation):
 
                 dU = np.zeros((Ndim,Nwaypoints))
 
+                DeformInfo = {}
+                DeformInfo['Ndim'] = Ndim
+                DeformInfo['Nwaypoints'] = Nwaypoints
+                DeformInfo['lambda_1'] = self.lambda_1
+                DeformInfo['lambda_2'] = self.lambda_2
+                DeformInfo['lambda_3'] = self.lambda_3
+                DeformInfo['traj'] = traj
+                DeformInfo['Wori'] = Wori
+
+                deformation_module_counterwrench()
+
+                from deformation_module_counterwrench import *
+
+                d1 = DeformationModuleCounterWrench( DeformInfo )
+                dU += d1.get_update( self.lambda_1 )
+
+                #dU += d2.get_update()
+                #dU += d3.get_update()
+                #dU += d4.get_update()
+                #dU += d5.get_update()
+
                 #################################################################
                 ## lambda 1 update
                 ## move against the normal component of the force field
