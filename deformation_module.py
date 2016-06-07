@@ -25,7 +25,7 @@ class DeformationModule():
                         if not traj_deformed.IsInCollision(env, Wnext):
                                 dU += dUtmp
                         else:
-                                print "## $> collision ",self.get_name()
+                                print "## $> collision in module:",self.get_name()
                 else:
                         dU += dUtmp
 

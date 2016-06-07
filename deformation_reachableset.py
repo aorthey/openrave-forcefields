@@ -225,34 +225,14 @@ class DeformationReachableSet(Deformation):
                 DeformInfo['eta'] = eta
                 DeformInfo['env'] = self.env
 
-                from deformation_module_counterwrench import *
-                d1 = DeformationModuleCounterWrench( DeformInfo )
-                dU += d1.get_update( self.lambda_1 )
-
-                #dU += d2.get_update()
-                #dU += d3.get_update()
-                #dU += d4.get_update()
-                #dU += d5.get_update()
-
                 #################################################################
                 ## lambda 1 update
                 ## move against the normal component of the force field
                 #################################################################
-                #dUtmp = np.zeros((Ndim,Nwaypoints))
-                #for i in range(0,Nwaypoints):
-                #        A = A1matrix(traj,i,Wori)
-                #        dUtmp[:,i] += np.dot(A,( -self.lambda_1 * FNxy.T))
-                #        dUtmp[:,i] += np.dot(A,( -self.lambda_1 * FNtorque.T))
 
-                #Wnext = Wori + eta*dUtmp
-                #if COLLISION_ENABLED:
-                #        if not self.traj_deformed.IsInCollision(self.env, Wnext):
-                #                dU += dUtmp
-                #        else:
-                #                print "## $> lambda1 collision (contra-force movement)"
-                #                #self.lambda_1=0.0
-                #else:
-                #        dU += dUtmp
+                from deformation_module_counterwrench import *
+                d1 = DeformationModuleCounterWrench( DeformInfo )
+                dU += d1.get_update( self.lambda_1 )
 
                 #################################################################
                 ## lambda 2 update
