@@ -4,9 +4,8 @@ from util_mvc import *
 import sys
 
 DEBUG = 0
-k = 0.5
 
-def avalue(Ncritical, i, c=k*20.0):
+def avalue(Ncritical, i, c=10.0):
         return np.exp(-((Ncritical-i)*(Ncritical-i))/(2*c*c))
 
 def A1matrix(traj, Ncritical, W):
@@ -19,7 +18,7 @@ def A1matrix(traj, Ncritical, W):
         while i > 0:
                 #if abs(i-Ncritical)<M and i<Nwaypoints:
                 if i<Nwaypoints-1:
-                        A1[i] = avalue(Ncritical, i,k*30.0)
+                        A1[i] = avalue(Ncritical, i,15.0)
                 i -= 1
         return A1
 def AOrientationMatrix(traj, Ncritical, W):
@@ -32,7 +31,7 @@ def AOrientationMatrix(traj, Ncritical, W):
         while i > 0:
                 #if abs(i-Ncritical)<M and i<Nwaypoints:
                 if i<Nwaypoints-1:
-                        A1[i] = avalue(Ncritical, i,k*30.0)
+                        A1[i] = avalue(Ncritical, i,15.0)
                 i -= 1
         return A1
 
@@ -75,7 +74,7 @@ def AEndMatrix(traj, W):
         #M = 100
         i = Nwaypoints-1
         while i >= 0:
-                A4[i] = avalue(Nwaypoints-1, i, k*20.0)
+                A4[i] = avalue(Nwaypoints-1, i, 10.0)
                 i -= 1
         return A4
 
@@ -86,7 +85,7 @@ def AStartMatrix(traj, W):
         #M = 100
         i = Nwaypoints-1
         while i >= 0:
-                A5[i] = avalue(0, i, k*20.0)
+                A5[i] = avalue(0, i, 10.0)
                 i -= 1
         return A5
 
@@ -216,13 +215,17 @@ class DeformationReachableSet(Deformation):
                 DeformInfo['lambda_1'] = self.lambda_1
                 DeformInfo['lambda_2'] = self.lambda_2
                 DeformInfo['lambda_3'] = self.lambda_3
-                DeformInfo['traj'] = traj
+                DeformInfo['traj'] = self.traj_deformed
                 DeformInfo['Wori'] = Wori
-
-                deformation_module_counterwrench()
+                DeformInfo['dWori'] = dWori
+                DeformInfo['F'] = F
+                DeformInfo['R'] = R
+                DeformInfo['amin'] = amin
+                DeformInfo['amax'] = amax
+                DeformInfo['eta'] = eta
+                DeformInfo['env'] = self.env
 
                 from deformation_module_counterwrench import *
-
                 d1 = DeformationModuleCounterWrench( DeformInfo )
                 dU += d1.get_update( self.lambda_1 )
 
@@ -235,21 +238,21 @@ class DeformationReachableSet(Deformation):
                 ## lambda 1 update
                 ## move against the normal component of the force field
                 #################################################################
-                dUtmp = np.zeros((Ndim,Nwaypoints))
-                for i in range(0,Nwaypoints):
-                        A = A1matrix(traj,i,Wori)
-                        dUtmp[:,i] += np.dot(A,( -self.lambda_1 * FNxy.T))
-                        dUtmp[:,i] += np.dot(A,( -self.lambda_1 * FNtorque.T))
+                #dUtmp = np.zeros((Ndim,Nwaypoints))
+                #for i in range(0,Nwaypoints):
+                #        A = A1matrix(traj,i,Wori)
+                #        dUtmp[:,i] += np.dot(A,( -self.lambda_1 * FNxy.T))
+                #        dUtmp[:,i] += np.dot(A,( -self.lambda_1 * FNtorque.T))
 
-                Wnext = Wori + eta*dUtmp
-                if COLLISION_ENABLED:
-                        if not self.traj_deformed.IsInCollision(self.env, Wnext):
-                                dU += dUtmp
-                        else:
-                                print "## $> lambda1 collision (contra-force movement)"
-                                #self.lambda_1=0.0
-                else:
-                        dU += dUtmp
+                #Wnext = Wori + eta*dUtmp
+                #if COLLISION_ENABLED:
+                #        if not self.traj_deformed.IsInCollision(self.env, Wnext):
+                #                dU += dUtmp
+                #        else:
+                #                print "## $> lambda1 collision (contra-force movement)"
+                #                #self.lambda_1=0.0
+                #else:
+                #        dU += dUtmp
 
                 #################################################################
                 ## lambda 2 update

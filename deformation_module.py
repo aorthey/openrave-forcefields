@@ -1,3 +1,4 @@
+import numpy as np
 import abc
 
 class DeformationModule():
@@ -9,10 +10,12 @@ class DeformationModule():
                 self.DeformInfo = DeformInfoIn
 
         def get_update(self, lambda_coeff):
+
                 traj_deformed = self.DeformInfo['traj']
                 env = self.DeformInfo['env']
                 eta = self.DeformInfo['eta']
                 Wori = self.DeformInfo['Wori']
+
                 dUtmp = self.get_gradient(lambda_coeff)
 
                 Wnext = Wori + eta*dUtmp
@@ -36,3 +39,5 @@ class DeformationModule():
         def get_name(self):
                 pass
 
+        def avalue(self, Ncritical, i, c=10.0):
+                return np.exp(-((Ncritical-i)*(Ncritical-i))/(2*c*c))
