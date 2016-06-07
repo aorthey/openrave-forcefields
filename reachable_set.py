@@ -73,9 +73,8 @@ class ReachableSet():
 
                         self.add_points( q[0:2,:].T )
 
-
                 tstring = 'Reachable Set (<T='+str(dt)+')'
-                self.filename = 'images/reachableset_car_ori'+str(np.around(p[3],decimals=2))
+                self.filename = 'images/reachableset_3dcar_ori'+str(np.around(p[3],decimals=2))
                 self.filename = re.sub('[.]', '-', self.filename)
                 self.filename += '.png'
 
@@ -215,4 +214,5 @@ class ReachableSet():
                 os.system(syscmd)
                 #renderPDF.drawToFile(drawing, self.filename+'.pdf')
                 os.system('cp /home/`whoami`/git/openrave/sandbox/WPI/images/*.pdf /home/`whoami`/git/papers/images/simulation/')
+                plt.show()
 

@@ -74,7 +74,8 @@ def AEndMatrix(traj, W):
         #M = 100
         i = Nwaypoints-1
         while i >= 0:
-                A4[i] = avalue(Nwaypoints-1, i, 10.0)
+                #A4[i] = avalue(Nwaypoints-1, i, 10.0)
+                A4[i] = avalue(Nwaypoints-1, i, 50.0)
                 i -= 1
         return A4
 
@@ -85,7 +86,7 @@ def AStartMatrix(traj, W):
         #M = 100
         i = Nwaypoints-1
         while i >= 0:
-                A5[i] = avalue(0, i, 10.0)
+                A5[i] = avalue(0, i, 50.0)
                 i -= 1
         return A5
 
@@ -126,7 +127,7 @@ class DeformationReachableSet(Deformation):
         #lambda_1 = 0.001
         #lambda_1 = 0.0005
         lambda_1 = 0.0005
-        lambda_2 = 0.5
+        lambda_2 = 1
         lambda_3 = 0.5*1e-2
 
         def deform_onestep(self, computeNewCriticalPoint = True):
@@ -152,13 +153,12 @@ class DeformationReachableSet(Deformation):
                 print "###########################################"
                 print "CRITICAL WAYPOINT: ",self.critical_pt,"/",Nwaypoints
 
-
                 if self.critical_pt >= Nwaypoints:
                         print "No deformation necessary => Trajectory dynamically feasible"
                         print traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.critical_pt)
                         print "###########################################"
                         #traj.PlotParametrization(self.env)
-                        return DEFORM_NONE
+                        return DEFORM_SUCCESS
                 else:
                         ##plot critical pt
                         Nc_handle = self.env.env.plot3(points=Wori[0:3,self.critical_pt],
@@ -249,7 +249,7 @@ class DeformationReachableSet(Deformation):
                         p = Wori[:,i]
                         dp = dWori[:,i]
                         pnext = Wori[:,i+1]
-                        smax = dpmax[:,i]/4
+                        smax = dpmax[:,i]/2
                         #smax = 0
 
                         if np.linalg.norm(F[:,i])>1e-3:

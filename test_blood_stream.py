@@ -27,8 +27,8 @@ from motion_planner_kinodynamic import MotionPlannerKinodynamic
 if __name__ == "__main__":
 
         #######################################################################
-        env = EnvironmentBloodStream()
-        #env = EnvironmentTheCounterStream()
+        #env = EnvironmentBloodStream()
+        env = EnvironmentTheCounterStream()
         #env = EnvironmentTheStream()
         #######################################################################
 
@@ -46,44 +46,43 @@ if __name__ == "__main__":
         traj.info()
         traj.draw(env)
         #raw_input('Press <ENTER> to start.')
+        time.sleep(1)
         traj.draw_delete()
 
         td = DeformationReachableSet(traj, env)
         Nd = 5
 
-        td.deform(N_iter=100)
-        td.traj_deformed.PlotParametrization(env)
+        deform_success = td.deform(N_iter=100)
 
-        xt = td.traj_deformed.topp.traj0
+        if deform_success:
+                td.traj_deformed.PlotParametrization(env)
 
-        with env.env:
-                robot.GetLinks()[0].SetStatic(True)
-                env.env.StopSimulation() 
+                xt = td.traj_deformed.topp.traj0
 
-        t = 0.0
-        tstep = 0.05
-        robot.SetDOFValues(xt.Eval(t))
-        env.MakeRobotVisible()
+                with env.env:
+                        robot.GetLinks()[0].SetStatic(True)
+                        env.env.StopSimulation() 
 
-        while t < xt.duration:
-                q = xt.Eval(t)
-                dq = xt.Evald(t)
-                ddq = xt.Evaldd(t)
+                t = 0.0
+                tstep = 0.05
+                robot.SetDOFValues(xt.Eval(t))
+                env.MakeRobotVisible()
 
-                qn = q + tstep*dq + 0.5*tstep*tstep*ddq
-                robot.SetDOFValues(qn)
+                while t < xt.duration:
+                        q = xt.Eval(t)
+                        dq = xt.Evald(t)
+                        ddq = xt.Evaldd(t)
 
-                env.env.StepSimulation(tstep)
-                time.sleep(tstep)
-                t += tstep
+                        qn = q + tstep*dq + 0.5*tstep*tstep*ddq
+                        robot.SetDOFValues(qn)
 
-        robot.WaitForController(0)
-        print "xt = td.traj_current.topp.traj0"
+                        env.env.StepSimulation(tstep)
+                        time.sleep(tstep)
+                        t += tstep
 
-        #raw_input('Press <ENTER> to execute trajectory.')
-        #RaveSetDebugLevel(DebugLevel.Debug) # set output level to debug
-        #openravepy.RaveLogInfo("Waiting for controller to finish")
-        #robot.GetController().SetPath(traj)
-        #robot.WaitForController(0)
-        #robot.GetController().Reset()
-        raw_input('Enter any key to quit. ')
+                robot.WaitForController(0)
+                print "xt = td.traj_current.topp.traj0"
+                raw_input('Enter any key to quit. ')
+        else:
+                print "deformation not successful"
+                raw_input('Enter any key to quit. ')

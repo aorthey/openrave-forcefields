@@ -5,7 +5,7 @@ import numpy as np
 from trajectory import *
 import copy
 
-DEFORM_NONE = 0
+DEFORM_SUCCESS = 0
 DEFORM_OK = 1
 DEFORM_COLLISION = 2
 DEFORM_NOPROGRESS = 3
@@ -52,21 +52,22 @@ class Deformation():
                         res = self.deform_onestep(computeNewCriticalPoint)
                         self.traj_current = copy.copy(self.traj_deformed)
                         self.draw_deformation()
-                        if res == DEFORM_NONE:
-                                print "DEFORM_NONE"
-                                return False
+                        if res == DEFORM_SUCCESS:
+                                print "DEFORM_SUCCESS"
+                                return True
                         elif res == DEFORM_OK:
                                 print "DEFORM_OK",
-                                computeNewCriticalPoint=False
                         elif res == DEFORM_COLLISION:
                                 print "DEFORM_COLLISION",
-                                computeNewCriticalPoint=False
+                                return False
                         elif res== DEFORM_NOPROGRESS:
                                 print "DEFORM_NOPROGRESS",
-                                computeNewCriticalPoint=True
+                                return False
                         else:
                                 print "DEFORM_UNKNOWN"
-                                return False
+                                print "(Deformation returned unknown error code)"
+                                sys.exit(0)
+
                         print "(Iteration:",i,")"
 
                 return True

@@ -41,3 +41,18 @@ class DeformationModule():
 
         def avalue(self, Ncritical, i, c=10.0):
                 return np.exp(-((Ncritical-i)*(Ncritical-i))/(2*c*c))
+
+        def A1matrix(self, traj, Ncritical, W):
+                [Ndim, Nwaypoints] = traj.getWaypointDim(W)
+                A1 = np.zeros(Nwaypoints)
+
+                assert(Ncritical<Nwaypoints)
+
+                i = Nwaypoints
+                while i > 0:
+                        #if abs(i-Ncritical)<M and i<Nwaypoints:
+                        if i<Nwaypoints-1:
+                                #A1[i] = self.avalue(Ncritical, i,15.0)
+                                A1[i] = self.avalue(Ncritical, i,50.0)
+                        i -= 1
+                return A1
