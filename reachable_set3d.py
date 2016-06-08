@@ -1,4 +1,5 @@
 from shapely.ops import cascaded_union, polygonize
+import sys
 import re
 import os
 from svglib.svglib import svg2rlg
@@ -64,7 +65,6 @@ class ReachableSet3D():
                 from mpl_toolkits.mplot3d import Axes3D
                 self.image = self.fig.gca(projection='3d')
 
-                
                 M = 10000
                 tstart = 0.001
                 tend = 0.01
@@ -85,6 +85,10 @@ class ReachableSet3D():
 
                         self.add_points( q.T )
 
+                qnext = p+dt*s*dp+dt2*force
+                self.ds = np.linalg.norm(qnext-p)
+                pnext = p+self.ds*dp/np.linalg.norm(dp)
+
                 tstring = 'Reachable Set (<T='+str(dt)+')'
                 self.filename = 'images/reachableset_3dcar_ori'+str(np.around(p[3],decimals=2))
                 self.filename = re.sub('[.]', '-', self.filename)
@@ -100,10 +104,9 @@ class ReachableSet3D():
                 self.hw = 0.5*self.arrow_head_size
                 self.lw = 0.2*self.arrow_head_size
 
-                pnext = p+dt*s*dp+dt2*force
-
-                self.image.scatter(p[0], p[1], p[3], 'ok', s=30)
-                self.image.scatter(pnext[0],pnext[1],pnext[3],  'ok', s=10)
+                self.image.scatter(p[0], p[1], p[3], color='k', s=80)
+                self.image.scatter(pnext[0],pnext[1],pnext[3], color='k', s=80)
+                #self.image.scatter(qnext[0],qnext[1],qnext[3],  'ob', s=10)
 
                 dori = np.zeros((Ndim))
                 dori[0:2] = np.dot(Rz(p[3]),ex)[0:2]
@@ -122,7 +125,7 @@ class ReachableSet3D():
                         self.PlotPathSegment( pathlast, pathnext)
 
                         arrow0 = self.PlotArrow(p, dt*si*dori, self.orientation_color)
-                        arrow0 = self.PlotArrow(pnext, dt*si*dori, self.orientation_color)
+                        arrow0 = self.PlotArrow(qnext, dt*si*dori, self.orientation_color)
                         arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
 
                         plt.legend([arrow0,arrow2,],
@@ -139,18 +142,54 @@ class ReachableSet3D():
                         arrow1 = self.PlotArrow(p, dt*s*dp, self.tangent_color)
                         arrow2 = self.PlotArrow(dt*s*dp, dt2*force, self.force_color)
 
-                        arrow0 = self.PlotArrow(pnext, dt*s*dori, self.orientation_color)
+                        arrow0 = self.PlotArrow(qnext, dt*s*dori, self.orientation_color)
                         arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
 
                         plt.legend([arrow0,arrow1,arrow2,],
                                         ['Orientation','Velocity/Tangent Path','Force',],
                                         fontsize=self.fs,
                                         loc=self.loc)
-                plt.tight_layout()
+                self.origin = p
+                self.tangent = dp
+
+                ts1 = acos( np.dot(dp[0:2],ex[0:2])/np.linalg.norm(dp[0:2]))
+                ts2 = acos( np.dot((qnext-p)[0:2],ex[0:2])/np.linalg.norm((qnext-p)[0:2]))
+
+                toffset = pi/16
+                toffsetz = pi/4
+                ori1 = np.cross(ex[0:2],(dp)[0:2])
+                ori2 = np.cross(ex[0:2],(qnext-p)[0:2])
+                if ori1 < 0:
+                        ts1 *= -1
+                if ori2 < 0:
+                        ts2 *= -1
+
+                if ts1 > ts2:
+                        tlimU = ts1+toffset
+                        tlimL = ts2-2*toffset
+                else:
+                        tlimL = ts1-toffset
+                        tlimU = ts2+2*toffset
+                #draw sphere
+                #u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
+                u, v = np.mgrid[tlimL:tlimU:20j, 0+toffsetz:np.pi-toffsetz:10j]
+                x=self.ds*np.cos(u)*np.sin(v) + p[0]
+                y=self.ds*np.sin(u)*np.sin(v) + p[1]
+                z=self.ds*np.cos(v) + p[3]
+
+                #self.image.plot_wireframe(x, y, z, color="r")
+
+                self.image.plot_surface( x, y, z,  rstride=1, cstride=1,
+                                color='c', alpha=0.3, linewidth=2,
+                                edgecolors=np.array((0.5,0.5,0.5,0.5)))
+
                 plt.axis('equal')
 
         def PlotPathSegment(self, plast, pnext):
                 self.image.plot([plast[0],pnext[0]],[plast[1],pnext[1]],[plast[3],pnext[3]],'-k',linewidth=self.path_lw)
+
+        def PlotBall(self, ds):
+                pass
 
 
         def PlotArrow(self, pos, direction, color):
@@ -197,19 +236,37 @@ class ReachableSet3D():
                         X = np.vstack((X[:,0],X[:,1],X[:,3])).T
                         hull = ConvexHull(X,qhull_options=self.qhull_options)    
 
-                        from matplotlib.tri import Triangulation
+                        from matplotlib.tri import Triangulation, TriAnalyzer
+#triang = Triangulation(x, y, triangles=meshgrid_triangles(n+1))
 
                         x,y,z=X.T
                         tri = Triangulation(x, y, triangles=hull.simplices)
+
+                        analyser = TriAnalyzer(tri)
+                        mask= analyser.get_flat_tri_mask(0.01)
+                        tri.set_mask(mask)
+
                         triangle_vertices = np.array([np.array([[x[T[0]], y[T[0]], z[T[0]]],
                                 [x[T[1]], y[T[1]], z[T[1]]],
                                 [x[T[2]], y[T[2]], z[T[2]]]]) for T in tri.triangles])
 
+                        self.tri = tri
+
                         tri = Poly3DCollection(triangle_vertices)
                         if i == len(self.poly)-1:
+                                #for T in tri.triangles:
+                                #        tp = np.array([[x[T[0]], y[T[0]], z[T[0]]],
+                                #                [x[T[1]], y[T[1]], z[T[1]]],
+                                #                [x[T[2]], y[T[2]], z[T[2]]]]) 
+
+                                #        v1 = tp[1] - tp[0]
+                                #        v2 = tp[2] - tp[0]
+                                #        trinormal = np.cross(v1,v2)
+
                                 tri.set_color(self.rs_last_color)
-                                tri.set_edgecolor('k')
+                                tri.set_edgecolor(np.array((0.5,0.5,0.5,0.5)))
                                 self.image.scatter(x,y,z, 'ok', color=np.array((0,0,1.0,0.1)),s=30)
+
                         else:
                                 tri.set_color(self.rs_color)
                                 tri.set_edgecolor('None')
@@ -241,6 +298,8 @@ class ReachableSet3D():
                 self.image.relim()
                 self.image.autoscale_view(True,False,True)
 
+
+        def PlotSave(self):
                 self.fig.set_size_inches(18.5, 18.5, forward=True)
                 plt.savefig(self.filename,format='svg', dpi=1200)
 
@@ -254,5 +313,6 @@ class ReachableSet3D():
                 os.system(syscmd)
                 os.system('cp /home/`whoami`/git/openrave/sandbox/WPI/images/*.pdf /home/`whoami`/git/papers/images/simulation/')
 
+        def PlotShow(self):
                 plt.show()
 

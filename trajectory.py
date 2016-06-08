@@ -251,7 +251,7 @@ class Trajectory():
                 thetavec = [-pi/2,-pi/4,0,pi/4,pi/2]
                 thetavec = [pi/4]
                 for theta in thetavec:
-                        p = np.array((0,0,0,theta))
+                        p = np.array((0,1e-4,0,theta))
 
                         force = np.array((4.5,-6.5,0,5.0))
                         dp = np.array((1,0.1,0,0.2))
@@ -265,6 +265,9 @@ class Trajectory():
                         from reachable_set3d import ReachableSet3D
                         self.reach = ReachableSet3D( p, s, dp, force, R[:,:,0], amin, amax)
                         self.reach.Plot()
+                        self.reach.PlotSave()
+                        self.reach.PlotShow()
+
 
 
         def get_dimension(self):
