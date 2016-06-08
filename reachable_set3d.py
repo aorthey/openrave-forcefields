@@ -37,6 +37,7 @@ class ReachableSet3D():
         pts = None
         poly = []
         rs_boundary_thickness = 4
+        system_name='virus'
         loc = 'upper left'
         qhull_options = 'QJ'
         #loc = 'best'
@@ -62,6 +63,7 @@ class ReachableSet3D():
                 self.pts = None
                 self.poly = []
                 self.fig = plt.figure(facecolor='white')
+                #self.fig.set_size_inches(18.5, 18.5, forward=True)
                 from mpl_toolkits.mplot3d import Axes3D
                 self.image = self.fig.gca(projection='3d')
 
@@ -90,7 +92,7 @@ class ReachableSet3D():
                 pnext = p+self.ds*dp/np.linalg.norm(dp)
 
                 tstring = 'Reachable Set (<T='+str(dt)+')'
-                self.filename = 'images/reachableset_3dcar_ori'+str(np.around(p[3],decimals=2))
+                self.filename = 'images/reachableset_'+self.system_name+'_ori'+str(np.around(p[3],decimals=2))
                 self.filename = re.sub('[.]', '-', self.filename)
                 self.filename += '.png'
 
@@ -172,16 +174,13 @@ class ReachableSet3D():
                         tlimU = ts2+2*toffset
                 #draw sphere
                 #u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
-                u, v = np.mgrid[tlimL:tlimU:20j, 0+toffsetz:np.pi-toffsetz:10j]
-                x=self.ds*np.cos(u)*np.sin(v) + p[0]
-                y=self.ds*np.sin(u)*np.sin(v) + p[1]
-                z=self.ds*np.cos(v) + p[3]
-
-                #self.image.plot_wireframe(x, y, z, color="r")
-
-                self.image.plot_surface( x, y, z,  rstride=1, cstride=1,
-                                color='c', alpha=0.3, linewidth=2,
-                                edgecolors=np.array((0.5,0.5,0.5,0.5)))
+                #u, v = np.mgrid[tlimL:tlimU:20j, 0+toffsetz:np.pi-toffsetz:10j]
+                #x=self.ds*np.cos(u)*np.sin(v) + p[0]
+                #y=self.ds*np.sin(u)*np.sin(v) + p[1]
+                #z=self.ds*np.cos(v) + p[3]
+                #self.image.plot_surface( x, y, z,  rstride=1, cstride=1,
+                #                color='c', alpha=0.3, linewidth=2,
+                #                edgecolors=np.array((0.5,0.5,0.5,0.5)))
 
                 plt.axis('equal')
 
@@ -237,14 +236,9 @@ class ReachableSet3D():
                         hull = ConvexHull(X,qhull_options=self.qhull_options)    
 
                         from matplotlib.tri import Triangulation, TriAnalyzer
-#triang = Triangulation(x, y, triangles=meshgrid_triangles(n+1))
 
                         x,y,z=X.T
                         tri = Triangulation(x, y, triangles=hull.simplices)
-
-                        analyser = TriAnalyzer(tri)
-                        mask= analyser.get_flat_tri_mask(0.01)
-                        tri.set_mask(mask)
 
                         triangle_vertices = np.array([np.array([[x[T[0]], y[T[0]], z[T[0]]],
                                 [x[T[1]], y[T[1]], z[T[1]]],
@@ -254,15 +248,6 @@ class ReachableSet3D():
 
                         tri = Poly3DCollection(triangle_vertices)
                         if i == len(self.poly)-1:
-                                #for T in tri.triangles:
-                                #        tp = np.array([[x[T[0]], y[T[0]], z[T[0]]],
-                                #                [x[T[1]], y[T[1]], z[T[1]]],
-                                #                [x[T[2]], y[T[2]], z[T[2]]]]) 
-
-                                #        v1 = tp[1] - tp[0]
-                                #        v2 = tp[2] - tp[0]
-                                #        trinormal = np.cross(v1,v2)
-
                                 tri.set_color(self.rs_last_color)
                                 tri.set_edgecolor(np.array((0.5,0.5,0.5,0.5)))
                                 self.image.scatter(x,y,z, 'ok', color=np.array((0,0,1.0,0.1)),s=30)
@@ -300,9 +285,8 @@ class ReachableSet3D():
 
 
         def PlotSave(self):
-                self.fig.set_size_inches(18.5, 18.5, forward=True)
-                plt.savefig(self.filename,format='svg', dpi=1200)
 
+                self.fig.savefig(self.filename,format='svg', dpi=1200)
 
                 svgname = self.filename
                 pdfname = os.path.splitext(self.filename)[0]+'.pdf'

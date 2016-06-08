@@ -22,14 +22,10 @@ class ReachableSet():
 
         pts = None
         poly = []
-        rs_boundary_thickness = 4
+        rs_boundary_thickness = 15
 
-        rs_color = np.array((0.8,0.8,1.0))
-        rs_dt_color = np.array((0.2,0.2,1.0))
-        rs_last_color = np.array((0.2,0.2,1.0))
-        rs_alpha = 1.0
-        rs_dt_alpha = 0.0
-        rs_last_alpha = 0.2
+        rs_color = np.array((0.8,0.8,1.0,1.0))
+        rs_last_color = np.array((0.1,0.1,1.0,0.5))
 
         path_lw = 3
 
@@ -74,7 +70,7 @@ class ReachableSet():
                         self.add_points( q[0:2,:].T )
 
                 tstring = 'Reachable Set (<T='+str(dt)+')'
-                self.filename = 'images/reachableset_3dcar_ori'+str(np.around(p[3],decimals=2))
+                self.filename = 'images/reachableset_ori'+str(np.around(p[3],decimals=2))
                 self.filename = re.sub('[.]', '-', self.filename)
                 self.filename += '.png'
 
@@ -83,10 +79,10 @@ class ReachableSet():
                 self.hw = 0.5*self.arrow_head_size
                 self.lw = 0.2*self.arrow_head_size
 
-                pnext = p+dt*s*dp+dt2*force
+                qnext = p+dt*s*dp+dt2*force
 
-                self.image.plot(p[0], p[1], 'ok', markersize=30)
-                self.image.plot(pnext[0],pnext[1], 'ok', markersize=10)
+                self.image.plot(p[0], p[1], 'ok', markersize=10)
+                self.image.plot(qnext[0],qnext[1], 'ok', markersize=10)
 
                 dori = np.dot(Rz(p[3]),ex)[0:2]
                 dori = 0.5*(dori/np.linalg.norm(dori))
@@ -99,7 +95,7 @@ class ReachableSet():
 
                         arrow0 = self.PlotArrow(p, dt*si*dori, self.orientation_color)
 
-                        arrow0 = self.PlotArrow(pnext, dt*si*dori, self.orientation_color)
+                        arrow0 = self.PlotArrow(qnext, dt*si*dori, self.orientation_color)
                         arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
 
                         plt.legend([arrow0,arrow2,],
@@ -109,10 +105,10 @@ class ReachableSet():
 
                         arrow0 = self.PlotArrow(p, dt*s*dori, self.orientation_color)
                         arrow1 = self.PlotArrow(p, dt*s*dp, self.tangent_color)
-                        arrow2 = self.PlotArrow(dt*s*dp, dt2*force, self.force_color)
-
-                        arrow0 = self.PlotArrow(pnext, dt*s*dori, self.orientation_color)
                         arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
+
+                        arrow0 = self.PlotArrow(qnext, dt*s*dori, self.orientation_color)
+                        arrow2 = self.PlotArrow(p+dt*s*dp, dt2*force, self.force_color)
 
                         plt.legend([arrow0,arrow1,arrow2,],
                                         ['Orientation','Velocity/Tangent Path','Force',],fontsize=self.fs)
@@ -167,21 +163,14 @@ class ReachableSet():
                                 hull = ConvexHull(q.T,qhull_options='QJ')    
                                 self.image.fill(q[0,hull.vertices], q[1,hull.vertices],
                                                 facecolor=self.rs_color,
-                                                edgecolor='None',alpha=self.rs_alpha,
+                                                edgecolor='None',
                                                 zorder=0)
-                        q = np.vstack((x1,y1))
-                        hull = ConvexHull(q.T,qhull_options='QJ')    
-                        self.image.fill(q[0,hull.vertices], q[1,hull.vertices],
-                                        facecolor=self.rs_dt_color,
-                                        edgecolor='black',alpha=self.rs_dt_alpha,
-                                        linewidth=self.rs_boundary_thickness,
-                                        linestyle="dotted",
-                                        zorder=len(self.poly)-1-i)
+
                 q = np.vstack((x1,y1))
                 hull = ConvexHull(q.T,qhull_options='QJ')    
                 self.image.fill(q[0,hull.vertices], q[1,hull.vertices],
                                 facecolor=self.rs_last_color,
-                                edgecolor='black',alpha=self.rs_last_alpha,
+                                edgecolor=self.rs_last_color,
                                 linewidth=self.rs_boundary_thickness,
                                 linestyle="dashed",
                                 zorder=1)
@@ -212,7 +201,7 @@ class ReachableSet():
                 os.system(syscmd)
                 syscmd = 'pdfcrop '+pdfname+' '+pdfname
                 os.system(syscmd)
-                #renderPDF.drawToFile(drawing, self.filename+'.pdf')
+
                 os.system('cp /home/`whoami`/git/openrave/sandbox/WPI/images/*.pdf /home/`whoami`/git/papers/images/simulation/')
                 plt.show()
 

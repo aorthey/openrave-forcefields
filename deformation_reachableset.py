@@ -157,7 +157,6 @@ class DeformationReachableSet(Deformation):
                         print "No deformation necessary => Trajectory dynamically feasible"
                         print traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.critical_pt)
                         print "###########################################"
-                        #traj.PlotParametrization(self.env)
                         return DEFORM_SUCCESS
                 else:
                         ##plot critical pt
