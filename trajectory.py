@@ -139,12 +139,12 @@ class Trajectory():
                 AM = 5
 
                 ### car/sailboat
-                #amin = np.array((-AM,-AM,-3))
-                #amax = np.array((AM,AM,3))
+                amin = np.array((-AM,-AM,-AM))
+                amax = np.array((AM,AM,AM))
 
                 ### bacteriophage
-                amin = np.array((0,0,-AM))
-                amax = np.array((AM,0,AM))
+                #amin = np.array((0,0,-AM))
+                #amax = np.array((AM,0,AM))
 
                 [Ndim,Nwaypoints] = self.getWaypointDim(W)
                 assert(Ndim==4)
@@ -253,8 +253,12 @@ class Trajectory():
                 for theta in thetavec:
                         p = np.array((0,1e-4,0,theta))
 
+                        ##sailboat
                         force = np.array((2.5,-3.5,0,5.0))
                         dp = np.array((1,0.0,0,0.2))
+                        ##car
+                        force = np.array((2.5,-6.5,0,5.0))
+                        dp = np.array((1,0.1,0,0.2))
                         #force = np.array((0,-2.5,0,0))
                         smax = 0.1
                         s = 0.1

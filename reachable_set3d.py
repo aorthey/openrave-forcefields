@@ -37,7 +37,7 @@ class ReachableSet3D():
         pts = None
         poly = []
         rs_boundary_thickness = 4
-        system_name='virus'
+        system_name='car3d'
         loc = 'upper left'
         qhull_options = 'QJ'
         #loc = 'best'
@@ -142,10 +142,10 @@ class ReachableSet3D():
 
                         arrow0 = self.PlotArrow(p, dt*s*dori, self.orientation_color)
                         arrow1 = self.PlotArrow(p, dt*s*dp, self.tangent_color)
-                        arrow2 = self.PlotArrow(dt*s*dp, dt2*force, self.force_color)
+                        arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
 
                         arrow0 = self.PlotArrow(qnext, dt*s*dori, self.orientation_color)
-                        arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
+                        arrow2 = self.PlotArrow(p+dt*s*dp, dt2*force, self.force_color)
 
                         plt.legend([arrow0,arrow1,arrow2,],
                                         ['Orientation','Velocity/Tangent Path','Force',],

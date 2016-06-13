@@ -157,25 +157,19 @@ class Deformation():
                 #print self.traj_current.info()
 
                 t1 = time.time()
-                sys.stdout.write("## DRAWING LINEAR HOMOTOPY DEFORMATION ...\n")
 
                 tdraw = 0.0
                 for i in range(0,self.DEFORMATION_STEPS):
                         k = float(i)/float(self.DEFORMATION_STEPS)
 
-                        #Wk = self.InterpolateWaypoints(W0,W1,k)
                         Wk = (1-k)*W0 + k*W1
-                        #if self.traj_current.IsInCollision(self.env, Wk):
-                                #break
-                        #else:
                         self.traj_current.new_from_waypoints(Wk)
-                        #self.handle = self.traj_current.draw_nocritical(self.env, keep_handle=False)
 
                         ti1 = time.time()
                         self.handle = self.traj_current.draw(self.env, keep_handle=False, critical_pt = self.critical_pt)
                         ti2 = time.time()
                         tdraw += ti2-ti1
-                sys.stdout.write("DONE\n")
+
                 t2 = time.time()
                 if self.DEBUG:
                         print "DEFORMATION TIME(s): ",t2-t1," (drawing:",tdraw,")"

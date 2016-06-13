@@ -27,8 +27,8 @@ from motion_planner_kinodynamic import MotionPlannerKinodynamic
 if __name__ == "__main__":
 
         #######################################################################
-        #env = EnvironmentBloodStream()
-        env = EnvironmentTheCounterStream()
+        env = EnvironmentBloodStream()
+        #env = EnvironmentTheCounterStream()
         #env = EnvironmentTheStream()
         #######################################################################
 

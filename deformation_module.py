@@ -24,8 +24,9 @@ class DeformationModule():
                 if self.COLLISION_ENABLED:
                         if not traj_deformed.IsInCollision(env, Wnext):
                                 dU += dUtmp
+                                print "## [",self.get_name(),"] update: ok, lambda:",lambda_coeff
                         else:
-                                print "## $> collision in module:",self.get_name()
+                                print "## [",self.get_name(),"] >>>>> collision <<<<<"
                 else:
                         dU += dUtmp
 
@@ -39,20 +40,18 @@ class DeformationModule():
         def get_name(self):
                 pass
 
-        def avalue(self, Ncritical, i, c=10.0):
-                return np.exp(-((Ncritical-i)*(Ncritical-i))/(2*c*c))
-
-        def A1matrix(self, traj, Ncritical, W):
+        def SmoothVector(self, traj, Ncritical, W):
+                smoothing_factor = self.DeformInfo['smoothing_factor']
                 [Ndim, Nwaypoints] = traj.getWaypointDim(W)
-                A1 = np.zeros(Nwaypoints)
+                A = np.zeros(Nwaypoints)
 
                 assert(Ncritical<Nwaypoints)
 
-                i = Nwaypoints
+                i = Nwaypoints-1
                 while i > 0:
-                        #if abs(i-Ncritical)<M and i<Nwaypoints:
-                        if i<Nwaypoints-1:
-                                #A1[i] = self.avalue(Ncritical, i,15.0)
-                                A1[i] = self.avalue(Ncritical, i,50.0)
+                        A[i] = self.avalue(Ncritical, i, smoothing_factor)
                         i -= 1
-                return A1
+                return A
+
+        def avalue(self, Ncritical, i, c):
+                return np.exp(-((Ncritical-i)*(Ncritical-i))/(2*c*c))

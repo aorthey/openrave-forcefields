@@ -75,7 +75,7 @@ def AEndMatrix(traj, W):
         i = Nwaypoints-1
         while i >= 0:
                 #A4[i] = avalue(Nwaypoints-1, i, 10.0)
-                A4[i] = avalue(Nwaypoints-1, i, 50.0)
+                A4[i] = avalue(Nwaypoints-1, i, 15.0)
                 i -= 1
         return A4
 
@@ -86,7 +86,7 @@ def AStartMatrix(traj, W):
         #M = 100
         i = Nwaypoints-1
         while i >= 0:
-                A5[i] = avalue(0, i, 50.0)
+                A5[i] = avalue(0, i, 15.0)
                 i -= 1
         return A5
 
@@ -102,33 +102,23 @@ class DeformationReachableSet(Deformation):
                         FN[:,i] = np.dot(F[:,i].flatten().T, trajNormal)*trajNormal
                 return FN
 
-        def getTorqueNormalComponent(self, F, Wori, dWori):
-                Nwaypoints = Wori.shape[1]
-                FNtorque = np.zeros((F.shape))
-                for i in range(0,Nwaypoints):
-                        #trajNormal = np.array((-dWori[1,i],dWori[0,i],0,0))
-                        #trajNormal = trajNormal/np.linalg.norm(trajNormal)
-                        FNtorque[3,i] = F[3,i]
-                        #FNtorque[:,i] = np.dot(F[:,i].flatten().T, trajNormal)*trajNormal
-
-                return FNtorque
-
-        def ComputeNextWaypoints(self, Wori, eta, dUtmp):
-                Wnext = Wori + eta*dUtmp
-                return Wnext
-
         ## change only traj_deformed here
         Nc_handle = []
 
         ###############################################################
         ### LAMBDA1: (smooth) move against force
         ### LAMBDA2: (smooth) project onto reachable set
+        ### LAMBDA3: orientation
         ###############################################################
         #lambda_1 = 0.001
         #lambda_1 = 0.0005
         lambda_1 = 0.0005
-        lambda_2 = 1
-        lambda_3 = 0.5*1e-2
+        #lambda_2 = 1
+        #lambda_3 = 0.5*1e-2
+        lambda_2 = 2
+        lambda_3 = 0
+
+        smoothing_factor = 10.0
 
         def deform_onestep(self, computeNewCriticalPoint = True):
 
@@ -159,7 +149,6 @@ class DeformationReachableSet(Deformation):
                         print "###########################################"
                         return DEFORM_SUCCESS
                 else:
-                        ##plot critical pt
                         Nc_handle = self.env.env.plot3(points=Wori[0:3,self.critical_pt],
                                         pointsize=0.02,
                                         colors=np.array(((1.0,0.2,0.2))),
@@ -172,7 +161,6 @@ class DeformationReachableSet(Deformation):
 
                 ### get forces in normal direction to trajectory
                 FNxy = self.getForceNormalComponent(F, dWori)
-                FNtorque = self.getTorqueNormalComponent(F, Wori, dWori)
 
                 #### compute min/max velocity profile from path without forces
                 #### (if available). otherwise use [0,0]
@@ -202,8 +190,6 @@ class DeformationReachableSet(Deformation):
                                 dpmax[:,i] = np.linalg.norm(dq)
                                 Tstart = Tcur
 
-
-                #Tz = self.getTorqueComponent(F, Wori, dWori)
                 print "## LAMBDAS: ",self.lambda_1,self.lambda_2,self.lambda_3
 
                 dU = np.zeros((Ndim,Nwaypoints))
@@ -211,9 +197,7 @@ class DeformationReachableSet(Deformation):
                 DeformInfo = {}
                 DeformInfo['Ndim'] = Ndim
                 DeformInfo['Nwaypoints'] = Nwaypoints
-                DeformInfo['lambda_1'] = self.lambda_1
-                DeformInfo['lambda_2'] = self.lambda_2
-                DeformInfo['lambda_3'] = self.lambda_3
+                DeformInfo['smoothing_factor'] = self.smoothing_factor
                 DeformInfo['traj'] = self.traj_deformed
                 DeformInfo['Wori'] = Wori
                 DeformInfo['dWori'] = dWori
@@ -221,6 +205,8 @@ class DeformationReachableSet(Deformation):
                 DeformInfo['R'] = R
                 DeformInfo['amin'] = amin
                 DeformInfo['amax'] = amax
+                DeformInfo['dpmin'] = dpmin
+                DeformInfo['dpmax'] = dpmax
                 DeformInfo['eta'] = eta
                 DeformInfo['env'] = self.env
 
@@ -230,75 +216,19 @@ class DeformationReachableSet(Deformation):
                 #################################################################
 
                 from deformation_module_counterwrench import *
+                from deformation_module_projection_reachable_set import *
+
                 d1 = DeformationModuleCounterWrench( DeformInfo )
+                d2 = DeformationModuleProjectionReachableSet( DeformInfo )
+
                 dU += d1.get_update( self.lambda_1 )
-
-                #################################################################
-                ## lambda 2 update
-                ## project onto reachable set
-                #################################################################
-                Wmove = np.zeros((Ndim,Nwaypoints))
-                dUtmp = np.zeros((Ndim,Nwaypoints))
-
-                ds = traj.DISCRETIZATION_TIME_STEP
-                #### compute the intersection of a forward simulation and the
-                #### ball with radius ds
-
-                for i in range(0,Nwaypoints-1):
-                        p = Wori[:,i]
-                        dp = dWori[:,i]
-                        pnext = Wori[:,i+1]
-                        smax = dpmax[:,i]/2
-                        #smax = 0
-
-                        if np.linalg.norm(F[:,i])>1e-3:
-                                qnext = np.zeros((Ndim))
-                                qnext = p
-                                tstep = 1e-4
-                                dt = 0.0
-
-                                dold = 1e5
-                                dnew = abs(np.linalg.norm(p-qnext) - ds)
-                                while dnew < dold:
-                                        dold = dnew
-                                        dt += tstep
-                                        dt2 = dt*dt/2
-                                        qnext = p + dt*smax*dp + dt2*F[:,i]
-                                        dnew = abs(np.linalg.norm(p-qnext) - ds)
-
-                                dpq = np.dot(np.linalg.norm(qnext),np.linalg.norm(pnext))
-                                if dpq < 0.1:
-                                        print "WaRNING: dpq:",dpq
-                                        sys.exit(0)
-
-                                ## project onto orthogonal direction to path
-                                dp = qnext - pnext
-                                dp = dp - np.dot(dp,pnext-p)*(pnext-p)
-                                Wmove[:,i] = dp
-                                #Wmove[3,i] *= 5
-
-
-                for i in range(0,Nwaypoints):
-                        A = AForwardMatrix(traj,i,Wori)
-                        dUtmp[:,i] = np.dot(A, (self.lambda_2 * Wmove.T))
-
-                Wnext = self.ComputeNextWaypoints(Wori, eta, dUtmp)
-
-                if COLLISION_ENABLED:
-                        if not self.traj_deformed.IsInCollision(self.env, Wnext):
-                                dU += dUtmp
-                        else:
-                                print "## $> lambda2 collision (reachable-set projection)"
-                                ### make lambda smaller to see if step size is
-                                ### an issue
-                                self.lambda_2 /= 2.0
-                else:
-                        dU += dUtmp
+                dU += d2.get_update( self.lambda_2 )
 
                 #################################################################
                 ## lambda 3 update
                 ## orient into path direction
                 #################################################################
+                ds = traj.DISCRETIZATION_TIME_STEP
                 Tdir = np.zeros((1,Nwaypoints))
                 dUtmp = np.zeros((Ndim,Nwaypoints))
 
@@ -374,7 +304,8 @@ class DeformationReachableSet(Deformation):
                         A1 = AOrientationMatrix(traj,i,Wori)
                         dUtmp[3,i] = np.dot(A1, (self.lambda_3*Tdir.T))
 
-                Wnext = self.ComputeNextWaypoints(Wori, eta, dUtmp)
+                #Wnext = self.ComputeNextWaypoints(Wori, eta, dUtmp)
+                Wnext = Wori + eta*dUtmp
 
                 if COLLISION_ENABLED:
                         if not self.traj_deformed.IsInCollision(self.env, Wnext):
