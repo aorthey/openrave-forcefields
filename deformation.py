@@ -9,6 +9,7 @@ DEFORM_SUCCESS = 0
 DEFORM_OK = 1
 DEFORM_COLLISION = 2
 DEFORM_NOPROGRESS = 3
+DEFORM_MAX_ITER_REACHED = 4
 
 class Deformation():
         DEBUG = 0
@@ -17,6 +18,7 @@ class Deformation():
         ## number of steps of a linear homotopy deformation between two given
         ## trajectories
         DEFORMATION_STEPS = 10
+        COLLISION_ENABLED = True
 
         env = []
         traj_ori = []
@@ -46,10 +48,12 @@ class Deformation():
         def deform_onestep(self):
                 pass
 
+
         def deform(self, N_iter = 1):
                 computeNewCriticalPoint = True
                 for i in range(0,N_iter):
                         res = self.deform_onestep(computeNewCriticalPoint)
+
                         self.traj_current = copy.copy(self.traj_deformed)
                         self.draw_deformation()
                         if res == DEFORM_SUCCESS:
@@ -70,7 +74,49 @@ class Deformation():
 
                         print "(Iteration:",i,")"
 
-                return True
+                print "DEFORM_MAX_ITER_REACHED"
+                return False
+
+        def plot_topp(self):
+                self.traj_deformed.PlotParametrization(self.env)
+
+        def execute(self, robot, tsleep=0.01, stepping=False):
+                tstep = 0.01
+                if self.traj_deformed.topp.traj0 is not None:
+                #if deform_success:
+                        #td.traj_deformed.PlotParametrization(env)
+
+                        xt = self.traj_deformed.topp.traj0
+
+                        with self.env.env:
+                                robot.GetLinks()[0].SetStatic(True)
+                                self.env.env.StopSimulation() 
+
+                        t = 0.0
+                        tstep = 0.01
+                        robot.SetDOFValues(xt.Eval(t))
+                        self.env.MakeRobotVisible()
+
+                        while t < xt.duration:
+                                q = xt.Eval(t)
+                                dq = xt.Evald(t)
+                                ddq = xt.Evaldd(t)
+
+                                qn = q + tstep*dq + 0.5*tstep*tstep*ddq
+                                robot.SetDOFValues(qn)
+
+                                self.env.env.StepSimulation(tstep)
+                                time.sleep(tsleep)
+                                t += tstep
+                                if stepping:
+                                        raw_input('Press Key to Step. Time: '+str(t)+'/'+str(xt.duration))
+
+                        robot.WaitForController(0)
+                        print "xt = td.traj_current.topp.traj0"
+                        raw_input('Enter any key to quit. ')
+                else:
+                        print "deformation not successful"
+                        raw_input('Enter any key to quit. ')
 
         def GetForcesAtWaypoints(self, W):
                 Ndim = W.shape[0]
@@ -183,3 +229,108 @@ class Deformation():
         def draw_trajectory_deformed(self):
                 self.traj_current.draw(self.env)
 
+        def extractInfoFromTrajectory(self, traj):
+                eta = 1.0
+
+                L = traj.get_length()
+
+                ### traj.DISCRETIZATION_TIME_STEP controls ds
+                [Wori,dWori,ddWori] = traj.get_waypoints_second_order()
+                [Ndim, Nwaypoints] = traj.getWaypointDim(Wori)
+                F = traj.get_forces_at_waypoints(Wori, self.env)
+                [R,amin,amax] = traj.getControlMatrix(Wori)
+
+                ### get forces in normal direction to trajectory
+                FN = self.getForceNormalComponent(F, dWori)
+
+                #### compute min/max velocity profile from path without forces
+                #### (if available). otherwise use [0,0]
+
+                self.traj_velprofile = traj.getVelocityIntervalWithoutForceField(self.env, Wori, dWori, ddWori)
+                dpmin = np.zeros((1,Nwaypoints))
+                dpmax = np.zeros((1,Nwaypoints))
+                if self.traj_velprofile is not None:
+                        Tend = self.traj_velprofile.duration
+                        Tstart = 0.0
+                        Tstep = Tend/1e4
+
+                        for i in range(0,Nwaypoints):
+                                Tcur =Tstart
+                                p = Wori[:,i]
+                                q = self.traj_velprofile.Eval(Tcur)
+
+                                dold = 1e5
+                                dnew = np.linalg.norm(p-q)
+                                while dnew < dold:
+                                        dold = dnew
+                                        Tcur += Tstep
+                                        q = self.traj_velprofile.Eval(Tcur)
+                                        dnew = np.linalg.norm(p-q)
+
+                                dq = self.traj_velprofile.Evald(Tcur)
+                                dpmax[:,i] = np.linalg.norm(dq)
+                                Tstart = Tcur
+
+                DeformInfo = {}
+                DeformInfo['Ndim'] = Ndim
+                DeformInfo['Nwaypoints'] = Nwaypoints
+                DeformInfo['smoothing_factor'] = self.smoothing_factor
+                DeformInfo['critical_pt'] = self.critical_pt
+                DeformInfo['traj'] = self.traj_deformed
+                DeformInfo['Wori'] = Wori
+                DeformInfo['dWori'] = dWori
+                DeformInfo['ddWori'] = ddWori
+                DeformInfo['F'] = F
+                DeformInfo['FN'] = FN
+                DeformInfo['R'] = R
+                DeformInfo['amin'] = amin
+                DeformInfo['amax'] = amax
+                DeformInfo['dpmin'] = dpmin
+                DeformInfo['dpmax'] = dpmax
+                DeformInfo['eta'] = eta
+                DeformInfo['env'] = self.env
+                return DeformInfo
+
+        def IsDynamicallyFeasible(self, DeformInfo):
+
+                traj = DeformInfo['traj']
+                Wori = DeformInfo['Wori']
+                dWori = DeformInfo['dWori']
+                ddWori = DeformInfo['ddWori']
+                Ndim = DeformInfo['Ndim']
+                Nwaypoints = DeformInfo['Nwaypoints']
+                critical_pt = DeformInfo['critical_pt']
+
+                self.critical_pt = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, critical_pt)
+
+                print "###########################################"
+                print "CRITICAL WAYPOINT: ",self.critical_pt,"/",Nwaypoints
+
+                if self.critical_pt >= Nwaypoints:
+                        print "No deformation necessary => Trajectory dynamically feasible"
+                        print traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.critical_pt)
+                        print "###########################################"
+                        return True
+                else:
+                        self.Nc_handle = self.env.env.plot3(points=Wori[0:3,critical_pt],
+                                        pointsize=0.02,
+                                        colors=np.array(((1.0,0.2,0.2))),
+                                        drawstyle=1)
+                print "###########################################"
+                return False
+
+        def getForceNormalComponent(self, F, dWori):
+                Nwaypoints = dWori.shape[1]
+                FN = np.zeros((F.shape))
+                for i in range(0,Nwaypoints):
+                        dWn = dWori[:,i]/np.linalg.norm(dWori[:,i])
+                        FN[:,i] = F[:,i]-np.dot(F[:,i],dWn)*dWn
+                return FN
+
+        def SafetyCheckUpdate(self, dU):
+                if not (dU[:,0]==0).all():
+                        print "ERROR: start point deformation -> not allowed"
+                        sys.exit(1)
+                if not (dU[:,-1]==0).all():
+                        print "ERROR: end point deformation -> not allowed"
+                        sys.exit(1)

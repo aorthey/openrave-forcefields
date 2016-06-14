@@ -19,6 +19,7 @@ class ForceEnvironment():
         CollisionCheckerName = 'ode'
         FORCE_FIELD_MIN_SPACING = 0.3
         FORCE_FIELD_MAX_SPACING = 0.8
+        FORCE_FIELD_MAX_FORCE = 2.0
         FORCE_FIELD_PT_SIZE = 4
         FORCE_FIELD_ARROW_SIZE = 0.02
         #FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))
@@ -60,7 +61,7 @@ class ForceEnvironment():
                         self.env.SetPhysicsEngine(self.physics)
                         self.cc = RaveCreateCollisionChecker(self.env, self.CollisionCheckerName)
                         self.env.SetCollisionChecker(self.cc)
-                        #self.env.SetForces( self.GetForces() )
+                        self.env.SetForces( self.GetForces() )
                         #self.recorder = RaveCreateModule(self.env,'viewerrecorder')
                         #self.env.AddModule(self.recorder,'')
 
@@ -172,7 +173,14 @@ class ForceEnvironment():
                         self.robot.SetDOFValues((xi,yi,zi,ti))
                         self.robot.SetDOFVelocities((dxi,dyi,dzi,dti))
                         self.robot.SetDOFVelocityLimits([10.0,10.0,0.0,5.0])
-                        self.robot.SetDOFAccelerationLimits([5.0,5.0,0.0,5.0])
+
+                        import parameters_dynamical_system as params
+
+                        a0 = params.amax[0]
+                        a1 = params.amax[1]
+                        a2 = params.amax[2]
+
+                        self.robot.SetDOFAccelerationLimits([a0,a1,0,a2])
 
 
                         ### TODO: draw real robot instead
@@ -469,9 +477,9 @@ class ForceEnvironment():
                         ## no force to display
                         return None
 
-                lx = np.sign(Fx)*min((abs(Fx)/10.0),10.0)*self.FORCE_FIELD_MAX_SPACING
-                ly = np.sign(Fy)*min((abs(Fy)/10.0),10.0)*self.FORCE_FIELD_MAX_SPACING
-                lz = np.sign(Fz)*min((abs(Fz)/10.0),10.0)*self.FORCE_FIELD_MAX_SPACING
+                lx = np.sign(Fx)*min((abs(Fx)/self.FORCE_FIELD_MAX_FORCE),self.FORCE_FIELD_MAX_FORCE)*self.FORCE_FIELD_MAX_SPACING
+                ly = np.sign(Fy)*min((abs(Fy)/self.FORCE_FIELD_MAX_FORCE),self.FORCE_FIELD_MAX_FORCE)*self.FORCE_FIELD_MAX_SPACING
+                lz = np.sign(Fz)*min((abs(Fz)/self.FORCE_FIELD_MAX_FORCE),self.FORCE_FIELD_MAX_FORCE)*self.FORCE_FIELD_MAX_SPACING
 
                 ########################################################
                 ## compute arrows inside of box (assume rectangular cover)

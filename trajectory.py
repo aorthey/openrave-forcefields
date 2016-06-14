@@ -73,6 +73,13 @@ class Trajectory():
                 self.trajectorystring = T
                 self.durationVector = D
 
+        def save(self, filename):
+                np.save(filename, self.waypoints)
+
+        def load(self, filename):
+                W = np.load(filename+'.npy')
+                return W
+
         def evaluate_at(self, t, der=1):
                 f = np.zeros((self.Ndim))
                 df = np.zeros((self.Ndim))
@@ -136,11 +143,15 @@ class Trajectory():
 
         ### SYSTEM DYNAMICS
         def getControlMatrix(self, W):
-                AM = 1
+                import parameters_dynamical_system as params
+                #AM = 1
 
                 ### car/sailboat
-                amin = np.array((-AM,-AM,-AM))
-                amax = np.array((AM,AM,AM))
+                #amin = np.array((-AM,-AM,-0.5*AM))
+                #amax = np.array((AM,AM,0.5*AM))
+
+                amin = params.amin
+                amax = params.amax
 
                 ### bacteriophage
                 #amin = np.array((0,0,-AM))
@@ -276,14 +287,13 @@ class Trajectory():
                         self.reach.PlotSave()
 
 
-
         def get_dimension(self):
                 [F,dF] = self.evaluate_at(0)
                 return F.shape[0]
 
         def waypoint_to_force(self, env, W):
                 Ndims = W.shape[0]
-                pt = np.array(((W[0],W[1],-0.1,0.001)))
+                pt = np.array(((W[0],W[1],-0.1,W[3])))
                 F = np.zeros((Ndims))
                 F[0:3] = env.GetForceAtX(pt)
                 r = 0.5
@@ -420,6 +430,11 @@ class Trajectory():
                         w = np.array((ravetraj.GetWaypoint(i)[0],ravetraj.GetWaypoint(i)[1],ravetraj.GetWaypoint(i)[2],ravetraj.GetWaypoint(i)[3]))
                         W.append((w))
                 W = np.array(W).T
+                return cls(W)
+
+        @classmethod
+        def from_file(cls, filename):
+                W = np.load(filename+'.npy')
                 return cls(W)
 
         def get_waypoints_second_order(self, N=None):
@@ -565,3 +580,30 @@ class Trajectory():
 
         def draw_delete(self):
                 self.handle = []
+
+        def execute(self, env, robot, tsleep=0.01, stepping=False):
+                tstep = 0.01
+                xt = self.topp.traj0
+
+                with env.env:
+                        robot.GetLinks()[0].SetStatic(True)
+                        env.env.StopSimulation() 
+
+                t = 0.0
+                tstep = 0.01
+                robot.SetDOFValues(xt.Eval(t))
+                env.MakeRobotVisible()
+
+                while t < xt.duration:
+                        q = xt.Eval(t)
+                        dq = xt.Evald(t)
+                        ddq = xt.Evaldd(t)
+
+                        qn = q + tstep*dq + 0.5*tstep*tstep*ddq
+                        robot.SetDOFValues(qn)
+
+                        env.env.StepSimulation(tstep)
+                        time.sleep(tsleep)
+                        t += tstep
+                        if stepping:
+                                raw_input('Press Key to Step. Time: '+str(t)+'/'+str(xt.duration))

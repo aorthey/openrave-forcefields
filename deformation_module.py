@@ -48,7 +48,7 @@ class DeformationModule():
                 assert(Ncritical<Nwaypoints)
 
                 i = Nwaypoints-1
-                while i > 0:
+                while i >= 0:
                         A[i] = self.avalue(Ncritical, i, smoothing_factor)
                         i -= 1
                 return A

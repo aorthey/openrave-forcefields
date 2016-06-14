@@ -1,4 +1,5 @@
 import string,time
+import os
 from pylab import *
 import numpy as np
 from openravepy import *
@@ -13,6 +14,7 @@ class TOPPInterface():
         fs_title = 40
         fs_label = 30
 
+        system_name = "car3d"
 
         #DURATION_DISCRETIZATION = 0.0001
         #DURATION_DISCRETIZATION = 1
@@ -41,6 +43,7 @@ class TOPPInterface():
         trajectoryclass_ = []
 
         def initializeFromSpecifications(self, durationVector_in, trajectorystring, F, R, amin, amax, W, dW):
+                self.filename = 'images/topp_'+str(self.system_name)+'.png'
                 self.Ndim = W.shape[0]
                 self.Nwaypoints = W.shape[1]
 
@@ -190,7 +193,7 @@ class TOPPInterface():
                 plot(tvect, qvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\\theta$")
                 #plot(tvect, qdvect, f, linewidth=2)
                 #plot(tvect, qddvect, f, linewidth=2)
-                title('TOPP-Profile Path', fontsize=self.fs_title, y=1.05)
+                title('TOPP-Profile '+str(self.system_name), fontsize=self.fs_title, y=1.05)
                 ylabel('Position \n$\\left(m\\right)$,$\\left(rad\\right)$', fontsize=self.fs_label)
                 ax1.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax1, fs)
@@ -223,7 +226,8 @@ class TOPPInterface():
 
                 if env is not None:
                         ax4 = subplot(4,1,4)
-                        ylabel('Control $\\left(\\frac{m^2}{s^2}\\right)$', fontsize=fs)
+                        ylabel('Control\n$\\left(\\frac{m^2}{s^2}\\right)$,$\\left(\\frac{rad^2}{s^2}\\right)$',
+                                        fontsize=self.fs_label)
                         plot(tvect, a[0,:], color = color_a1_coordinate, linewidth = lw, label = "${a_1}(Thruster)$")
                         plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
                         plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")
@@ -245,6 +249,17 @@ class TOPPInterface():
                         self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3)
 
                 plt.show()
+
+                fig.savefig(self.filename,format='svg', dpi=1200)
+
+                svgname = self.filename
+                pdfname = os.path.splitext(self.filename)[0]+'.pdf'
+
+                syscmd = 'mogrify -format pdf -trim '+svgname
+                os.system(syscmd)
+                syscmd = 'pdfcrop '+pdfname+' '+pdfname
+                os.system(syscmd)
+                os.system('cp /home/`whoami`/git/openrave/sandbox/WPI/images/*.pdf /home/`whoami`/git/papers/images/simulation/')
 
         def ReparameterizeTrajectory(self):
                 x = self.topp_inst.solver
@@ -352,3 +367,4 @@ class TOPPInterface():
                         a[i,:] = np.dot(G,qs[:,i]).flatten()
                         b[i,:] = np.dot(G,qss[:,i]).flatten()
                 return [a,b,c]
+

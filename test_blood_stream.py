@@ -37,52 +37,25 @@ if __name__ == "__main__":
         env.DisplayForces()
         time.sleep(0.5)
 
-        planner = MotionPlannerGeometrical(robot, env)
-        #planner = MotionPlannerKinodynamic(robot, env)
+        #planner = MotionPlannerGeometrical(robot, env)
+        planner = MotionPlannerKinodynamic(robot, env)
 
         rave_path = planner.GetPath()
 
         traj = Trajectory.from_ravetraj(rave_path)
         traj.info()
         traj.draw(env)
+
         #raw_input('Press <ENTER> to start.')
         time.sleep(1)
         traj.draw_delete()
 
         td = DeformationReachableSet(traj, env)
-        Nd = 5
-
         deform_success = td.deform(N_iter=100)
+
+        td.traj_deformed.save('trajectories/bloodstream_kinodynamic')
 
         if deform_success:
                 td.traj_deformed.PlotParametrization(env)
-
-                xt = td.traj_deformed.topp.traj0
-
-                with env.env:
-                        robot.GetLinks()[0].SetStatic(True)
-                        env.env.StopSimulation() 
-
-                t = 0.0
-                tstep = 0.05
-                robot.SetDOFValues(xt.Eval(t))
-                env.MakeRobotVisible()
-
-                while t < xt.duration:
-                        q = xt.Eval(t)
-                        dq = xt.Evald(t)
-                        ddq = xt.Evaldd(t)
-
-                        qn = q + tstep*dq + 0.5*tstep*tstep*ddq
-                        robot.SetDOFValues(qn)
-
-                        env.env.StepSimulation(tstep)
-                        time.sleep(tstep)
-                        t += tstep
-
-                robot.WaitForController(0)
-                print "xt = td.traj_current.topp.traj0"
-                raw_input('Enter any key to quit. ')
-        else:
-                print "deformation not successful"
-                raw_input('Enter any key to quit. ')
+                td.traj_deformed.execute(env, robot, tsleep=0.003, stepping=False)
+                #td.execute(robot, tsleep=0.003, stepping=True)
