@@ -136,7 +136,7 @@ class Trajectory():
 
         ### SYSTEM DYNAMICS
         def getControlMatrix(self, W):
-                AM = 5
+                AM = 1
 
                 ### car/sailboat
                 amin = np.array((-AM,-AM,-AM))

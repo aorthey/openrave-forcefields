@@ -112,11 +112,11 @@ class DeformationReachableSet(Deformation):
         ###############################################################
         #lambda_1 = 0.001
         #lambda_1 = 0.0005
-        lambda_1 = 0.0005
+        lambda_1 = 0.000
         #lambda_2 = 1
         #lambda_3 = 0.5*1e-2
-        lambda_2 = 2
-        lambda_3 = 0
+        lambda_2 = 0
+        lambda_3 = 0.5*1e-2
 
         smoothing_factor = 10.0
 
