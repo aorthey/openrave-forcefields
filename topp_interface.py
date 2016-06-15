@@ -3,6 +3,7 @@ import os
 from pylab import *
 import numpy as np
 from openravepy import *
+import parameters_dynamical_system as params
 import TOPP
 from TOPP import Utilities
 from TOPP import TOPPbindings
@@ -13,8 +14,6 @@ from TOPP import TOPPopenravepy
 class TOPPInterface():
         fs_title = 40
         fs_label = 30
-
-        system_name = "car3d"
 
         #DURATION_DISCRETIZATION = 0.0001
         #DURATION_DISCRETIZATION = 1
@@ -43,7 +42,7 @@ class TOPPInterface():
         trajectoryclass_ = []
 
         def initializeFromSpecifications(self, durationVector_in, trajectorystring, F, R, amin, amax, W, dW):
-                self.filename = 'images/topp_'+str(self.system_name)+'.png'
+                self.filename = 'images/topp_'+str(params.FILENAME)+'.png'
                 self.Ndim = W.shape[0]
                 self.Nwaypoints = W.shape[1]
 
@@ -193,7 +192,7 @@ class TOPPInterface():
                 plot(tvect, qvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\\theta$")
                 #plot(tvect, qdvect, f, linewidth=2)
                 #plot(tvect, qddvect, f, linewidth=2)
-                title('TOPP-Profile '+str(self.system_name), fontsize=self.fs_title, y=1.05)
+                title('TOPP-Profile '+str(params.system_name), fontsize=self.fs_title, y=1.05)
                 ylabel('Position \n$\\left(m\\right)$,$\\left(rad\\right)$', fontsize=self.fs_label)
                 ax1.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax1, fs)

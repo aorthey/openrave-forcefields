@@ -37,16 +37,16 @@ if __name__ == "__main__":
         env.DisplayForces()
         time.sleep(0.5)
 
-        planner = MotionPlannerGeometrical(robot, env)
-        #planner = MotionPlannerKinodynamic(robot, env)
+        #planner = MotionPlannerGeometrical(robot, env)
+        planner = MotionPlannerKinodynamic(robot, env)
 
         rave_path = planner.GetPath()
 
         traj = Trajectory.from_ravetraj(rave_path)
         traj.info()
         traj.draw(env)
-        traj.save('trajectories/bloodstream')
-
+        raw_input('Press <ENTER> to save trajectory')
+        traj.save('trajectories/bloodstream_kinodynamic')
         raw_input('Press <ENTER> to start deforming.')
         time.sleep(1)
         traj.draw_delete()
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         td = DeformationReachableSet(traj, env)
         deform_success = td.deform(N_iter=100)
 
-        td.traj_deformed.save('trajectories/bloodstream_deformed')
+        td.traj_deformed.save('trajectories/bloodstream_kinodynamic_deformed')
 
         if deform_success:
                 td.traj_deformed.PlotParametrization(env)

@@ -172,7 +172,7 @@ class ForceEnvironment():
                         self.robot.SetDOFLimits((-10,-10,-0.2,-2*pi),(10,10,0.2,2*pi))
                         self.robot.SetDOFValues((xi,yi,zi,ti))
                         self.robot.SetDOFVelocities((dxi,dyi,dzi,dti))
-                        self.robot.SetDOFVelocityLimits([10.0,10.0,0.0,5.0])
+                        self.robot.SetDOFVelocityLimits([1.0,1.0,0.0,5.0])
 
                         import parameters_dynamical_system as params
 
