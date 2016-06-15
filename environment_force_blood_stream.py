@@ -6,7 +6,7 @@ class EnvironmentBloodStream(ForceEnvironment):
         def __init__(self):
                 ForceEnvironment.__init__(self)
                 xmlenv='environments/the_blood_stream.env.xml'
-                xmlrobot='robots/pointrobot.robot.xml'
+                xmlrobot='robots/virus.robot.xml'
                 self.setrobotenv(xmlrobot,xmlenv)
 
         def GetCells(self):
