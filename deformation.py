@@ -271,6 +271,8 @@ class Deformation():
                                 dpmax[:,i] = np.linalg.norm(dq)
                                 Tstart = Tcur
 
+                self.critical_pt = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, 0)
+
                 DeformInfo = {}
                 DeformInfo['Ndim'] = Ndim
                 DeformInfo['Nwaypoints'] = Nwaypoints

@@ -14,11 +14,13 @@ class DeformationReachableSet(Deformation):
         ###############################################################
         #lambda_1 = 0.001
         #lambda_1 = 0.0005
-        lambda_1 = 0.0005
+        #lambda_1 = 0.0005
         #lambda_2 = 1
         #lambda_3 = 0.5*1e-2
-        lambda_2 = 1
-        lambda_3 = 0.5*1e-2
+        lambda_1 = 0.0
+        lambda_2 = 0.0
+        lambda_3 = 0.0
+        lambda_4 = 0.01
 
         smoothing_factor = 15.0
 
@@ -33,6 +35,7 @@ class DeformationReachableSet(Deformation):
                 eta = DeformInfo['eta']
 
                 dU = np.zeros((Ndim,Nwaypoints))
+
                 ###############################################################
                 ## check if path dynamically feasible => return if yes
                 ###############################################################
@@ -42,20 +45,23 @@ class DeformationReachableSet(Deformation):
 
                 from deformation_module_counterwrench import *
                 from deformation_module_projection_reachable_set import *
+                from deformation_module_stretch import *
                 from deformation_module_orientation import *
                 from deformation_module_endpoint_projection import *
 
                 d1 = DeformationModuleCounterWrench( DeformInfo )
                 d2 = DeformationModuleProjectionReachableSet( DeformInfo )
                 d3 = DeformationModuleOrientation( DeformInfo )
+                d4 = DeformationModuleStretch( DeformInfo )
 
                 dU += d1.get_update( self.lambda_1 )
                 dU += d2.get_update( self.lambda_2 )
                 dU += d3.get_update( self.lambda_3 )
+                dU += d4.get_update( self.lambda_4 )
 
                 DeformInfo['dU'] = dU
-                d4 = DeformationModuleEndPointProjection( DeformInfo )
-                dU += d4.get_update(0)
+                dend = DeformationModuleEndPointProjection( DeformInfo )
+                dU += dend.get_update(0)
 
                 #################################################################
                 ## update 

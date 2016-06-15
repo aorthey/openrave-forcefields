@@ -47,7 +47,7 @@ if __name__ == "__main__":
         traj.draw(env)
         traj.save('trajectories/bloodstream')
 
-        raw_input('Press <ENTER> to start deforming.')
+        #raw_input('Press <ENTER> to start deforming.')
         time.sleep(1)
         traj.draw_delete()
 
