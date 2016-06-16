@@ -21,7 +21,7 @@ class Trajectory():
         __metaclass__ = abc.ABCMeta
         DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.005
+        DISCRETIZATION_TIME_STEP = 0.01
 
         rave_traj = []
         traj = []
@@ -35,7 +35,7 @@ class Trajectory():
 
         ##drawing parameters
         ptsize = 0.03
-        critical_pt_size = 0.07
+        critical_pt_size = 0.08
 
         show_tangent_vector = False
         show_orientation_vector = True

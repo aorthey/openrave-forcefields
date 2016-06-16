@@ -6,7 +6,7 @@ class EnvironmentTheCounterStream(ForceEnvironment):
         def __init__(self):
                 ForceEnvironment.__init__(self)
                 xmlenv='environments/the_counterstream.env.xml'
-                xmlrobot='robots/pointrobot.robot.xml'
+                xmlrobot='robots/virus.robot.xml'
                 self.setrobotenv(xmlrobot,xmlenv)
 
         def GetCells(self):
@@ -18,19 +18,19 @@ class EnvironmentTheCounterStream(ForceEnvironment):
                 ##
                 self.forces = np.array((0.0,0.0,0.0))
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
-                self.forces = np.vstack([self.forces,(5.0,0.0,0.0)])
-                self.forces = np.vstack([self.forces,(-5.0,0.0,0.0)])
+                self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
+                self.forces = np.vstack([self.forces,(-0.5,0.0,0.0)])
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
                 return self.forces
 
         def RobotGetInitialPosition(self):
-                return [-4.0,1.0,0.1,-pi,0,0,0,0]
+                return [-5.0,-1.0,0.1,pi/2,0,0,0,0]
 
         def RobotGetGoalPosition(self):
-                return [5.0,-3.0,0.1,-pi/2,0,0,0,0]
+                return [5.0,-3.0,0.1,pi/2,0,0,0,0]
 
 
 
 
 if __name__ == "__main__":
-        env = EnvironmentTheStream()
+        env = EnvironmentTheCounterStream()

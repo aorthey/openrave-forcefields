@@ -546,10 +546,21 @@ class ForceEnvironment():
 
                 self.ResetForceHandles()
                 for i in range(0,len(self.cells)):
-                        h = self.DrawBorderAroundCell(self.cells[i])
-                        self.AddForceHandles(h)
+                        #h = self.DrawBorderAroundCell(self.cells[i])
+                        #self.AddForceHandles(h)
                         h = self.DrawForceArrowsInCell(self.cells[i], self.forces[i])
                         self.AddForceHandles(h)
+        def GetName(self):
+                import os
+                from os.path import basename
+                xml = self.env_xml
+                xml = basename(xml)
+                xml =  os.path.splitext(xml)[0]
+                xml =  os.path.splitext(xml)[0]
+                xml =  os.path.splitext(xml)[0]
+                return xml
+
+
 
 if __name__ == "__main__":
         env = ForceEnvironment()

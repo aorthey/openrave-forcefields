@@ -23,6 +23,7 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
                 S = None
                 for link in self.GetCells():
                         Tall = link.GetTransform()
+                        print link
                         G1 = link.GetGeometries()[0]
                         B = G1.GetBoxExtents()
                         T = G1.GetTransform()
@@ -130,6 +131,12 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
 
 
         def DisplayForces(self):
+                self.FORCE_FIELD_COLOR = np.array((0.5,0.5,0.9,0.3))
+                self.FORCE_FIELD_MIN_SPACING = 0.5
+                self.FORCE_FIELD_MAX_SPACING = 1.0
+                self.FORCE_FIELD_MAX_FORCE = 3.0
+                self.FORCE_FIELD_PT_SIZE = 4
+                self.FORCE_FIELD_ARROW_SIZE = 0.005
                 if self.forces is None:
                         self.forces = self.GetForces()
                 if self.cells is None:
@@ -144,11 +151,11 @@ class EnvironmentHumanoidContactWorld(EnvironmentHumanoid):
                         G1 = C.GetGeometries()[0]
                         B = G1.GetBoxExtents()
                         T = G1.GetTransform()
-                        T[2,3] = 1.0
-                        B[2] = 1.0
+                        T[2,3] = 1.5
+                        B[2] = 1.5
                         ######
-                        h = self.DrawBoxMesh(T,B)
-                        self.AddForceHandles([h])
+                        #h = self.DrawBoxMesh(T,B)
+                        #self.AddForceHandles([h])
                         ######
                         F = self.forces[i]
                         h = self.DrawForceArrowsInBox(T, B, F)

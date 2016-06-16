@@ -17,8 +17,9 @@ class Deformation():
 
         ## number of steps of a linear homotopy deformation between two given
         ## trajectories
-        DEFORMATION_STEPS = 10
+        DEFORMATION_STEPS = 50
         COLLISION_ENABLED = True
+        PAUSE_BEFORE_DEFORM = False
 
         env = []
         traj_ori = []
@@ -214,6 +215,9 @@ class Deformation():
                         ti1 = time.time()
                         self.handle = self.traj_current.draw(self.env, keep_handle=False, critical_pt = self.critical_pt)
                         ti2 = time.time()
+
+                        if self.PAUSE_BEFORE_DEFORM and i==0:
+                                raw_input('Press <ENTER> to start deforming.')
                         tdraw += ti2-ti1
 
                 t2 = time.time()

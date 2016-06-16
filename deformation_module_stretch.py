@@ -50,19 +50,13 @@ class DeformationModuleStretch(DeformationModule):
                                         tangent, Wori, dWori, first_pt, last_pt)
                         Wdir = np.zeros((Ndim,Nwaypoints))
 
-                        #for i in idxW1:
-                                #Wdir[:,i] = -tangent
-                        #for i in idxW2:
-                                #Wdir[:,i] = 0 
-                        #for i in idxW3:
-                                #Wdir[:,i] = tangent+0.1*normal
+                        #### apply deform potential onto reidemeister twist
 
-                        #print idxW1,idxW2,idxW3
+                        for idx in idxW1:
+                                Wdir[:,idx] = -tangent
 
-                        idx = idxW2[-1]
-                        Wdir[:,idx] = -tangent
-                        idx2 = idxW2[0]
-                        #Wdir[:,idx] = tangent
+                        for idx in idxW2:
+                                Wdir[:,idx] = tangent + normal
 
                         draw_Wpos = Wori[0:3,idxW2[-1]]
                         draw_Wdir = np.vstack((draw_Wpos,draw_Wpos+Wdir[0:3,idx]))
@@ -77,17 +71,24 @@ class DeformationModuleStretch(DeformationModule):
                                                 linewidth=5,
                                                 colors=np.array(((0.0,0.0,1.0,1.0))))
                                 self.handler.append(h)
-                        #Wdir[:,idxW2[-1]] = tangent
-                        #Wdir[:,idxW2[int(len(idxW2)/2)]] = normal
-                        #sys.exit(0)
 
                         for i in range(0,Nwaypoints):
                                 A = self.SmoothVector(traj,i,Wori,smoothing_factor=10.0)
                                 dUtmp[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
                                 #dUtmp[:,i] += lambda_coeff * Wdir[:,i]
 
+                        #### COUNTERACT any deformation on the left part of the
+                        #### twist
+                        #for idx in idxW2:
+
+                        #idx = idxW3[0]
+                        #A = self.SmoothVector(traj,idx,Wori,smoothing_factor=15.0)
+                        #for i in range(0,Nwaypoints):
+                        #        dUtmp[:,i] += -A[i]*dUtmp[:,idx]
+
                         #Wdirtmp = np.zeros((Ndim))
                         #Wdirtmp[:] = dUtmp[:,idx2]
+
                         #A = self.SmoothVector(traj,idx2,Wori,smoothing_factor=15.0)
                         #for i in range(0,Nwaypoints):
                                 #dUtmp[:,i] += -A[i]*Wdirtmp
@@ -95,19 +96,19 @@ class DeformationModuleStretch(DeformationModule):
                         Wnext = Wori + dUtmp
                         Ic = traj.GetFirstCollisionPointIdx(env, Wnext)
 
-                        print "[Stretch]",Ic
-                        while Ic is not None:
-                                dW = Wnext[:,Ic] - Wnext[:,Ic-1]
-                                ## slide along contact
-                                print "[Stretch]: sliding along contact, standby"
-                                A = self.SmoothVector(traj,Ic,Wori,smoothing_factor=15.0)
-                                for i in range(0,Nwaypoints):
-                                        dUtmp[:,i] += -A[i]*dW
-                                Wnext = Wori + dUtmp
-                                Ic = traj.GetFirstCollisionPointIdx(env, Wnext)
-
-
                         ### CHECK IF IN COLLISION
+                        return dUtmp
+                        #while Ic is not None:
+                        #print "[Stretch]",Ic
+                        #while Ic is not None:
+                        #        dW = Wnext[:,Ic] - Wnext[:,Ic-1]
+                        #        ## slide along contact
+                        #        print "[Stretch]: sliding along contact, standby"
+                        #        A = self.SmoothVector(traj,Ic,Wori,smoothing_factor=15.0)
+                        #        for i in range(0,Nwaypoints):
+                        #                dUtmp[:,i] += -A[i]*dW
+                        #        Wnext = Wori + dUtmp
+                        #        Ic = traj.GetFirstCollisionPointIdx(env, Wnext)
 
 
                 else:
@@ -119,8 +120,6 @@ class DeformationModuleStretch(DeformationModule):
                                         traj.DISCRETIZATION_TIME_STEP)
 
                 return dUtmp
-
-                #sys.exit(0)
 
         def get_name(self):
                 return "reidemeister stretch"
@@ -208,7 +207,7 @@ class DeformationModuleStretch(DeformationModule):
 
                 #print Wupdate
 
-                dUtmp = Wupdate
+                dUtmp = 0.4*Wupdate
                 #for i in range(0,Nwaypoints):
                         #A = self.SmoothVector(traj,i,W, smoothing_factor=0.2)
                         #dUtmp[:,i] += np.dot(A,( Wupdate.T))

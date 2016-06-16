@@ -55,8 +55,6 @@ if __name__ == "__main__":
         right_leg_tf = robot.GetManipulator('r_leg').GetTransform()
         left_arm_tf = robot.GetManipulator('l_arm').GetTransform()
         right_arm_tf = robot.GetManipulator('r_arm').GetTransform()
-        #right_hand_surface = 19
-        #S.SampleSurface(100,19,env)
 
         #raw_input('Press <ENTER> to sample stances.')
         with env.env:

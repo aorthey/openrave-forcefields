@@ -27,8 +27,8 @@ from motion_planner_kinodynamic import MotionPlannerKinodynamic
 if __name__ == "__main__":
 
         #######################################################################
-        env = EnvironmentBloodStream()
-        #env = EnvironmentTheCounterStream()
+        #env = EnvironmentBloodStream()
+        env = EnvironmentTheCounterStream()
         #env = EnvironmentTheStream()
         #######################################################################
 
@@ -45,16 +45,16 @@ if __name__ == "__main__":
         traj = Trajectory.from_ravetraj(rave_path)
         traj.info()
         traj.draw(env)
-        traj.save('trajectories/bloodstream')
+        xml = env.GetName()
+        traj.save('trajectories/'+xml)
 
-        #raw_input('Press <ENTER> to start deforming.')
-        time.sleep(1)
+        time.sleep(2)
         traj.draw_delete()
 
         td = DeformationReachableSet(traj, env)
         deform_success = td.deform(N_iter=100)
 
-        td.traj_deformed.save('trajectories/bloodstream_deformed')
+        td.traj_deformed.save('trajectories/'+xml+'_deformed')
 
         if deform_success:
                 td.traj_deformed.PlotParametrization(env)

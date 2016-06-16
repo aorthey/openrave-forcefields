@@ -198,6 +198,7 @@ class GIKInterface():
                                                 #returnclosest=False,
                                                 #checkcollisionlink=['l_foot','r_foot'],
                                                 #obstacles=obstacle_list,
+                                                execute=True,
                                                 maniptm=maniptm_list,
                                                 support=support_list,
                                                 printcommand=True)
@@ -209,8 +210,8 @@ class GIKInterface():
                                         print "LEFT FOOT POS     :",Cll[0:3,3]
                                         print "RIGHT FOOT POS    :",Crl[0:3,3]
                                         print "------------------------------------------------------- "
-                                        return None
-                                        #sys.exit(0)
+                                        #return None
+                                        sys.exit(0)
 
 
                                 robot.SetActiveDOFValues(q_gik)
