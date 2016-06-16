@@ -40,8 +40,9 @@ class DeformationModule():
         def get_name(self):
                 pass
 
-        def SmoothVector(self, traj, Ncritical, W):
-                smoothing_factor = self.DeformInfo['smoothing_factor']
+        def SmoothVector(self, traj, Ncritical, W, smoothing_factor=None):
+                if smoothing_factor is None:
+                        smoothing_factor = self.DeformInfo['smoothing_factor']
                 [Ndim, Nwaypoints] = traj.getWaypointDim(W)
                 A = np.zeros(Nwaypoints)
 

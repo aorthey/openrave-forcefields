@@ -22,11 +22,12 @@ class DeformationReachableSet(Deformation):
         lambda_3 = 0.0
         lambda_4 = 0.01
 
-        smoothing_factor = 15.0
+        smoothing_factor = 10.0
 
         def deform_onestep(self, computeNewCriticalPoint = True):
 
                 DeformInfo = self.extractInfoFromTrajectory(self.traj_deformed)
+                print "!!!!!!!!!!!!",DeformInfo['critical_pt']
 
                 Ndim = DeformInfo['Ndim']
                 Nwaypoints = DeformInfo['Nwaypoints']
