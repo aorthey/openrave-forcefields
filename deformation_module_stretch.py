@@ -6,17 +6,19 @@ from util import *
 
 class DeformationModuleStretch(DeformationModule):
 
+        DEBUG = False
+        handler = []
         def get_gradient(self, lambda_coeff):
 
                 traj = self.DeformInfo['traj']
-                #env = self.DeformInfo['env']
+                env = self.DeformInfo['env']
                 Wori = self.DeformInfo['Wori']
                 dWori = self.DeformInfo['dWori']
                 Ndim = self.DeformInfo['Ndim']
                 Nwaypoints = self.DeformInfo['Nwaypoints']
                 critical_pt = self.DeformInfo['critical_pt']
 
-                #dUtmp = np.zeros((Ndim,Nwaypoints))
+                dUtmp = np.zeros((Ndim,Nwaypoints))
                 tangent = dWori[:,critical_pt]
                 tangent /= np.linalg.norm(tangent)
                 normal = np.dot(Rz(pi/2),np.array((tangent[0],tangent[1],1)))
@@ -47,7 +49,6 @@ class DeformationModuleStretch(DeformationModule):
                         [idxW1,idxW2,idxW3] = self.IdentifyReidemeisterSubpaths(
                                         tangent, Wori, dWori, first_pt, last_pt)
                         Wdir = np.zeros((Ndim,Nwaypoints))
-                        dUtmp = np.zeros((Ndim,Nwaypoints))
 
                         #for i in idxW1:
                                 #Wdir[:,i] = -tangent
@@ -56,14 +57,58 @@ class DeformationModuleStretch(DeformationModule):
                         #for i in idxW3:
                                 #Wdir[:,i] = tangent+0.1*normal
 
-                        print idxW1,idxW2,idxW3
-                        Wdir[:,idxW2[0]] = normal
-                        sys.exit(0)
+                        #print idxW1,idxW2,idxW3
+
+                        idx = idxW2[-1]
+                        Wdir[:,idx] = -tangent
+                        idx2 = idxW2[0]
+                        #Wdir[:,idx] = tangent
+
+                        draw_Wpos = Wori[0:3,idxW2[-1]]
+                        draw_Wdir = np.vstack((draw_Wpos,draw_Wpos+Wdir[0:3,idx]))
+
+                        if self.DEBUG:
+                                h= env.env.plot3(points=draw_Wpos,
+                                                pointsize=0.02,
+                                                colors=np.array(((1.0,0.2,1.0,1.0))),
+                                                drawstyle=1)
+                                self.handler.append(h)
+                                h= env.env.drawlinestrip(points=draw_Wdir,
+                                                linewidth=5,
+                                                colors=np.array(((0.0,0.0,1.0,1.0))))
+                                self.handler.append(h)
+                        #Wdir[:,idxW2[-1]] = tangent
+                        #Wdir[:,idxW2[int(len(idxW2)/2)]] = normal
+                        #sys.exit(0)
 
                         for i in range(0,Nwaypoints):
-                                A = self.SmoothVector(traj,i,Wori)
+                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=10.0)
                                 dUtmp[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
                                 #dUtmp[:,i] += lambda_coeff * Wdir[:,i]
+
+                        #Wdirtmp = np.zeros((Ndim))
+                        #Wdirtmp[:] = dUtmp[:,idx2]
+                        #A = self.SmoothVector(traj,idx2,Wori,smoothing_factor=15.0)
+                        #for i in range(0,Nwaypoints):
+                                #dUtmp[:,i] += -A[i]*Wdirtmp
+
+                        Wnext = Wori + dUtmp
+                        Ic = traj.GetFirstCollisionPointIdx(env, Wnext)
+
+                        print "[Stretch]",Ic
+                        while Ic is not None:
+                                dW = Wnext[:,Ic] - Wnext[:,Ic-1]
+                                ## slide along contact
+                                print "[Stretch]: sliding along contact, standby"
+                                A = self.SmoothVector(traj,Ic,Wori,smoothing_factor=15.0)
+                                for i in range(0,Nwaypoints):
+                                        dUtmp[:,i] += -A[i]*dW
+                                Wnext = Wori + dUtmp
+                                Ic = traj.GetFirstCollisionPointIdx(env, Wnext)
+
+
+                        ### CHECK IF IN COLLISION
+
 
                 else:
                         ### identify the three reidemeister segments, or create them
@@ -161,10 +206,7 @@ class DeformationModuleStretch(DeformationModule):
                         Wupdate[:,last_pt+Nclip+i] = Wcirc[:,i] - W[:,last_pt+Nclip+i]
                         Wupdate[:,Nmid+i] = Wcirc[:,Nprev+i] - W[:,Nmid+i]
 
-                print Wupdate
-
-                #Wnext = W + Wupdate
-                #plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt],'-or',linewidth=8)
+                #print Wupdate
 
                 dUtmp = Wupdate
                 #for i in range(0,Nwaypoints):
@@ -173,19 +215,20 @@ class DeformationModuleStretch(DeformationModule):
 
                 Wnext = W + dUtmp
 
-                ## original line
-                plt.plot(W[0,last_pt:first_pt],W[1,last_pt:first_pt]+0.01,'-og',linewidth=8)
-                ## infinitesimal twist line
+                if self.DEBUG:
+                        ## original line
+                        plt.plot(W[0,last_pt:first_pt],W[1,last_pt:first_pt]+0.01,'-og',linewidth=8)
+                        ## infinitesimal twist line
 
-                plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]-0.02,'-or',linewidth=1,markersize=2)
+                        plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]-0.02,'-or',linewidth=1,markersize=2)
 
-                #plt.plot(W[0,last_pt+Nclip:first_pt-Nclip],W[1,last_pt+Nclip:first_pt-Nclip],'-or')
-                plt.plot(Wmid[0],Wmid[1],'-og',markersize=10)
+                        #plt.plot(W[0,last_pt+Nclip:first_pt-Nclip],W[1,last_pt+Nclip:first_pt-Nclip],'-or')
+                        plt.plot(Wmid[0],Wmid[1],'-og',markersize=10)
 
-                circle = plt.Circle((Wmid[0],Wmid[1]),ds_ball,color='r',fill=False)
-                plt.gca().add_artist(circle)
-                plt.axis('equal')
-                plt.show()
+                        circle = plt.Circle((Wmid[0],Wmid[1]),ds_ball,color='r',fill=False)
+                        plt.gca().add_artist(circle)
+                        plt.axis('equal')
+                        plt.show()
                 return dUtmp
 
 
@@ -250,18 +293,18 @@ class DeformationModuleStretch(DeformationModule):
                         Wdir[:,j]/=np.linalg.norm(Wdir[:,j])
                         Wdir[:,j]*=0.1
 
+                if self.DEBUG:
+                        plt.plot([Wpos[0,:],Wpos[0,:]+Wdir[0,:]],[Wpos[1,:],Wpos[1,:]+Wdir[1,:]],'-om')
+                        #Ws1 = Wpos[0:2,sec1_start:sec1_end]
+                        Ws1 = Wpos[0:2,sec1_end:sec1_start]
+                        Ws2 = Wpos[0:2,sec2_end:sec2_start]
+                        Ws3 = Wpos[0:2,sec3_end:sec3_start]
+                        plt.plot(Ws1[0,:],Ws1[1,:],'-or',linewidth=6)
+                        plt.plot(Ws2[0,:],Ws2[1,:],'-ob',linewidth=6)
+                        plt.plot(Ws3[0,:],Ws3[1,:],'-og',linewidth=6)
+                        #plt.plot([Wpos[0,-1],Wpos[0,-1]+0.1*tangent[0]],[Wpos[1,-1],Wpos[1,-1]+0.1*tangent[1]],'-ob',linewidth=6)
 
-                plt.plot([Wpos[0,:],Wpos[0,:]+Wdir[0,:]],[Wpos[1,:],Wpos[1,:]+Wdir[1,:]],'-om')
-                #Ws1 = Wpos[0:2,sec1_start:sec1_end]
-                Ws1 = Wpos[0:2,sec1_end:sec1_start]
-                Ws2 = Wpos[0:2,sec2_end:sec2_start]
-                Ws3 = Wpos[0:2,sec3_end:sec3_start]
-                plt.plot(Ws1[0,:],Ws1[1,:],'-or',linewidth=6)
-                plt.plot(Ws2[0,:],Ws2[1,:],'-ob',linewidth=6)
-                plt.plot(Ws3[0,:],Ws3[1,:],'-og',linewidth=6)
-                #plt.plot([Wpos[0,-1],Wpos[0,-1]+0.1*tangent[0]],[Wpos[1,-1],Wpos[1,-1]+0.1*tangent[1]],'-ob',linewidth=6)
-
-                plt.show()
+                        plt.show()
 
                 print "section1:",sec1_start,"->",sec1_end
                 print "section2:",sec2_start,"->",sec2_end

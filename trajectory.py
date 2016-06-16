@@ -37,14 +37,14 @@ class Trajectory():
         ptsize = 0.03
         critical_pt_size = 0.07
 
-        show_tangent_vector = True
+        show_tangent_vector = False
         show_orientation_vector = True
 
         lw_path = 10
         lw_tangent = 3
         lw_orientation = 3
         FONT_SIZE = 20
-        dVECTOR_LENGTH = 0.5
+        dVECTOR_LENGTH = 0.4
         trajectory_orientation_color = np.array((0.9,0.9,0.9,0.3))
         trajectory_tangent_color = np.array((0.9,0.2,0.9,0.3))
         trajectory_color_deformation = np.array((0.9,0.2,0.9,0.9))
@@ -312,6 +312,14 @@ class Trajectory():
                         if env.CheckCollisionAtX(W[:,i]):
                                 return True
                 return False
+
+        def GetFirstCollisionPointIdx(self, env, W):
+                [Ndim,Nwaypoints] = self.getWaypointDim(W)
+
+                for i in range(0,Nwaypoints):
+                        if env.CheckCollisionAtX(W[:,i]):
+                                return i
+                return None
 
         def get_forces_at_waypoints(self, W, env):
                 Ndim = W.shape[0]
