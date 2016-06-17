@@ -45,11 +45,6 @@ class Deformation():
                 self.traj_display = copy.copy(trajectory)
                 self.critical_pt = 0
 
-        @abc.abstractmethod 
-        def deform_onestep(self):
-                pass
-
-
         def deform(self, N_iter = 1):
                 computeNewCriticalPoint = True
                 for i in range(0,N_iter):
@@ -220,6 +215,7 @@ class Deformation():
                                 raw_input('Press <ENTER> to start deforming.')
                         tdraw += ti2-ti1
 
+                self.handle = self.traj_current.draw(self.env, keep_handle=False) 
                 t2 = time.time()
                 if self.DEBUG:
                         print "DEFORMATION TIME(s): ",t2-t1," (drawing:",tdraw,")"

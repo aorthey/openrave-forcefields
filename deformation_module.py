@@ -5,9 +5,11 @@ class DeformationModule():
         __metaclass__ = abc.ABCMeta
         DeformInfo = {}
         COLLISION_ENABLED = True
+        lambda_coeff = None
 
         def __init__(self, DeformInfoIn):
                 self.DeformInfo = DeformInfoIn
+
 
         def get_update(self, lambda_coeff):
 
@@ -27,6 +29,7 @@ class DeformationModule():
                                 print "## [",self.get_name(),"] update: ok, lambda:",lambda_coeff
                         else:
                                 print "## [",self.get_name(),"] >>>>> collision <<<<<"
+                                ### make lambda smaller ?
                 else:
                         dU += dUtmp
 

@@ -18,7 +18,7 @@ class EnvironmentTheCounterStream(ForceEnvironment):
                 ##
                 self.forces = np.array((0.0,0.0,0.0))
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
-                self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
+                self.forces = np.vstack([self.forces,(1.0,0.0,0.0)])
                 self.forces = np.vstack([self.forces,(-0.5,0.0,0.0)])
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
                 return self.forces
@@ -27,7 +27,7 @@ class EnvironmentTheCounterStream(ForceEnvironment):
                 return [-5.0,-1.0,0.1,pi/2,0,0,0,0]
 
         def RobotGetGoalPosition(self):
-                return [5.0,-3.0,0.1,pi/2,0,0,0,0]
+                return [5.0,-3.0,0.1,-pi/2,0,0,0,0]
 
 
 

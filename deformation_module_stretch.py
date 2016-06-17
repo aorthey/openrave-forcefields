@@ -52,30 +52,16 @@ class DeformationModuleStretch(DeformationModule):
 
                         #### apply deform potential onto reidemeister twist
 
+                        print idxW1,idxW2,idxW3
                         for idx in idxW1:
                                 Wdir[:,idx] = -tangent
 
                         for idx in idxW2:
-                                Wdir[:,idx] = tangent + normal
-
-                        draw_Wpos = Wori[0:3,idxW2[-1]]
-                        draw_Wdir = np.vstack((draw_Wpos,draw_Wpos+Wdir[0:3,idx]))
-
-                        if self.DEBUG:
-                                h= env.env.plot3(points=draw_Wpos,
-                                                pointsize=0.02,
-                                                colors=np.array(((1.0,0.2,1.0,1.0))),
-                                                drawstyle=1)
-                                self.handler.append(h)
-                                h= env.env.drawlinestrip(points=draw_Wdir,
-                                                linewidth=5,
-                                                colors=np.array(((0.0,0.0,1.0,1.0))))
-                                self.handler.append(h)
+                                Wdir[:,idx] = 0.5*normal
 
                         for i in range(0,Nwaypoints):
-                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=10.0)
+                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=30.0)
                                 dUtmp[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
-                                #dUtmp[:,i] += lambda_coeff * Wdir[:,i]
 
                         #### COUNTERACT any deformation on the left part of the
                         #### twist
@@ -124,19 +110,129 @@ class DeformationModuleStretch(DeformationModule):
         def get_name(self):
                 return "reidemeister stretch"
 
+
+        def ScaleFactorBall(self, i, Nprev, ds_ball):
+                d = ds_ball * np.sqrt((i)/(Nprev-1.0))
+                #d = ds_ball * np.sqrt((i+1)/(Nprev-1.0))
+                return d
+
+        def ContainsReidemeisterTwist( self, tangent, W, first_pt, last_pt ):
+                i = first_pt 
+                dW = W[:,i]-W[:,i-1]
+                direction = np.dot(dW,tangent)
+                sec1_start = i
+                while direction > 0:
+                        if i <= last_pt:
+                                return False
+                        dW = W[:,i]-W[:,i-1]
+                        direction = np.dot(dW,tangent)
+                        i-=1
+                print "Found reidemeister twist at",i
+                return True
+
+        def IdentifyReidemeisterSubpaths( self, tangent, W, dW, first_pt, last_pt ):
+                i = first_pt 
+
+                #dW = W[:,i]-W[:,i-1]
+                direction = np.dot(dW[:,i],tangent)
+                sec1_start = i
+
+                while direction > 0:
+                        if i <= last_pt:
+                                print "end section 1"
+                                break
+                        #dW = W[:,i]-W[:,i-1]
+                        direction = np.dot(dW[:,i],tangent)
+                        i-=1
+
+                sec1_end = i
+
+                if i <= last_pt:
+                        print "reidemeister subpath:",
+                        print "only one subpath exist"
+                        sys.exit(0)
+                else:
+                        sec2_start = i
+                        print "identify section 2/3"
+                        epsilon = 0.01
+                        while direction <= epsilon:
+                                if i <= last_pt:
+                                        print "end section 2"
+                                        break
+                                #dW = W[:,i]-W[:,i-1]
+                                direction = np.dot(dW[:,i],tangent)
+                                print direction
+                                i-=1
+                        sec2_end = i
+                        sec3_start = sec2_end
+
+                        while direction > 0:
+                                if i <= last_pt:
+                                        print "end section 3"
+                                        break
+                                direction = np.dot(dW[:,i],tangent)
+                                i-=1
+                        sec3_end = i
+
+                Wpos = W[:,last_pt:first_pt]
+
+                Wdir = 0.2*dW[:,last_pt:first_pt]
+
+                for j in range(0,Wdir.shape[1]):
+                        Wdir[:,j]/=np.linalg.norm(Wdir[:,j])
+                        Wdir[:,j]*=0.1
+
+                if self.DEBUG:
+                        plt.plot([Wpos[0,:],Wpos[0,:]+Wdir[0,:]],[Wpos[1,:],Wpos[1,:]+Wdir[1,:]],'-om')
+                        plt.plot(Wpos[0,:],Wpos[1,:],'-k',linewidth=2)
+                        #Ws1 = Wpos[0:2,sec1_start:sec1_end]
+                        Ws1 = Wpos[0:2,sec1_end:sec1_start]
+                        Ws2 = Wpos[0:2,sec2_end:sec2_start]
+                        Ws3 = Wpos[0:2,sec3_end:sec3_start]
+                        plt.plot(Ws1[0,:],Ws1[1,:],'-or',linewidth=6)
+                        plt.plot(Ws2[0,:],Ws2[1,:],'-ob',linewidth=6)
+                        plt.plot(Ws3[0,:],Ws3[1,:],'-og',linewidth=6)
+                        #plt.plot([Wpos[0,-1],Wpos[0,-1]+0.1*tangent[0]],[Wpos[1,-1],Wpos[1,-1]+0.1*tangent[1]],'-ob',linewidth=6)
+
+                        plt.show()
+
+                print "section1:",sec1_start,"->",sec1_end
+                print "section2:",sec2_start,"->",sec2_end
+                print "section3:",sec3_start,"->",sec3_end
+                idx1 = np.arange(sec1_end,sec1_start)
+                idx2 = np.arange(sec2_end,sec2_start)
+                idx3 = np.arange(sec3_end,sec3_start)
+                return [idx1,idx2,idx3]
+
+        def GetClosestDistanceLineToPoint( self, p1, p2, dp1 ):
+                ### start at p1, move along dp1 until minimum to p2 reached
+                dp1 /= np.linalg.norm(dp1)
+
+                dold = 1e5
+                dnew = 1e3
+                gamma = 0.0
+                gamma_step = 1e-3
+                while dnew < dold:
+                        dold = dnew
+                        pn = p1 - gamma*dp1
+                        dnew = np.linalg.norm(p2-pn)
+                        gamma += gamma_step
+
+                pn = p1 - (gamma-gamma_step)*dp1
+                return [np.linalg.norm(pn-p2),pn]
+
         def InfinitesimalReidemeisterType1Twist( self, traj, tangent, W, first_pt, last_pt, ds_ball):
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
                 dUtmp = np.zeros((Ndim,Nwaypoints))
-                Mclip = 0.33
+                Mclip = 0.4
                 ### clip the first Mclip percent
                 N = first_pt - last_pt
                 Nclip = int(Mclip*N)
                 print N,Mclip,Nclip
-                N = N - 2*Nclip
 
+                N = N - 2*Nclip
                 ds_ball = ds_ball*int(N/2)
-                #ds_ball = ds_ball*0.5
 
                 #N = int(0.66*(first_pt - last_pt))
                 if N < 3:
@@ -162,7 +258,7 @@ class DeformationModuleStretch(DeformationModule):
                 #Nnext = W[:,Nmid:first_pt-Nclip].shape[1]
                 Nprev = W[:,last_pt+Nclip:Nmid].shape[1]
 
-                piclip = pi/10
+                piclip = pi/32
                 pistep = (pi/2-2*piclip)/float(Nprev-1.0)
 
                 tangentSE2 = np.zeros(3)
@@ -207,19 +303,18 @@ class DeformationModuleStretch(DeformationModule):
 
                 #print Wupdate
 
-                dUtmp = 0.4*Wupdate
-                #for i in range(0,Nwaypoints):
-                        #A = self.SmoothVector(traj,i,W, smoothing_factor=0.2)
-                        #dUtmp[:,i] += np.dot(A,( Wupdate.T))
+                dUtmp = 0.5*Wupdate
 
                 Wnext = W + dUtmp
 
                 if self.DEBUG:
                         ## original line
                         plt.plot(W[0,last_pt:first_pt],W[1,last_pt:first_pt]+0.01,'-og',linewidth=8)
-                        ## infinitesimal twist line
 
-                        plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]-0.02,'-or',linewidth=1,markersize=2)
+                        ## infinitesimal twist line
+                        for i in range(last_pt,first_pt):
+                                Wnext[1,i]+=i*0.001
+                        plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]-0.03,'-or',linewidth=1,markersize=2)
 
                         #plt.plot(W[0,last_pt+Nclip:first_pt-Nclip],W[1,last_pt+Nclip:first_pt-Nclip],'-or')
                         plt.plot(Wmid[0],Wmid[1],'-og',markersize=10)
@@ -228,104 +323,6 @@ class DeformationModuleStretch(DeformationModule):
                         plt.gca().add_artist(circle)
                         plt.axis('equal')
                         plt.show()
+                print "INSIDE:",Wnext
+                print dUtmp
                 return dUtmp
-
-
-        def ScaleFactorBall(self, i, Nprev, ds_ball):
-                d = ds_ball * np.sqrt((i+1)/(Nprev-1.0))
-                return d
-
-        def ContainsReidemeisterTwist( self, tangent, W, first_pt, last_pt ):
-                i = first_pt 
-                dW = W[:,i]-W[:,i-1]
-                direction = np.dot(dW,tangent)
-                sec1_start = i
-                while direction > 0:
-                        if i <= last_pt:
-                                return False
-                        dW = W[:,i]-W[:,i-1]
-                        direction = np.dot(dW,tangent)
-                        i-=1
-
-                return True
-
-        def IdentifyReidemeisterSubpaths( self, tangent, W, dW, first_pt, last_pt ):
-                i = first_pt 
-
-                #dW = W[:,i]-W[:,i-1]
-                direction = np.dot(dW[:,i],tangent)
-                sec1_start = i
-
-                while direction > 0:
-                        if i <= last_pt:
-                                print "end section 1"
-                                break
-                        #dW = W[:,i]-W[:,i-1]
-                        direction = np.dot(dW[:,i],tangent)
-                        i-=1
-
-                sec1_end = i
-
-                if i <= last_pt:
-                        print "reidemeister subpath:",
-                        print "only one subpath exist"
-                        sys.exit(0)
-                else:
-                        sec2_start = i
-                        print "identify section 2/3"
-                        while direction <= 0:
-                                if i <= last_pt:
-                                        print "end section 2"
-                                        break
-                                #dW = W[:,i]-W[:,i-1]
-                                direction = np.dot(dW[:,i],tangent)
-                                i-=1
-                        sec2_end = i
-                        sec3_start = sec2_end
-                        sec3_end = last_pt
-
-                Wpos = W[:,last_pt:first_pt]
-
-                Wdir = 0.2*dW[:,last_pt:first_pt]
-
-                for j in range(0,Wdir.shape[1]):
-                        Wdir[:,j]/=np.linalg.norm(Wdir[:,j])
-                        Wdir[:,j]*=0.1
-
-                if self.DEBUG:
-                        plt.plot([Wpos[0,:],Wpos[0,:]+Wdir[0,:]],[Wpos[1,:],Wpos[1,:]+Wdir[1,:]],'-om')
-                        #Ws1 = Wpos[0:2,sec1_start:sec1_end]
-                        Ws1 = Wpos[0:2,sec1_end:sec1_start]
-                        Ws2 = Wpos[0:2,sec2_end:sec2_start]
-                        Ws3 = Wpos[0:2,sec3_end:sec3_start]
-                        plt.plot(Ws1[0,:],Ws1[1,:],'-or',linewidth=6)
-                        plt.plot(Ws2[0,:],Ws2[1,:],'-ob',linewidth=6)
-                        plt.plot(Ws3[0,:],Ws3[1,:],'-og',linewidth=6)
-                        #plt.plot([Wpos[0,-1],Wpos[0,-1]+0.1*tangent[0]],[Wpos[1,-1],Wpos[1,-1]+0.1*tangent[1]],'-ob',linewidth=6)
-
-                        plt.show()
-
-                print "section1:",sec1_start,"->",sec1_end
-                print "section2:",sec2_start,"->",sec2_end
-                print "section3:",sec3_start,"->",sec3_end
-                idx1 = np.arange(sec1_end,sec1_start)
-                idx2 = np.arange(sec2_end,sec2_start)
-                idx3 = np.arange(sec3_end,sec3_start)
-                return [idx1,idx2,idx3]
-
-        def GetClosestDistanceLineToPoint( self, p1, p2, dp1 ):
-                ### start at p1, move along dp1 until minimum to p2 reached
-                dp1 /= np.linalg.norm(dp1)
-
-                dold = 1e5
-                dnew = 1e3
-                gamma = 0.0
-                gamma_step = 1e-3
-                while dnew < dold:
-                        dold = dnew
-                        pn = p1 - gamma*dp1
-                        dnew = np.linalg.norm(p2-pn)
-                        gamma += gamma_step
-
-                pn = p1 - (gamma-gamma_step)*dp1
-                return [np.linalg.norm(pn-p2),pn]

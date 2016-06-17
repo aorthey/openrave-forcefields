@@ -227,6 +227,7 @@ class ForceEnvironment():
                 ## visualize extend of force constraint box
                 ########################################################
                 zoffset=0.05
+                B = np.dot(T[0:3,0:3],B)
                 P = array(((T[0,3]-B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset), \
                         (T[0,3]+B[0],T[1,3]-B[1],B[2]+T[2,3]+zoffset), \
                         (T[0,3]+B[0],T[1,3]+B[1],B[2]+T[2,3]+zoffset), \

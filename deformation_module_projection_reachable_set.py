@@ -12,6 +12,7 @@ class DeformationModuleProjectionReachableSet(DeformationModule):
                 dWori = self.DeformInfo['dWori']
                 Ndim = self.DeformInfo['Ndim']
                 Nwaypoints = self.DeformInfo['Nwaypoints']
+                critical_pt = self.DeformInfo['critical_pt']
                 F = self.DeformInfo['F']
                 dpmin = self.DeformInfo['dpmin']
                 dpmax = self.DeformInfo['dpmax']

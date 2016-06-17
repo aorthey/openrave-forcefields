@@ -24,10 +24,10 @@ class EnvironmentBloodStream(ForceEnvironment):
                 return self.forces
 
         def RobotGetInitialPosition(self):
-                return [-2.5,0.0,0.1,-pi,0,0,0,0]
+                return [-2.0,0.0,0.1,-pi,0,0,0,0]
 
         def RobotGetGoalPosition(self):
-                return [-4.5,0.0,0.1,-pi,0,0,0,0]
+                return [-5.5,0.0,0.1,-pi,0,0,0,0]
 
 if __name__ == "__main__":
         env = EnvironmentBloodStream()

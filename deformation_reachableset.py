@@ -14,16 +14,21 @@ class DeformationReachableSet(Deformation):
         ###############################################################
         #lambda_1 = 0.001
         #lambda_1 = 0.0005
-        lambda_1 = 0.0005
-        lambda_2 = 1
+        #lambda_1 = 0.0005
+        #lambda_2 = 1
         #lambda_3 = 0.5*1e-2
+
 
         #lambda_1 = 0.0
         #lambda_2 = 0.0
-        lambda_3 = 0.5*1e-2
-        lambda_4 = 0.1
+        #lambda_3 = 0.0
+        lambda_1 = 0.0005
+        lambda_2 = 0.03
+        lambda_3 = 0.3*1e-2
+        #lambda_4 = 0.005
+        lambda_4 = 0.0
 
-        smoothing_factor = 15.0
+        smoothing_factor = 30.0
 
         def deform_onestep(self, computeNewCriticalPoint = True):
 
@@ -47,19 +52,20 @@ class DeformationReachableSet(Deformation):
 
                 from deformation_module_counterwrench import *
                 from deformation_module_projection_reachable_set import *
+                from deformation_module_projection_reachable_set2 import *
                 from deformation_module_stretch import *
                 from deformation_module_orientation import *
                 from deformation_module_endpoint_projection import *
 
                 d1 = DeformationModuleCounterWrench( DeformInfo )
-                d2 = DeformationModuleProjectionReachableSet( DeformInfo )
+                d2 = DeformationModuleProjectionReachableSet2( DeformInfo )
                 d3 = DeformationModuleOrientation( DeformInfo )
-                #d4 = DeformationModuleStretch( DeformInfo )
+                d4 = DeformationModuleStretch( DeformInfo )
 
                 dU += d1.get_update( self.lambda_1 )
                 dU += d2.get_update( self.lambda_2 )
                 dU += d3.get_update( self.lambda_3 )
-                #dU += d4.get_update( self.lambda_4 )
+                dU += d4.get_update( self.lambda_4 )
 
                 DeformInfo['dU'] = dU
                 dend = DeformationModuleEndPointProjection( DeformInfo )
