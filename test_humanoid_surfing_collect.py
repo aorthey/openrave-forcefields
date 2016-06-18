@@ -42,56 +42,6 @@ def EvalSurfboardPath(t):
         T[0:3,3] = X
         return T
 
-def VisualizeCOMSet(q, env):
-        handler = []
-        from scipy.spatial import ConvexHull
-        from mpl_toolkits.mplot3d import Axes3D
-        from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-        from matplotlib.tri import Triangulation, TriAnalyzer
-        import pylab as plt
-        qhull_options = 'QJ'
-        hull = ConvexHull(q,qhull_options=qhull_options)    
-        #q = q[hull.vertices,:]
-
-        fig = plt.figure(facecolor='white')
-        image = fig.gca(projection='3d')
-
-        x,y,z=q.T
-        print x,y
-
-        tri = Triangulation(x, y, triangles=hull.simplices)
-        print tri.triangles
-
-        triangle_vertices = np.array([np.array([[x[T[0]], y[T[0]], z[T[0]]],
-                [x[T[1]], y[T[1]], z[T[1]]],
-                [x[T[2]], y[T[2]], z[T[2]]]]) for T in tri.triangles])
-
-        #tri = Poly3DCollection(triangle_vertices)
-
-        #ctri = np.array((0.5,0.5,1.0,0.2))
-        #tri.set_color(ctri)
-        #tri.set_edgecolor(np.array((0.5,0.5,0.5,0.5)))
-
-        #tri.set_edgecolor('None')
-
-        #image.scatter(x,y,z, 'ok', color=np.array((0,0,1.0,0.1)),s=20)
-        #image.add_collection3d(tri)
-        #plt.show()
-        h = env.env.drawtrimesh(points=q,indices=hull.simplices,colors=array((0,1,0,0.2)))
-        handler.append(h)
-
-        h = env.env.plot3(points=q,
-                pointsize=0.01,
-                colors=array((1,0,1,1)),
-                drawstyle=1)
-        handler.append(h)
-        h = env.env.plot3(points=q[hull.vertices,:],
-                pointsize=0.01,
-                colors=array((1,0,1,1)),
-                drawstyle=1)
-        handler.append(h)
-        return handler
-
 
 def waitrobot(robot):
     """busy wait for robot completion"""
@@ -150,24 +100,18 @@ if __name__ == "__main__":
 
         cog_handler = []
 
-        Mwaypoints = 1
-        MsamplesPerStance = 1000
+        Mwaypoints = 20
+        MsamplesPerStance = 10000
 
         tvec = linspace(0,1,Mwaypoints)
-        DEBUG=True
-
-        qcom = np.loadtxt("trajectories/surfboard_com_test.txt",dtype='float')
 
         ictr=0
-        with env.env:
-                handler = VisualizeCOMSet(qcom, env)
-
         for t in tvec:
+                fh = open("trajectories/surfboard_com_"+str(ictr)+".txt", 'w')
                 ictr+=1
                 t1 = time.time()
                 for m in range(0,MsamplesPerStance):
                         with env.env:
-                                #handler = VisualizeCOMSet(qcom, env)
                                 T = EvalSurfboardPath(t)
                                 B.SetTransform(T)
 
@@ -196,7 +140,6 @@ if __name__ == "__main__":
 
 
                                 X = T[0:3,3]
-
                                 xmin = X[0]-0.4
                                 xmax = X[0]+0.4
 
@@ -211,60 +154,21 @@ if __name__ == "__main__":
                                 cog[1] = np.random.uniform(ymin,ymax)
                                 cog[2] = np.random.uniform(zmin,zmax)
 
-                                h = env.env.plot3(points=cog,
-                                                pointsize=0.01,
-                                                colors=array((1,0,0,1)),
-                                                drawstyle=1)
-                                cog_handler.append(h)
-
-                                #res = gik.giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
-                                res = False
-                                if DEBUG:
-                                        if res:
-                                                print "valid com:",cog
-                                                h = env.env.plot3(points=gik.cog,
-                                                                pointsize=0.01,
-                                                                colors=array((0,1,0,1)),
-                                                                drawstyle=1)
-                                                cog_handler.append(h)
-                                                h = env.env.plot3(points=cog,
-                                                                pointsize=0.01,
-                                                                colors=array((1,0,0,1)),
-                                                                drawstyle=1)
-                                                cog_handler.append(h)
-
-                                        if env.static_handles:
-                                               env.static_handles = None
-                                               env.static_handles = []
-                                        env.DrawFootContactPatchFromTransform(left_leg_tf, cpatch=green)
-                                        env.DrawFootContactPatchFromTransform(right_leg_tf, cpatch=green)
-                                        S.DrawCoordinateFrames(env)
-                                #else:
-                                        #h = env.env.plot3(points=gik.cog,
-                                        #                pointsize=0.01,
-                                        #                colors=array((1,0,0,1)),
-                                        #                drawstyle=1)
-                                        #cog_handler.append(h)
-                                #q = gik.fromContactTransform(robot, left_leg_tf,
-                                                #right_leg_tf, None, None)
-
-                                #gik.VisualizeFrictionCone(robot)
-
-                                #torques = (numpy.random.rand(robot.GetDOF())-0.5)
-                                #robot.SetJointTorques(torques,True)
+                                res = gik.giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
+                                if res:
+                                        cog = gik.cog
+                                        fh.write("%f %f %f\n" % (cog[0],cog[1],cog[2]))
                                 #######################################################
                                 ### random noise on environment
                                 #######################################################
 
-                        #if DEBUG:
-                                #env.env.StepSimulation(0.002)
-                                #time.sleep(0.5)
                 t2 = time.time()
                 tall = t2-t1
                 print "sampling",MsamplesPerStance,"samples, time:",tall
                 tps = float(tall)/float(MsamplesPerStance)
                 print "time per sample:",tps
                 print "estimated time:",tps*Mwaypoints*MsamplesPerStance
+                fh.close()
 
 
         robot.WaitForController(0)

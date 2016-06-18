@@ -38,6 +38,9 @@ ze = np.array((0,0,1))
 ex = np.array((1,0,0))
 ey = np.array((0,1,0))
 ez = np.array((0,0,1))
+exh = np.array((1,0,0,1))
+eyh = np.array((0,1,0,1))
+ezh = np.array((0,0,1,1))
 
 def Rz(t):
         return np.array([[cos(t),-sin(t),0],[sin(t),cos(t),0],[0,0,1]])

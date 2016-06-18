@@ -6,7 +6,7 @@ from util import *
 
 class DeformationModuleStretch(DeformationModule):
 
-        DEBUG = False
+        DEBUG = True
         handler = []
         def get_gradient(self, lambda_coeff):
 

@@ -6,11 +6,14 @@ from util import Rax
 from math import pi
 class SurfaceModule():
 
-        OFFSET_CONTACT_FROM_SURFACE_BOUNDARY = 0.05
+        OFFSET_CONTACT_FROM_SURFACE_BOUNDARY = 0.2
         #OFFSET_HAND_CONTACT_TO_PLANE = 0.02
         OFFSET_HAND_CONTACT_TO_PLANE = 0.03
         #OFFSET_FOOT_CONTACT_TO_PLANE = 0.005
         OFFSET_FOOT_CONTACT_TO_PLANE = 0.005
+
+        OFFSET_MINIMUM_FOOT_TO_FOOT_DISTANCE = 0.1
+
         handles = []
         ### pos of center, dir of normal, dir of tangential, dir
         ### of binormal, extension in tangential dir, extension in

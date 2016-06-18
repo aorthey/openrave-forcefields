@@ -135,6 +135,122 @@ class GIKInterface():
                         self.DrawRightHandCone(Cra[0:3,3], Cra)
 
 
+        def giwc(self, robot, cog, Cll, Crl, Cla, Cra):
+                print "--------------------------------------------------"
+                print "GIK GIWC from surface contacts"
+                print "--------------------------------------------------"
+                print "LEFT FOOT  : ", self.printContact(Cll)
+                print "RIGHT FOOT : ", self.printContact(Crl)
+                print "LEFT HAND  : ", self.printContact(Cla)
+                print "RIGHT HAND : ", self.printContact(Cra)
+
+                q_old = self.env.surrender_pos
+                q_gik = None
+                N = q_old.shape[0]
+
+                self.checkValidTransform(Cll)
+                self.checkValidTransform(Crl)
+                self.checkValidTransform(Cla)
+                self.checkValidTransform(Cra)
+
+                with self.env.env:
+                        cbirrt = CBiRRT(self.env.env, self.env.robot_name)
+                        try:
+                                [qlimL,qlimU]=robot.GetActiveDOFLimits()
+                                self.env.EnforceLimits(q_old, qlimL, qlimU)
+                                robot.SetActiveDOFValues(q_old)
+
+                                Cll_old = robot.GetManipulator('l_leg').GetTransform()
+                                Crl_old = robot.GetManipulator('r_leg').GetTransform()
+                                Cla_old = robot.GetManipulator('l_arm').GetTransform()
+                                Cra_old = robot.GetManipulator('r_arm').GetTransform()
+
+                                support_list = []
+                                maniptm_list = []
+
+                                if Cll is not None:
+                                        maniptm_list.append(('l_leg',Cll))
+                                        support_list.append(('l_leg',SURFACE_FRICTION))
+                                        self.contact_ll = True
+                                if Crl is not None:
+                                        maniptm_list.append(('r_leg',Crl))
+                                        support_list.append(('r_leg',SURFACE_FRICTION))
+                                        self.contact_rl = True
+                                if Cla is not None:
+                                        maniptm_list.append(('l_arm',Cla))
+                                        support_list.append(('l_arm',SURFACE_FRICTION))
+                                        self.contact_la = True
+                                if Cra is not None:
+                                        maniptm_list.append(('r_arm',Cra))
+                                        support_list.append(('r_arm',SURFACE_FRICTION))
+                                        self.contact_ra = True
+
+                                print "SUPPORT       :",support_list
+                                F = np.zeros((3))
+                                F += np.array((0,0,-9.80)) ## boston-style gravity
+                                q_gik = cbirrt.DoGeneralIK(
+                                                movecog=cog,
+                                                gravity=F.tolist(),
+                                                returnclosest=True,
+                                                #checkcollisionlink=['l_foot','r_foot'],
+                                                #obstacles=obstacle_list,
+                                                #execute=True,
+                                                maniptm=maniptm_list,
+                                                support=support_list,
+                                                printcommand=True)
+
+                                if q_gik is None:
+                                        print "------------------------------------------------------- "
+                                        print "No solution found GIK"
+                                        print "ZHEIGHT FEET (L,R):",Cll[2,3],Crl[2,3],support_list
+                                        print "LEFT FOOT POS     :",Cll[0:3,3]
+                                        print "RIGHT FOOT POS    :",Crl[0:3,3]
+                                        print "------------------------------------------------------- "
+                                        #return None
+                                        return False
+
+                                robot.SetActiveDOFValues(q_gik)
+                                self.cog = robot.GetCenterOfMass()
+                                self.env.env.GetCollisionChecker().SetCollisionOptions(CollisionOptions.Contacts)
+                                report = CollisionReport()
+                                ret = self.env.env.CheckCollision(robot, report=report)
+
+                                if ret:
+                                        print "------------------------------------------------------- "
+                                        print "GIK found solution, but solution is in collision"
+                                        print "------------------------------------------------------- "
+                                        print '%d contacts'%len(report.contacts)
+                                        positions = [c.pos for c in report.contacts]
+                                        for c in report.contacts:
+                                                p = c.pos
+                                                self.handles.append(self.env.env.plot3(points=np.array(((p[0],p[1],p[2]))),
+                                                                   pointsize=0.03,
+                                                                   colors=np.array(((1.0,0.0,0.0,0.8))),
+                                                                   drawstyle=1))
+                                        print positions
+                                        return False
+
+                                print "------------------------------------------------------- "
+                                print "GIK found solution"
+                                print "------------------------------------------------------- "
+
+                                #print "LEFT FOOT  : ", 
+                                #self.printFromToContact(Cll_old,Cll_gik)
+                                #print "RIGHT FOOT : ", 
+                                #self.printFromToContact(Crl_old, Crl_gik)
+                                #print "LEFT HAND  : ",
+                                #self.printFromToContact(Cla_old,Cla_gik)
+                                #print "RIGHT HAND : ", 
+                                #self.printFromToContact(Cra_old,Cra_gik)
+
+                        except Exception as e:
+                                print "Exception in GIK fromContactTransform"
+                                print e
+                                sys.exit(0)
+                print "return"
+                return True
+
+
         def fromContactTransform( self, robot, Cll, Crl, Cla, Cra): 
                 print "--------------------------------------------------"
                 print "GIK from surface contacts"
@@ -195,12 +311,12 @@ class GIKInterface():
                                 q_gik = cbirrt.DoGeneralIK(
                                                 movecog=cog,
                                                 gravity=F.tolist(),
-                                                #returnclosest=False,
+                                                returnclosest=True,
                                                 #checkcollisionlink=['l_foot','r_foot'],
                                                 #obstacles=obstacle_list,
                                                 execute=True,
                                                 maniptm=maniptm_list,
-                                                support=support_list,
+                                                #support=support_list,
                                                 printcommand=True)
 
                                 if q_gik is None:

@@ -19,7 +19,7 @@ class AttributePassthrough(object):
 
 class EnvironmentHumanoid(ForceEnvironment):
         surrender_pos = []
-        def __init__(self, xmlenv = 'environments/plane.env.xml'):
+        def __init__(self, xmlenv = 'environments/plane.env.xml', free_flyer_offset=np.array((0,0,0))):
                 ForceEnvironment.__init__(self)
                 urdf = 'robots/escher/escher_v2.kinbody.urdf'
                 srdf = 'robots/escher/escher.robot.srdf'
@@ -69,7 +69,9 @@ class EnvironmentHumanoid(ForceEnvironment):
                         whole_body_indices = np.concatenate((l_arm_indices, r_arm_indices, l_leg_indices, r_leg_indices, additional_active_DOF_indices),axis=0)
 
                         self.robot.SetActiveDOFs(whole_body_indices)
-                        self.robot.SetTransform(np.array([[1,0,0,-0.5],[0,1,0,0],[0,0,1,robot_z],[0,0,0,1]]))
+                        T = np.array([[1,0,0,-0.5],[0,1,0,0],[0,0,1,robot_z],[0,0,0,1]])
+                        T[0:3,3] += free_flyer_offset
+                        self.robot.SetTransform(T)
 
                         ### surrender posture
                         DOFValues = self.robot.GetDOFValues()
@@ -82,7 +84,9 @@ class EnvironmentHumanoid(ForceEnvironment):
                         #DOFValues[24] = -math.pi/2
                         #DOFValues[37] = -math.pi/2
                         self.robot.SetDOFValues(DOFValues)
+
                         self.surrender_pos = self.robot.GetActiveDOFValues()
+                        self.surrender_pos[0:3] += free_flyer_offset
 
                         dof = self.robot.GetDOF()
                         v = np.ones(dof)

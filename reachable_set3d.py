@@ -21,6 +21,7 @@ import pylab as plt
 import numpy as np
 import math
 from util import *
+import parameters_dynamical_system as params
 class Arrow3D(FancyArrowPatch):
         def __init__(self, xs, ys, zs, *args, **kwargs):
                 FancyArrowPatch.__init__(self, (0,0), (0,0), *args, **kwargs)
@@ -37,7 +38,6 @@ class ReachableSet3D():
         pts = None
         poly = []
         rs_boundary_thickness = 4
-        system_name='car3d'
         loc = 'upper left'
         qhull_options = 'QJ'
         #loc = 'best'
@@ -92,7 +92,7 @@ class ReachableSet3D():
                 pnext = p+self.ds*dp/np.linalg.norm(dp)
 
                 tstring = 'Reachable Set (<T='+str(dt)+')'
-                self.filename = 'images/reachableset_'+self.system_name+'_ori'+str(np.around(p[3],decimals=2))
+                self.filename = 'images/reachableset_'+params.FILENAME+'_ori'+str(np.around(p[3],decimals=2))
                 self.filename = re.sub('[.]', '-', self.filename)
                 self.filename += '.png'
 

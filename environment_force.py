@@ -222,6 +222,9 @@ class ForceEnvironment():
                         handle.append(h)
                         return handle
 
+        #def DrawTrimesh(self, array):
+                #h2 = self.env.drawtrimesh(points=newpoints,indices=indices[:,1:4],colors=array((0,0,1,0.5)))
+
         def GetBoxCoords(self, T,B):
                 ########################################################
                 ## visualize extend of force constraint box

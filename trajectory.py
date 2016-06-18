@@ -183,6 +183,7 @@ class Trajectory():
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
 
+                toffset = 0.1
                 ###############################################################
                 ##### get number of intervals between breakpoints
                 tvec = np.linspace(0,1,W.shape[1])
@@ -190,6 +191,23 @@ class Trajectory():
                 poly= PPoly.from_spline(trajectory)
                 [B,idx]=np.unique(poly.x,return_index=True)
                 Ninterval = B.shape[0]-1
+                ###############################################################
+                ###############################################################
+                ###############################################################
+                if 0:
+                        tvec = np.linspace(0,1,100*W.shape[1])
+                        print splev(tvec,trajectory)
+                        print splev(tvec,trajectory,der=1)
+                        tvec = np.linspace(0,1,W.shape[1])
+                        tvec = np.hstack((-0.1,tvec,1.1))
+                        Wnext = np.hstack((W[0,0],W[0,:],W[0,-1]))
+                        trajectory = splrep(tvec,Wnext,k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
+                        print tvec,W[0,:]
+                        tvec = np.linspace(0,1,100*W.shape[1])
+                        print splev(tvec,trajectory)
+                        print splev(tvec,trajectory,der=1)
+                        sys.exit(0)
+                ###############################################################
                 ###############################################################
                 P = np.zeros((Ninterval, Ndim, 4))
 
@@ -201,7 +219,12 @@ class Trajectory():
                 for i in range(0,Ndim):
 
                         tvec = np.linspace(0,1,Nwaypoints)
-                        trajectory = splrep(tvec,W[i,:],k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
+                        WP = W[i,:]
+
+                        #tvec = np.hstack((-0.1,tvec,1.1))
+                        #WP = np.hstack((W[i,0],W[i,:],W[i,-1]))
+
+                        trajectory = splrep(tvec,WP,k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
                         bspline.append(trajectory)
 
                         poly= PPoly.from_spline(trajectory)
@@ -209,6 +232,12 @@ class Trajectory():
                         ddpoly = poly.derivative(2)
                         [B,idx]=np.unique(poly.x,return_index=True)
                         coeff = poly.c[:,idx]
+
+                        #print poly.x
+                        #print W[i,:]
+                        #print splev(0.0001,trajectory)
+                        #sys.exit(0)
+
 
                         try:
                                 P[:,i,0] = coeff[3,:-1]
