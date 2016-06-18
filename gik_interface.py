@@ -187,14 +187,14 @@ class GIKInterface():
 
                                 print "SUPPORT       :",support_list
                                 F = np.zeros((3))
-                                F += np.array((0,0,-9.80)) ## boston-style gravity
+                                F += np.array((0,0,0.00)) ## boston-style gravity
+
                                 q_gik = cbirrt.DoGeneralIK(
                                                 movecog=cog,
                                                 gravity=F.tolist(),
-                                                returnclosest=True,
                                                 #checkcollisionlink=['l_foot','r_foot'],
                                                 #obstacles=obstacle_list,
-                                                #execute=True,
+                                                execute=True,
                                                 maniptm=maniptm_list,
                                                 support=support_list,
                                                 printcommand=True)

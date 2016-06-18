@@ -29,7 +29,7 @@ from surface_module import *
 
 def EvalSurfboardPath(t):
 
-        initTheta = -pi/8
+        initTheta = 0.0#-pi/8
         goalTheta = pi/8
         initX = np.array((-1,-1,0.5))
         goalX = np.array((-1,0.5,0.5))
@@ -217,16 +217,18 @@ if __name__ == "__main__":
                                                 drawstyle=1)
                                 cog_handler.append(h)
 
-                                #res = gik.giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
-                                res = False
+                                res = gik.giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
+
+                                #res = False
                                 if DEBUG:
                                         if res:
                                                 print "valid com:",cog
                                                 h = env.env.plot3(points=gik.cog,
-                                                                pointsize=0.01,
+                                                                pointsize=0.02,
                                                                 colors=array((0,1,0,1)),
                                                                 drawstyle=1)
                                                 cog_handler.append(h)
+                                        else:
                                                 h = env.env.plot3(points=cog,
                                                                 pointsize=0.01,
                                                                 colors=array((1,0,0,1)),
