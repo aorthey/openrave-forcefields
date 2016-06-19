@@ -108,6 +108,7 @@ if __name__ == "__main__":
         ictr=0
         for t in tvec:
                 fh = open("trajectories/surfboard_com_"+str(ictr)+".txt", 'w')
+                fh2 = open("trajectories/surfboard_com_all_"+str(ictr)+".txt", 'w')
                 ictr+=1
                 t1 = time.time()
                 for m in range(0,MsamplesPerStance):
@@ -149,15 +150,18 @@ if __name__ == "__main__":
                                 zmin = X[2]-0.0
                                 zmax = X[2]+1.5
 
-                                cog = np.zeros(3)
-                                cog[0] = np.random.uniform(xmin,xmax)
-                                cog[1] = np.random.uniform(ymin,ymax)
-                                cog[2] = np.random.uniform(zmin,zmax)
+                                cog_in  = np.zeros(3)
+                                cog_in[0] = np.random.uniform(xmin,xmax)
+                                cog_in[1] = np.random.uniform(ymin,ymax)
+                                cog_in[2] = np.random.uniform(zmin,zmax)
 
-                                res = gik.giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
+                                res = gik.giwc(robot, cog_in, left_leg_tf, right_leg_tf, None, None)
                                 if res:
                                         cog = gik.cog
                                         fh.write("%f %f %f\n" % (cog[0],cog[1],cog[2]))
+                                if gik.cogIsValid:
+                                        cog = cog_in
+                                        fh2.write("%f %f %f\n" % (cog[0],cog[1],cog[2]))
                                 #######################################################
                                 ### random noise on environment
                                 #######################################################
@@ -169,6 +173,7 @@ if __name__ == "__main__":
                 print "time per sample:",tps
                 print "estimated time:",tps*Mwaypoints*MsamplesPerStance
                 fh.close()
+                fh2.close()
 
 
         robot.WaitForController(0)

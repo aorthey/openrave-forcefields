@@ -42,7 +42,7 @@ def EvalSurfboardPath(t):
         T[0:3,3] = X
         return T
 
-def VisualizeCOMSet(q, env):
+def VisualizeCOMSet(q, env, tricolor=np.array((1,0,1,1))):
         handler = []
         from scipy.spatial import ConvexHull
         from mpl_toolkits.mplot3d import Axes3D
@@ -77,7 +77,7 @@ def VisualizeCOMSet(q, env):
         #image.scatter(x,y,z, 'ok', color=np.array((0,0,1.0,0.1)),s=20)
         #image.add_collection3d(tri)
         #plt.show()
-        h = env.env.drawtrimesh(points=q,indices=hull.simplices,colors=array((0,1,0,0.2)))
+        h = env.env.drawtrimesh(points=q,indices=hull.simplices,colors=tricolor)
         handler.append(h)
 
         h = env.env.plot3(points=q,
@@ -155,11 +155,13 @@ if __name__ == "__main__":
         DEBUG=True
 
         qcom = np.loadtxt("trajectories/surfboard_com_test.txt",dtype='float')
+        qcom2 = np.loadtxt("trajectories/surfboard_com_all_test.txt",dtype='float')
 
         ictr=0
         ictr_valid = 0
         with env.env:
-                handler = VisualizeCOMSet(qcom, env)
+                handler = VisualizeCOMSet(qcom, env, np.array((0.0,1.0,0.0,0.4)))
+                handler2 = VisualizeCOMSet(qcom2, env, np.array((1.0,0.0,1.0,0.4)))
 
 
         np.random.seed(0)
@@ -178,9 +180,6 @@ if __name__ == "__main__":
                                 #######################################################
                                 ### draw
                                 #######################################################
-
-                                #right_leg_tf = S.AdjustToNewSurfaceTransform( 0.02, right_leg_relative_surface_tf, right_leg_surface, env)
-                                #left_leg_tf = S.AdjustToNewSurfaceTransform( 0.02, left_leg_relative_surface_tf, left_leg_surface, env)
 
                                 right_leg_tf = np.eye(4)
                                 left_leg_tf = np.eye(4)
@@ -211,18 +210,12 @@ if __name__ == "__main__":
                                 cog[1] = np.random.uniform(ymin,ymax)
                                 cog[2] = np.random.uniform(zmin,zmax)
 
-                                #h = env.env.plot3(points=cog,
-                                #                pointsize=0.01,
-                                #                colors=array((1,0,0,1)),
-                                #                drawstyle=1)
-                                #cog_handler.append(h)
-
                                 res = gik.check_giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
 
                                 print "RES:",res
                                 ictr+=1
                                 if res:
-                                        h = env.env.plot3(points=gik.cog,
+                                        h = env.env.plot3(points=cog,
                                                         pointsize=0.01,
                                                         colors=array((0,1,0,1)),
                                                         drawstyle=1)

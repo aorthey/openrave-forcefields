@@ -286,6 +286,14 @@ class GIKInterface():
 
                                 robot.SetActiveDOFValues(q_gik)
 
+                                robot.SetActiveDOFValues(q_gik)
+                                self.cogIsValid = cbirrt.CheckGIWC(
+                                                support=support_list,
+                                                center=cog,
+                                                gravity=F.tolist(),
+                                                printcommand=True)
+
+
                                 q_gik = cbirrt.DoGeneralIK(
                                                 maniptm=maniptm_list,
                                                 support=support_list,
