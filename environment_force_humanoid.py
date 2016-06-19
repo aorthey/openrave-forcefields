@@ -19,6 +19,28 @@ class AttributePassthrough(object):
 
 class EnvironmentHumanoid(ForceEnvironment):
         surrender_pos = []
+        def SetTransformRobot(self, Cll, Crl, Cla, Cra):
+                #self.manip.l_arm.SetLocalToolDirection(np.array([1, 0, 0]))
+                #self.manip.l_arm.SetLocalToolTransform(np.array([
+                #    [-1,  0, 0, -0.036],
+                #    [ 0, -1, 0, 0],
+                #    [ 0,  0, 1, 0],
+                #    [ 0,  0, 0, 1]])
+                #)
+
+                #self.manip.r_arm.SetLocalToolDirection(np.array([1, 0, 0]))
+                with self.env:
+                        if Cll is not None:
+                                self.manip.l_leg.SetLocalToolTransform(Cll)
+                        if Crl is not None:
+                                self.manip.r_leg.SetLocalToolTransform(Crl)
+                        if Cla is not None:
+                                self.manip.l_arm.SetLocalToolTransform(Cla)
+                        if Cra is not None:
+                                self.manip.r_arm.SetLocalToolTransform(Cra)
+                #self.manip.l_leg.SetLocalToolDirection(np.array([0, 0, -1]))
+                #self.manip.r_leg.SetLocalToolDirection(np.array([0, 0, -1]))
+
         def __init__(self, xmlenv = 'environments/plane.env.xml', free_flyer_offset=np.array((0,0,0))):
                 ForceEnvironment.__init__(self)
                 urdf = 'robots/escher/escher_v2.kinbody.urdf'
@@ -70,7 +92,8 @@ class EnvironmentHumanoid(ForceEnvironment):
 
                         self.robot.SetActiveDOFs(whole_body_indices)
                         T = np.array([[1,0,0,-0.5],[0,1,0,0],[0,0,1,robot_z],[0,0,0,1]])
-                        T[0:3,3] += free_flyer_offset
+
+                        #T[0:3,3] += free_flyer_offset
                         self.robot.SetTransform(T)
 
                         ### surrender posture
@@ -86,7 +109,7 @@ class EnvironmentHumanoid(ForceEnvironment):
                         self.robot.SetDOFValues(DOFValues)
 
                         self.surrender_pos = self.robot.GetActiveDOFValues()
-                        self.surrender_pos[0:3] += free_flyer_offset
+                        #self.surrender_pos[0:3] += free_flyer_offset
 
                         dof = self.robot.GetDOF()
                         v = np.ones(dof)

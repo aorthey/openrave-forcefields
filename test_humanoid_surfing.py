@@ -29,7 +29,7 @@ from surface_module import *
 
 def EvalSurfboardPath(t):
 
-        initTheta = 0.0#-pi/8
+        initTheta = -pi/8
         goalTheta = pi/8
         initX = np.array((-1,-1,0.5))
         goalX = np.array((-1,0.5,0.5))
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         env.DrawAxes()
         #env.MakeRobotTransparent(alpha=1.0)
         time.sleep(0.5)
-        env.DisplayForces()
+        #env.DisplayForces()
 
         #######################################################################
         gik = GIKInterface(env)
@@ -142,8 +142,6 @@ if __name__ == "__main__":
         left_leg_relative_surface_tf = S.GetContactRelativeToSurfaceTransform(left_leg_tf, left_leg_surface) 
         right_leg_relative_surface_tf = S.GetContactRelativeToSurfaceTransform(right_leg_tf, right_leg_surface) 
 
-        ictr=0
-
         W = env.env.GetKinBody('world')
         B = W.GetLink('surfboard')
         #T = B.GetTransform()
@@ -151,7 +149,7 @@ if __name__ == "__main__":
         cog_handler = []
 
         Mwaypoints = 1
-        MsamplesPerStance = 1000
+        MsamplesPerStance = 10000
 
         tvec = linspace(0,1,Mwaypoints)
         DEBUG=True
@@ -159,11 +157,13 @@ if __name__ == "__main__":
         qcom = np.loadtxt("trajectories/surfboard_com_test.txt",dtype='float')
 
         ictr=0
+        ictr_valid = 0
         with env.env:
                 handler = VisualizeCOMSet(qcom, env)
 
+
+        np.random.seed(0)
         for t in tvec:
-                ictr+=1
                 t1 = time.time()
                 for m in range(0,MsamplesPerStance):
                         with env.env:
@@ -187,21 +187,21 @@ if __name__ == "__main__":
                                 sy =  np.dot(T[0:3,0:3],ey)
                                 sz =  np.dot(T[0:3,0:3],ez)
                                 dl = 0.25
-                                dz = 0.02
+                                dz = 0.03
 
                                 right_leg_tf[0:3,0:3] = T[0:3,0:3]
                                 right_leg_tf[0:3,3]= T[0:3,3]-dl*sy+dz*sz
                                 left_leg_tf[0:3,0:3] = T[0:3,0:3]
                                 left_leg_tf[0:3,3]= T[0:3,3]+dl*sy+dz*sz
 
-
                                 X = T[0:3,3]
 
-                                xmin = X[0]-0.4
-                                xmax = X[0]+0.4
+                                offset = 0.3
+                                xmin = X[0]-offset
+                                xmax = X[0]+offset
 
-                                ymin = X[1]-0.4
-                                ymax = X[1]+0.4
+                                ymin = X[1]-offset
+                                ymax = X[1]+offset
 
                                 zmin = X[2]-0.0
                                 zmax = X[2]+1.5
@@ -211,36 +211,37 @@ if __name__ == "__main__":
                                 cog[1] = np.random.uniform(ymin,ymax)
                                 cog[2] = np.random.uniform(zmin,zmax)
 
-                                h = env.env.plot3(points=cog,
-                                                pointsize=0.01,
-                                                colors=array((1,0,0,1)),
-                                                drawstyle=1)
-                                cog_handler.append(h)
+                                #h = env.env.plot3(points=cog,
+                                #                pointsize=0.01,
+                                #                colors=array((1,0,0,1)),
+                                #                drawstyle=1)
+                                #cog_handler.append(h)
 
-                                res = gik.giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
+                                res = gik.check_giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
 
-                                #res = False
-                                if DEBUG:
-                                        if res:
-                                                print "valid com:",cog
-                                                h = env.env.plot3(points=gik.cog,
-                                                                pointsize=0.02,
-                                                                colors=array((0,1,0,1)),
-                                                                drawstyle=1)
-                                                cog_handler.append(h)
-                                        else:
-                                                h = env.env.plot3(points=cog,
-                                                                pointsize=0.01,
-                                                                colors=array((1,0,0,1)),
-                                                                drawstyle=1)
-                                                cog_handler.append(h)
+                                print "RES:",res
+                                ictr+=1
+                                if res:
+                                        h = env.env.plot3(points=gik.cog,
+                                                        pointsize=0.01,
+                                                        colors=array((0,1,0,1)),
+                                                        drawstyle=1)
+                                        cog_handler.append(h)
+                                        ictr_valid+=1
+                                else:
+                                        h = env.env.plot3(points=cog,
+                                                        pointsize=0.01,
+                                                        colors=array((1,0,0,1)),
+                                                        drawstyle=1)
+                                        cog_handler.append(h)
 
-                                        if env.static_handles:
-                                               env.static_handles = None
-                                               env.static_handles = []
-                                        env.DrawFootContactPatchFromTransform(left_leg_tf, cpatch=green)
-                                        env.DrawFootContactPatchFromTransform(right_leg_tf, cpatch=green)
-                                        S.DrawCoordinateFrames(env)
+                                if env.static_handles:
+                                       env.static_handles = None
+                                       env.static_handles = []
+                                env.DrawFootContactPatchFromTransform(left_leg_tf, cpatch=green)
+                                env.DrawFootContactPatchFromTransform(right_leg_tf, cpatch=green)
+                                S.DrawCoordinateFrames(env)
+                                print "VALID SAMPLES:",ictr_valid,"/",ictr,"(",float(ictr_valid)/float(ictr),")"
                                 #else:
                                         #h = env.env.plot3(points=gik.cog,
                                         #                pointsize=0.01,
@@ -259,8 +260,8 @@ if __name__ == "__main__":
                                 #######################################################
 
                         #if DEBUG:
-                                #env.env.StepSimulation(0.002)
-                                #time.sleep(0.5)
+                        env.env.StepSimulation(0.002)
+                        #time.sleep(0.5)
                 t2 = time.time()
                 tall = t2-t1
                 print "sampling",MsamplesPerStance,"samples, time:",tall

@@ -135,6 +135,80 @@ class GIKInterface():
                         self.DrawRightHandCone(Cra[0:3,3], Cra)
 
 
+        def check_giwc(self, robot, cog, Cll, Crl, Cla, Cra):
+                print "--------------------------------------------------"
+                print "GIK GIWC from surface contacts"
+                print "--------------------------------------------------"
+                print "LEFT FOOT  : ", self.printContact(Cll)
+                print "RIGHT FOOT : ", self.printContact(Crl)
+                print "LEFT HAND  : ", self.printContact(Cla)
+                print "RIGHT HAND : ", self.printContact(Cra)
+
+                q_old = self.env.surrender_pos
+                q_gik = None
+                N = q_old.shape[0]
+
+                self.checkValidTransform(Cll)
+                self.checkValidTransform(Crl)
+                self.checkValidTransform(Cla)
+                self.checkValidTransform(Cra)
+
+                with self.env.env:
+                        cbirrt = CBiRRT(self.env.env, self.env.robot_name)
+                        [qlimL,qlimU]=robot.GetActiveDOFLimits()
+                        self.env.EnforceLimits(q_old, qlimL, qlimU)
+                        robot.SetActiveDOFValues(q_old)
+                        #self.env.SetTransformRobot(Cll, Crl, Cla, Cra)
+
+                        Cll_old = robot.GetManipulator('l_leg').GetTransform()
+                        Crl_old = robot.GetManipulator('r_leg').GetTransform()
+                        Cla_old = robot.GetManipulator('l_arm').GetTransform()
+                        Cra_old = robot.GetManipulator('r_arm').GetTransform()
+
+
+                        support_list = []
+                        maniptm_list = []
+
+                        if Cll is not None:
+                                maniptm_list.append(('l_leg',Cll))
+                                support_list.append(('l_leg',SURFACE_FRICTION))
+                                self.contact_ll = True
+                        if Crl is not None:
+                                maniptm_list.append(('r_leg',Crl))
+                                support_list.append(('r_leg',SURFACE_FRICTION))
+                                self.contact_rl = True
+                        if Cla is not None:
+                                maniptm_list.append(('l_arm',Cla))
+                                support_list.append(('l_arm',SURFACE_FRICTION))
+                                self.contact_la = True
+                        if Cra is not None:
+                                maniptm_list.append(('r_arm',Cra))
+                                support_list.append(('r_arm',SURFACE_FRICTION))
+                                self.contact_ra = True
+
+                        print "SUPPORT       :",support_list
+                        F = np.zeros((3))
+                        F += np.array((0,0,-9.80)) ## boston-style gravity
+
+                        q_gik = cbirrt.DoGeneralIK(
+                                        maniptm=maniptm_list,
+                                        support=support_list,
+                                        #movecog=cog,
+                                        gravity=F.tolist(),
+                                        returnclosest=True,
+                                        #checkcollisionlink=['l_foot','r_foot'],
+                                        #obstacles=obstacle_list,
+                                        printcommand=True)
+
+                        robot.SetActiveDOFValues(q_gik)
+                        isValid = cbirrt.CheckGIWC(
+                                        support=support_list,
+                                        center=cog,
+                                        gravity=F.tolist(),
+                                        printcommand=True)
+
+                        return isValid
+
         def giwc(self, robot, cog, Cll, Crl, Cla, Cra):
                 print "--------------------------------------------------"
                 print "GIK GIWC from surface contacts"
@@ -159,11 +233,13 @@ class GIKInterface():
                                 [qlimL,qlimU]=robot.GetActiveDOFLimits()
                                 self.env.EnforceLimits(q_old, qlimL, qlimU)
                                 robot.SetActiveDOFValues(q_old)
+                                #self.env.SetTransformRobot(Cll, Crl, Cla, Cra)
 
                                 Cll_old = robot.GetManipulator('l_leg').GetTransform()
                                 Crl_old = robot.GetManipulator('r_leg').GetTransform()
                                 Cla_old = robot.GetManipulator('l_arm').GetTransform()
                                 Cra_old = robot.GetManipulator('r_arm').GetTransform()
+
 
                                 support_list = []
                                 maniptm_list = []
@@ -187,16 +263,37 @@ class GIKInterface():
 
                                 print "SUPPORT       :",support_list
                                 F = np.zeros((3))
-                                F += np.array((0,0,0.00)) ## boston-style gravity
+                                F += np.array((0,0,-9.80)) ## boston-style gravity
 
+                                #isValid = cbirrt.CheckGIWC(
+                                #                support=support_list,
+                                #                center=cog,
+                                #                gravity=F.tolist(),
+                                #                printcommand=True)
+
+                                #return isValid
                                 q_gik = cbirrt.DoGeneralIK(
-                                                movecog=cog,
+                                                maniptm=maniptm_list,
+                                                support=support_list,
+                                                #movecog=cog,
                                                 gravity=F.tolist(),
+                                                returnclosest=True,
                                                 #checkcollisionlink=['l_foot','r_foot'],
                                                 #obstacles=obstacle_list,
                                                 execute=True,
+                                                printcommand=True)
+
+
+                                robot.SetActiveDOFValues(q_gik)
+
+                                q_gik = cbirrt.DoGeneralIK(
                                                 maniptm=maniptm_list,
                                                 support=support_list,
+                                                movecog=cog,
+                                                gravity=F.tolist(),
+                                                #returnclosest=True,
+                                                #checkcollisionlink=['l_foot','r_foot'],
+                                                #obstacles=obstacle_list,
                                                 printcommand=True)
 
                                 if q_gik is None:
