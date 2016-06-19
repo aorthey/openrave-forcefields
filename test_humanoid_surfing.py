@@ -115,7 +115,6 @@ if __name__ == "__main__":
         left_leg_surface = 4
         right_leg_surface = 4
 
-
         #######################################################################
         left_leg_tf = robot.GetManipulator('l_leg').GetTransform()
         right_leg_tf = robot.GetManipulator('r_leg').GetTransform()
@@ -160,8 +159,8 @@ if __name__ == "__main__":
         ictr=0
         ictr_valid = 0
         with env.env:
-                handler = VisualizeCOMSet(qcom, env, np.array((0.0,1.0,0.0,0.4)))
-                handler2 = VisualizeCOMSet(qcom2, env, np.array((1.0,0.0,1.0,0.4)))
+                handler = VisualizeCOMSet(qcom, env, np.array((0.0,1.0,0.0,0.5)))
+                handler2 = VisualizeCOMSet(qcom2, env, np.array((1.0,0.0,1.0,0.2)))
 
 
         np.random.seed(0)

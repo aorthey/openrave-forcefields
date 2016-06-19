@@ -92,8 +92,6 @@ if __name__ == "__main__":
         left_leg_relative_surface_tf = S.GetContactRelativeToSurfaceTransform(left_leg_tf, left_leg_surface) 
         right_leg_relative_surface_tf = S.GetContactRelativeToSurfaceTransform(right_leg_tf, right_leg_surface) 
 
-        ictr=0
-
         W = env.env.GetKinBody('world')
         B = W.GetLink('surfboard')
         #T = B.GetTransform()
@@ -101,7 +99,7 @@ if __name__ == "__main__":
         cog_handler = []
 
         Mwaypoints = 20
-        MsamplesPerStance = 10000
+        MsamplesPerStance = 2000
 
         tvec = linspace(0,1,Mwaypoints)
 
@@ -165,6 +163,9 @@ if __name__ == "__main__":
                                 #######################################################
                                 ### random noise on environment
                                 #######################################################
+                                print "#############################################################"
+                                print "WP:",ictr,"/",Mwaypoints,"sample:",m,"/",MsamplesPerStance
+                                print "#############################################################"
 
                 t2 = time.time()
                 tall = t2-t1
