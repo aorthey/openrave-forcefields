@@ -7,7 +7,7 @@ from util import *
 
 class DeformationModuleStretch(DeformationModule):
 
-        DEBUG = False
+        DEBUG = True
         handler = []
         def get_gradient(self, lambda_coeff):
 
@@ -19,7 +19,11 @@ class DeformationModuleStretch(DeformationModule):
                 Nwaypoints = self.DeformInfo['Nwaypoints']
                 critical_pt = self.DeformInfo['critical_pt']
 
-                tangent = dWori[:,critical_pt]
+                first_pt = critical_pt-1
+                last_pt = 0
+                print "first pt:",first_pt,"last pt:",last_pt
+
+                tangent = dWori[:,first_pt]
                 tangent /= np.linalg.norm(tangent)
                 normal = np.dot(Rz(pi/2),np.array((tangent[0],tangent[1],1)))
                 normal = np.array((normal[0], normal[1], 0.0, 0.0))
@@ -28,9 +32,6 @@ class DeformationModuleStretch(DeformationModule):
                 epsilon = 1e-2
                 dc = 0.0
 
-                first_pt = critical_pt
-                last_pt = 0
-                print "first pt:",first_pt,"last pt:",last_pt
 
                 dUtmp = np.zeros((Ndim,Nwaypoints))
                 if self.ContainsReidemeisterTwist( tangent, Wori, first_pt, last_pt):
@@ -38,9 +39,13 @@ class DeformationModuleStretch(DeformationModule):
                         [idxW1,idxW2,idxW3] = self.IdentifyReidemeisterSubpaths(
                                         tangent, Wori, dWori, first_pt, last_pt)
 
-                        sf = 20.0
+                        sf = 15.0
                         ########################### idx1
                         Wdir = np.zeros((Ndim,Nwaypoints))
+                        idxW1
+                        idxW1_start = idxW1[0]
+                        idxW1_end = idxW1[-1]
+
                         for idx in idxW1:
                                 Wdir[:,idx] = -tangent-0.1*normal
 
@@ -58,7 +63,7 @@ class DeformationModuleStretch(DeformationModule):
                         ########################### idx2
                         Wdir = np.zeros((Ndim,Nwaypoints))
                         for idx in idxW2:
-                                Wdir[:,idx] = normal
+                                Wdir[:,idx] = -tangent + normal
 
                         dUtmp2 = np.zeros((Ndim,Nwaypoints))
                         for i in range(0,Nwaypoints):
@@ -74,15 +79,18 @@ class DeformationModuleStretch(DeformationModule):
                         for idx in idxW3:
                                 Wdir[:,idx] = tangent
                         dUtmp3 = np.zeros((Ndim,Nwaypoints))
+
                         for i in range(0,Nwaypoints):
                                 A = self.SmoothVector(traj,i,Wori,smoothing_factor=sf)
                                 dUtmp3[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
+
                         Wnext = Wori + dUtmp3
                         if traj.IsInCollision(env, Wnext):
                                 print "idx3 collision"
                         else:
                                 dUtmp += dUtmp3
                         ###########################
+                        #sys.exit(0)
 
 
                 else:
@@ -152,7 +160,6 @@ class DeformationModuleStretch(DeformationModule):
                                         break
                                 #dW = W[:,i]-W[:,i-1]
                                 direction = np.dot(dW[:,i],tangent)
-                                print direction
                                 i-=1
                         sec2_end = i
                         sec3_start = sec2_end
@@ -321,19 +328,22 @@ class DeformationModuleStretch(DeformationModule):
 
                 dUtmp = Wupdate
 
-                Wnext = W + dUtmp
-                #Wnext = self.InsertMissingWaypoints(Wnext, traj.DISCRETIZATION_TIME_STEP)
-                #from trajectory import *
-                #tnext = Trajectory(Wnext)
-                #[Wnext2,tmp,tmpp] = tnext.get_waypoints_second_order(N=1000)
-
-                #first_pt2=0
-                #d = 100
-                #while d > 0.01:
-                #        d = np.linalg.norm(W[0,first_pt]-Wnext2[0,first_pt2])
-                #        first_pt2+=1
-
                 if self.DEBUG:
+
+                        Wnext = W + dUtmp
+                        #Wnext = self.InsertMissingWaypoints(Wnext, traj.DISCRETIZATION_TIME_STEP)
+                        from trajectory import *
+
+                        tnext = Trajectory(Wnext)
+                        [Wnext2,tmp,tmpp] = tnext.get_waypoints_second_order(N=100)
+
+                        first_pt2=0
+                        d = 100
+                        while d > traj.DISCRETIZATION_TIME_STEP:
+                                d = np.linalg.norm(W[0,first_pt]-Wnext2[0,first_pt2])
+                                first_pt2+=1
+
+
                         first_pt = first_pt - int(Nclip*0.4)
                         #last_pt = last_pt + int(Nclip*0.5)
                         fs = 22
@@ -347,8 +357,8 @@ class DeformationModuleStretch(DeformationModule):
                         plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]+offset_new_line,'ok',markersize=5)
                         plt.plot(Wmid[0],Wmid[1]+offset_new_line,'ok',markersize=12)
 
-                        #plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+offset_new_line,'-og',linewidth=9,markersize=5)
-                        #plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+offset_new_line,'ok',markersize=7)
+                        plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+offset_new_line,'-og',linewidth=9,markersize=5)
+                        plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+offset_new_line,'ok',markersize=7)
 
                         for i in range(last_pt,first_pt):
                                 W0 = Wnext[0,i]

@@ -156,6 +156,8 @@ class TOPPInterface():
                         #N = int(L/dt)
                         #Npts = int(self.path_length/dt)
                 dt = float(self.DURATION_DISCRETIZATION)
+                while dt > self.traj0.duration:
+                        dt/=2.0
                 Npts = int(self.traj0.duration/dt)
                 tvect = np.linspace(0,self.traj0.duration, Npts)
                 qvect = np.array([self.traj0.Eval(t) for t in tvect])
