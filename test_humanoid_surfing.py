@@ -14,7 +14,7 @@ from cbirrtpy import *
 from deformation_naive import *
 from deformation_potentials import *
 from deformation_stretchpull import *
-from trajectory_bspline import *
+from trajectory import *
 import numpy as np
 from motion_planner_geometrical import MotionPlannerGeometrical
 from motion_planner_kinodynamic import MotionPlannerKinodynamic
@@ -57,10 +57,8 @@ def VisualizeCOMSet(q, env, tricolor=np.array((1,0,1,1))):
         image = fig.gca(projection='3d')
 
         x,y,z=q.T
-        print x,y
 
         tri = Triangulation(x, y, triangles=hull.simplices)
-        print tri.triangles
 
         triangle_vertices = np.array([np.array([[x[T[0]], y[T[0]], z[T[0]]],
                 [x[T[1]], y[T[1]], z[T[1]]],
@@ -80,16 +78,16 @@ def VisualizeCOMSet(q, env, tricolor=np.array((1,0,1,1))):
         h = env.env.drawtrimesh(points=q,indices=hull.simplices,colors=tricolor)
         handler.append(h)
 
-        h = env.env.plot3(points=q,
-                pointsize=0.01,
-                colors=array((1,0,1,1)),
-                drawstyle=1)
-        handler.append(h)
-        h = env.env.plot3(points=q[hull.vertices,:],
-                pointsize=0.01,
-                colors=array((1,0,1,1)),
-                drawstyle=1)
-        handler.append(h)
+        #h = env.env.plot3(points=q,
+        #        pointsize=0.01,
+        #        colors=array((1,0,1,1)),
+        #        drawstyle=1)
+        #handler.append(h)
+        #h = env.env.plot3(points=q[hull.vertices,:],
+        #        pointsize=0.01,
+        #        colors=array((1,0,1,1)),
+        #        drawstyle=1)
+        #handler.append(h)
         return handler
 
 
@@ -147,119 +145,81 @@ if __name__ == "__main__":
 
         cog_handler = []
 
-        Mwaypoints = 1
-        MsamplesPerStance = 10000
-
-        tvec = linspace(0,1,Mwaypoints)
         DEBUG=True
 
-        qcom = np.loadtxt("trajectories/surfboard_com_test.txt",dtype='float')
-        qcom2 = np.loadtxt("trajectories/surfboard_com_all_test.txt",dtype='float')
-
-        ictr=0
-        ictr_valid = 0
-        with env.env:
-                handler = VisualizeCOMSet(qcom, env, np.array((0.0,1.0,0.0,0.5)))
-                handler2 = VisualizeCOMSet(qcom2, env, np.array((1.0,0.0,1.0,0.2)))
-
-
         np.random.seed(0)
+        cog_in = np.loadtxt("trajectories/surfboard_com.txt",dtype='float')
+        q_in = np.loadtxt("trajectories/surfboard_q.txt",dtype='float')
+
+        h = env.env.drawlinestrip(points=cog_in,
+                        linewidth=5,
+                        colors=array((1,0,1,1)))
+        cog_handler.append(h)
+
+        from trajectory import Trajectory
+
+        ctraj = Trajectory(cog_in.T)
+        qtraj = Trajectory(q_in.T)
+
+        with env.env:
+                handler = []
+                for i in range(0,20):
+                        qcom = np.loadtxt("trajectories/surfboard_com_"+str(i)+".txt",dtype='float')
+                        qcom2 = np.loadtxt("trajectories/surfboard_com_all_"+str(i)+".txt",dtype='float')
+                        h = VisualizeCOMSet(qcom, env, np.array((0.0,1.0,0.0,0.1)))
+                        handler.append(h)
+                        h = VisualizeCOMSet(qcom2, env, np.array((1.0,0.0,1.0,0.02)))
+                        handler.append(h)
+
+        Mwaypoints=200
+        tvec = linspace(0,1,Mwaypoints)
+
         for t in tvec:
                 t1 = time.time()
-                for m in range(0,MsamplesPerStance):
-                        with env.env:
-                                #handler = VisualizeCOMSet(qcom, env)
-                                T = EvalSurfboardPath(t)
-                                B.SetTransform(T)
+                with env.env:
+                        [cog,dcog] =ctraj.evaluate_at(t)
+                        [q,dq] =qtraj.evaluate_at(t)
+                        T = EvalSurfboardPath(t)
+                        B.SetTransform(T)
 
-                                surfaces = env.GetSurfaces()
-                                S = SurfaceModule(surfaces)
-                                #######################################################################
+                        surfaces = env.GetSurfaces()
+                        S = SurfaceModule(surfaces)
+                        #######################################################################
 
-                                #######################################################
-                                ### draw
-                                #######################################################
+                        #######################################################
+                        ### draw
+                        #######################################################
 
-                                right_leg_tf = np.eye(4)
-                                left_leg_tf = np.eye(4)
-                                sy =  np.dot(T[0:3,0:3],ey)
-                                sz =  np.dot(T[0:3,0:3],ez)
-                                dl = 0.25
-                                dz = 0.03
+                        right_leg_tf = np.eye(4)
+                        left_leg_tf = np.eye(4)
+                        sy =  np.dot(T[0:3,0:3],ey)
+                        sz =  np.dot(T[0:3,0:3],ez)
+                        dl = 0.25
+                        dz = 0.03
 
-                                right_leg_tf[0:3,0:3] = T[0:3,0:3]
-                                right_leg_tf[0:3,3]= T[0:3,3]-dl*sy+dz*sz
-                                left_leg_tf[0:3,0:3] = T[0:3,0:3]
-                                left_leg_tf[0:3,3]= T[0:3,3]+dl*sy+dz*sz
+                        right_leg_tf[0:3,0:3] = T[0:3,0:3]
+                        right_leg_tf[0:3,3]= T[0:3,3]-dl*sy+dz*sz
+                        left_leg_tf[0:3,0:3] = T[0:3,0:3]
+                        left_leg_tf[0:3,3]= T[0:3,3]+dl*sy+dz*sz
 
-                                X = T[0:3,3]
+                        #print cog
+                        #res = gik.giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
+                        robot.SetActiveDOFValues(q)
 
-                                offset = 0.3
-                                xmin = X[0]-offset
-                                xmax = X[0]+offset
+                        if env.static_handles:
+                               env.static_handles = None
+                               env.static_handles = []
+                        env.DrawFootContactPatchFromTransform(left_leg_tf, cpatch=green)
+                        env.DrawFootContactPatchFromTransform(right_leg_tf, cpatch=green)
+                        S.DrawCoordinateFrames(env)
 
-                                ymin = X[1]-offset
-                                ymax = X[1]+offset
-
-                                zmin = X[2]-0.0
-                                zmax = X[2]+1.5
-
-                                cog = np.zeros(3)
-                                cog[0] = np.random.uniform(xmin,xmax)
-                                cog[1] = np.random.uniform(ymin,ymax)
-                                cog[2] = np.random.uniform(zmin,zmax)
-
-                                res = gik.check_giwc(robot, cog, left_leg_tf, right_leg_tf, None, None)
-
-                                print "RES:",res
-                                ictr+=1
-                                if res:
-                                        h = env.env.plot3(points=cog,
-                                                        pointsize=0.01,
-                                                        colors=array((0,1,0,1)),
-                                                        drawstyle=1)
-                                        cog_handler.append(h)
-                                        ictr_valid+=1
-                                else:
-                                        h = env.env.plot3(points=cog,
-                                                        pointsize=0.01,
-                                                        colors=array((1,0,0,1)),
-                                                        drawstyle=1)
-                                        cog_handler.append(h)
-
-                                if env.static_handles:
-                                       env.static_handles = None
-                                       env.static_handles = []
-                                env.DrawFootContactPatchFromTransform(left_leg_tf, cpatch=green)
-                                env.DrawFootContactPatchFromTransform(right_leg_tf, cpatch=green)
-                                S.DrawCoordinateFrames(env)
-                                print "VALID SAMPLES:",ictr_valid,"/",ictr,"(",float(ictr_valid)/float(ictr),")"
-                                #else:
-                                        #h = env.env.plot3(points=gik.cog,
-                                        #                pointsize=0.01,
-                                        #                colors=array((1,0,0,1)),
-                                        #                drawstyle=1)
-                                        #cog_handler.append(h)
-                                #q = gik.fromContactTransform(robot, left_leg_tf,
-                                                #right_leg_tf, None, None)
-
-                                #gik.VisualizeFrictionCone(robot)
-
-                                #torques = (numpy.random.rand(robot.GetDOF())-0.5)
-                                #robot.SetJointTorques(torques,True)
-                                #######################################################
-                                ### random noise on environment
-                                #######################################################
-
-                        #if DEBUG:
-                        env.env.StepSimulation(0.002)
-                        #time.sleep(0.5)
+                env.env.StepSimulation(0.002)
+                time.sleep(0.2)
+                if t<=0:
+                        raw_input('Press <ENTER> to execute com traj.')
                 t2 = time.time()
                 tall = t2-t1
-                print "sampling",MsamplesPerStance,"samples, time:",tall
-                tps = float(tall)/float(MsamplesPerStance)
-                print "time per sample:",tps
-                print "estimated time:",tps*Mwaypoints*MsamplesPerStance
+                print "time:",tall
 
 
         robot.WaitForController(0)

@@ -56,6 +56,7 @@ class TOPPInterface():
                 if dendpoint > self.TRAJECTORY_ACCURACY_REQUIRED:
                         print self.length
                         print "###############"
+                        print self.trajstr
                         print "FINAL POINT on piecewise C^2 traj:",self.traj0.Eval(self.length)
                         print "FINAL WAYPOINT                   :",W[:,-1]
                         print "###############"
@@ -179,7 +180,6 @@ class TOPPInterface():
                 tavect = np.linspace(0,self.traj0.duration, self.Nwaypoints)
                 
                 fig=figure(facecolor='white')
-
 
                 ax1 = subplot(4,1,1)
                 plot(twvect, self.W_[0,:], '--', color = color_x_coordinate, linewidth = lw)

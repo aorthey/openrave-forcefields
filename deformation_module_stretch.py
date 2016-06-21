@@ -1,5 +1,6 @@
 import abc
 import pylab as plt
+from pylab import *
 import sys
 from deformation_module import *
 from util import *
@@ -112,8 +113,10 @@ class DeformationModuleStretch(DeformationModule):
 
 
         def ScaleFactorBall(self, i, Nprev, ds_ball):
-                d = ds_ball * np.sqrt((i)/(Nprev-1.0))
+                t=(i+1)/(Nprev-1.0)
+                #d = ds_ball * np.sqrt(t)
                 #d = ds_ball * np.sqrt((i+1)/(Nprev-1.0))
+                d = ds_ball*(-(1-t)**2+1.0)
                 return d
 
         def ContainsReidemeisterTwist( self, tangent, W, first_pt, last_pt ):
@@ -226,10 +229,13 @@ class DeformationModuleStretch(DeformationModule):
                 Nwaypoints = W.shape[1]
                 dUtmp = np.zeros((Ndim,Nwaypoints))
                 Mclip = 0.4
+
+                ### for debug drawing only
+                offset_old_line = 0.03
+                offset_new_line = -0.03
                 ### clip the first Mclip percent
                 N = first_pt - last_pt
                 Nclip = int(Mclip*N)
-                print N,Mclip,Nclip
 
                 N = N - 2*Nclip
                 ds_ball = ds_ball*int(N/2)
@@ -241,13 +247,12 @@ class DeformationModuleStretch(DeformationModule):
                 else:
                         if N%2 == 0:
                                 ## even
-                                Nmid = N/2 + Nclip + last_pt
-                                ## draw circle around mid point
-                                Wmid = W[:,Nmid-1] + 0.5*(W[:,Nmid] - W[:,Nmid-1])
+                                Nmid = N/2
                         else:
                                 ## odd
                                 Nmid = (N-1)/2
-                                Wmid = 0.5*(W[:,Nmid] - W[:,Nmid-1])
+                        Nmid += Nclip + last_pt
+                        Wmid = W[:,Nmid-1] + 0.5*(W[:,Nmid] - W[:,Nmid-1])
 
                         print "Nmid:",Nmid,"last:",last_pt,"first:",first_pt,"N:",N
                         print "Nlast:",last_pt+Nclip,"Nfirst:",first_pt-Nclip,"Nclip:",Nclip
@@ -288,14 +293,13 @@ class DeformationModuleStretch(DeformationModule):
                         ds_scale = self.ScaleFactorBall(Nprev-i-1, Nprev+1, ds_ball)
                         Wcirc[:,Nprev+i] = Wmid + ds_scale*Wtmp
 
-                        #plt.plot(Wcirc[0,i],Wcirc[1,i],'-og',markersize=10)
-                        #plt.plot(W[0,last_pt+Nclip+i],W[1,last_pt+Nclip+i],'-og',markersize=10)
-                        L1 = Wcirc[:,i]
-                        L2 = W[:,last_pt+Nclip+i]
-                        plt.plot([L1[0],L2[0]],[L1[1],L2[1]],'-g',markersize=10)
-                        L3 = Wcirc[:,Nprev+i]
-                        L4 = W[:,Nmid+i]
-                        plt.plot([L3[0],L4[0]],[L3[1],L4[1]],'-r',markersize=10)
+                        #if self.DEBUG:
+                        #        L1 = Wcirc[:,i]
+                        #        L2 = W[:,last_pt+Nclip+i]
+                        #        plt.plot([L1[0],L2[0]],[L1[1]+offset_new_line,L2[1]+offset_old_line],'-k',markersize=10)
+                        #        L3 = Wcirc[:,Nprev+i]
+                        #        L4 = W[:,Nmid+i]
+                        #        plt.plot([L3[0],L4[0]],[L3[1]+offset_new_line,L4[1]+offset_old_line],'-k',markersize=10)
 
                         ## left update
                         Wupdate[:,last_pt+Nclip+i] = Wcirc[:,i] - W[:,last_pt+Nclip+i]
@@ -303,26 +307,49 @@ class DeformationModuleStretch(DeformationModule):
 
                 #print Wupdate
 
-                dUtmp = 0.5*Wupdate
+                dUtmp = Wupdate
 
                 Wnext = W + dUtmp
 
                 if self.DEBUG:
+                        first_pt = first_pt - int(Nclip*0.4)
+                        #last_pt = last_pt + int(Nclip*0.5)
+                        fs = 22
                         ## original line
-                        plt.plot(W[0,last_pt:first_pt],W[1,last_pt:first_pt]+0.01,'-og',linewidth=8)
+                        fig=figure(facecolor='white')
+                        plt.plot(W[0,last_pt:first_pt],W[1,last_pt:first_pt]+offset_old_line,'-og',linewidth=9,markersize=5)
+                        plt.plot(W[0,last_pt:first_pt],W[1,last_pt:first_pt]+offset_old_line,'ok',markersize=5)
+                        plt.plot(Wmid[0],Wmid[1]+offset_old_line,'ok',markersize=12)
 
-                        ## infinitesimal twist line
+                        plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]+offset_new_line,'-or',linewidth=9,markersize=5)
+                        plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]+offset_new_line,'ok',markersize=5)
+                        plt.plot(Wmid[0],Wmid[1]+offset_new_line,'ok',markersize=12)
+
                         for i in range(last_pt,first_pt):
-                                Wnext[1,i]+=i*0.001
-                        plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]-0.03,'-or',linewidth=1,markersize=2)
+                                W0 = Wnext[0,i]
+                                W1 = Wnext[1,i]+offset_new_line
+                                I0 = W[0,i]
+                                I1 = W[1,i]+offset_old_line
+                                plt.plot([W0,I0],[W1,I1],'-',color=np.array((0.4,0.4,0.4,1)),markersize=10)
 
                         #plt.plot(W[0,last_pt+Nclip:first_pt-Nclip],W[1,last_pt+Nclip:first_pt-Nclip],'-or')
-                        plt.plot(Wmid[0],Wmid[1],'-og',markersize=10)
 
-                        circle = plt.Circle((Wmid[0],Wmid[1]),ds_ball,color='r',fill=False)
+                        circle = plt.Circle((Wmid[0],Wmid[1]+offset_new_line),ds_ball,color='r',fill=False)
                         plt.gca().add_artist(circle)
-                        plt.axis('equal')
+                        #circle = plt.Circle((Wmid[0],Wmid[1]+offset_old_line),ds_ball,color='r',fill=False)
+                        #plt.gca().add_artist(circle)
+                        plt.xlabel('X',fontsize=fs)
+                        plt.ylabel('Y',fontsize=fs)
+                        #plt.axis('equal')
+                        ax = fig.gca()
+                        for tick in ax.xaxis.get_major_ticks():
+                                tick.label.set_fontsize(fs) 
+                        for tick in ax.yaxis.get_major_ticks():
+                                tick.label.set_fontsize(fs) 
+                        ax.xaxis.labelpad = 20
+                        ax.yaxis.labelpad = 20
                         plt.show()
+
                 print "INSIDE:",Wnext
                 print dUtmp
                 return dUtmp

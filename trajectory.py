@@ -30,7 +30,7 @@ class Trajectory():
         #env_ptr = []
 
         SMOOTH_CONSTANT=0 ##TODO: do not change to >0 => problems with PPoly
-        POLYNOMIAL_DEGREE=3
+        POLYNOMIAL_DEGREE=2
         MIN_NUMBER_WAYPOINTS = 5
 
         ##drawing parameters
@@ -183,7 +183,6 @@ class Trajectory():
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
 
-                toffset = 0.1
                 ###############################################################
                 ##### get number of intervals between breakpoints
                 tvec = np.linspace(0,1,W.shape[1])
@@ -193,35 +192,24 @@ class Trajectory():
                 Ninterval = B.shape[0]-1
                 ###############################################################
                 ###############################################################
-                ###############################################################
-                if 0:
-                        tvec = np.linspace(0,1,100*W.shape[1])
-                        print splev(tvec,trajectory)
-                        print splev(tvec,trajectory,der=1)
-                        tvec = np.linspace(0,1,W.shape[1])
-                        tvec = np.hstack((-0.1,tvec,1.1))
-                        Wnext = np.hstack((W[0,0],W[0,:],W[0,-1]))
-                        trajectory = splrep(tvec,Wnext,k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
-                        print tvec,W[0,:]
-                        tvec = np.linspace(0,1,100*W.shape[1])
-                        print splev(tvec,trajectory)
-                        print splev(tvec,trajectory,der=1)
-                        sys.exit(0)
-                ###############################################################
-                ###############################################################
-                P = np.zeros((Ninterval, Ndim, 4))
+
+                Kcoeff = self.POLYNOMIAL_DEGREE+1
+                P = np.zeros((Ninterval, Ndim, Kcoeff))
 
                 durationVector = np.zeros((Ninterval))
                 for j in range(1,B.shape[0]):
                         d = B[j]-B[j-1]
                         durationVector[j-1] = d
                 bspline = []
+
+                #print Ninterval
                 for i in range(0,Ndim):
+
 
                         tvec = np.linspace(0,1,Nwaypoints)
                         WP = W[i,:]
 
-                        #tvec = np.hstack((-0.1,tvec,1.1))
+                        #tvec = np.hstack((-0.5,tvec,1.5))
                         #WP = np.hstack((W[i,0],W[i,:],W[i,-1]))
 
                         trajectory = splrep(tvec,WP,k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
@@ -235,27 +223,34 @@ class Trajectory():
 
                         #print poly.x
                         #print W[i,:]
-                        #print splev(0.0001,trajectory)
+                        #print splev(0.0,trajectory)
+                        #print splev(1.0,trajectory)
+                        #print splev(0.0,trajectory,der=1)
+                        #print splev(1.0,trajectory,der=1)
+                        #print coeff
                         #sys.exit(0)
 
-
                         try:
-                                P[:,i,0] = coeff[3,:-1]
-                                P[:,i,1] = coeff[2,:-1]
-                                P[:,i,2] = coeff[1,:-1]
-                                P[:,i,3] = coeff[0,:-1]
+                                for j in range(0,Kcoeff):
+                                        P[:,i,j] = coeff[Kcoeff-j-1,:-1]
+                                #P[:,i,0] = coeff[3,:-1]
+                                #P[:,i,1] = coeff[2,:-1]
+                                #P[:,i,2] = coeff[1,:-1]
+                                #P[:,i,3] = coeff[0,:-1]
                         except Exception as e:
-                                print Ninterval
                                 print "TOPP EXCEPTION: ",e
+                                print i,"/",Ndim
                                 print B
                                 print coeff
                                 sys.exit(0)
 
                         #### TODO: remove z-coordinates for now
                         if i == 2:
-                                P[:,i,3]=0
-                                P[:,i,2]=0
-                                P[:,i,1]=0
+                                for j in range(1,Kcoeff):
+                                        P[:,i,j]=0
+                                #P[:,i,3]=0
+                                #P[:,i,2]=0
+                                #P[:,i,1]=0
 
                 for i in range(0,durationVector.shape[0]):
                         duration = durationVector[i]
@@ -267,7 +262,12 @@ class Trajectory():
 
                         for j in range(Ndim):
                                 trajectorystring += "\n"
-                                trajectorystring += string.join([str(P[i,j,0]),str(P[i,j,1]),str(P[i,j,2]),str(P[i,j,3])])
+                                trajectorystring += string.join(map(str,P[i,j,:]))
+                                #trajectorystring += string.join([str(P[i,j,0]),str(P[i,j,1]),str(P[i,j,2]),str(P[i,j,3])])
+                                #trajectorystring += string.join([str(P[i,j,0]),str(P[i,j,1])])
+
+                #print trajectorystring
+                #sys.exit(0)
 
                 return [bspline, trajectorystring, durationVector]
 

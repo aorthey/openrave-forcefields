@@ -286,14 +286,6 @@ class GIKInterface():
 
                                 robot.SetActiveDOFValues(q_gik)
 
-                                robot.SetActiveDOFValues(q_gik)
-                                self.cogIsValid = cbirrt.CheckGIWC(
-                                                support=support_list,
-                                                center=cog,
-                                                gravity=F.tolist(),
-                                                printcommand=True)
-
-
                                 q_gik = cbirrt.DoGeneralIK(
                                                 maniptm=maniptm_list,
                                                 support=support_list,
@@ -303,6 +295,7 @@ class GIKInterface():
                                                 #checkcollisionlink=['l_foot','r_foot'],
                                                 #obstacles=obstacle_list,
                                                 printcommand=True)
+
 
                                 if q_gik is None:
                                         print "------------------------------------------------------- "
@@ -315,6 +308,8 @@ class GIKInterface():
                                         return False
 
                                 robot.SetActiveDOFValues(q_gik)
+
+                                self.q = q_gik
                                 self.cog = robot.GetCenterOfMass()
                                 self.env.env.GetCollisionChecker().SetCollisionOptions(CollisionOptions.Contacts)
                                 report = CollisionReport()
