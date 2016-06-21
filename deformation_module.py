@@ -4,7 +4,7 @@ import abc
 class DeformationModule():
         __metaclass__ = abc.ABCMeta
         DeformInfo = {}
-        COLLISION_ENABLED = True
+        COLLISION_ENABLED = False
         lambda_coeff = None
 
         def __init__(self, DeformInfoIn):

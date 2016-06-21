@@ -330,9 +330,12 @@ class Deformation():
                 return FN
 
         def SafetyCheckUpdate(self, dU):
-                if not (dU[:,0]==0).all():
+                epsilon=1e-10
+                dstart = np.linalg.norm(dU[:,0])
+                dend = np.linalg.norm(dU[:,-1])
+                if dstart > epsilon:
                         print "ERROR: start point deformation -> not allowed"
                         sys.exit(1)
-                if not (dU[:,-1]==0).all():
+                if dend > epsilon:
                         print "ERROR: end point deformation -> not allowed"
                         sys.exit(1)

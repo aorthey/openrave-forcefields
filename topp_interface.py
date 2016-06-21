@@ -19,7 +19,7 @@ class TOPPInterface():
         #DURATION_DISCRETIZATION = 1
         DURATION_DISCRETIZATION = 0.001
 
-        TRAJECTORY_ACCURACY_REQUIRED = 1e-5
+        TRAJECTORY_ACCURACY_REQUIRED = 1e-1
         traj0 = []
         trajstr = []
         durationVector = []

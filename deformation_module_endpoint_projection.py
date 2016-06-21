@@ -20,11 +20,12 @@ class DeformationModuleEndPointProjection(DeformationModule):
 
                 AEnd = self.SmoothVector(traj, Nwaypoints-1, Wori)
                 AStart = self.SmoothVector(traj, 0, Wori)
-                for i in range(0,Nwaypoints):
-                        dU[:,i] += -AEnd[i]*dEnd
-                        dU[:,i] += -AStart[i]*dStart
 
-                return dU
+                for i in range(0,Nwaypoints):
+                        dUtmp[:,i] += -AEnd[i]*dEnd
+                        dUtmp[:,i] += -AStart[i]*dStart
+
+                return dUtmp
 
         def get_name(self):
                 return "endpoint subspace projection"

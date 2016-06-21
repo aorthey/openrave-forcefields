@@ -22,16 +22,15 @@ class Trajectory():
         DEBUG = 0
 
         DISCRETIZATION_TIME_STEP = 0.01
+        SMOOTH_CONSTANT=0.01 ##TODO: do not change to >0 => problems with PPoly
+        POLYNOMIAL_DEGREE=2
+        MIN_NUMBER_WAYPOINTS = 5
 
         rave_traj = []
         traj = []
         waypoints = []
         handle = []
         #env_ptr = []
-
-        SMOOTH_CONSTANT=0 ##TODO: do not change to >0 => problems with PPoly
-        POLYNOMIAL_DEGREE=2
-        MIN_NUMBER_WAYPOINTS = 5
 
         ##drawing parameters
         ptsize = 0.03
@@ -111,7 +110,7 @@ class Trajectory():
                         Nwaypoints = W.shape[1]
                 return W
         def removeDuplicateWaypoints(self, W):
-                ACCURACY_DUPLICATE = 1e-5
+                ACCURACY_DUPLICATE = self.DISCRETIZATION_TIME_STEP/1e3
                 Nwaypoints = W.shape[1]
                 if Nwaypoints == 1:
                         print "cannot create trajectory with only one waypoint"
@@ -239,6 +238,8 @@ class Trajectory():
                                 #P[:,i,3] = coeff[0,:-1]
                         except Exception as e:
                                 print "TOPP EXCEPTION: ",e
+                                print "Kcoeff:",Kcoeff,"Ninterval:",Ninterval
+                                print "P.shape",P.shape
                                 print i,"/",Ndim
                                 print B
                                 print coeff

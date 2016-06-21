@@ -23,12 +23,12 @@ class DeformationReachableSet(Deformation):
         #lambda_2 = 0.03
         #lambda_3 = 0.3*1e-2
         lambda_1 = 0.0
-        lambda_2 = 0.0
-        lambda_3 = 0.0
-        lambda_4 = 0.005
+        lambda_2 = 0.1
+        lambda_3 = 0.02
+        lambda_4 = 0.02
         #lambda_4 = 0.0
 
-        smoothing_factor = 30.0
+        smoothing_factor = 10.0
 
         def deform_onestep(self, computeNewCriticalPoint = True):
 
@@ -49,6 +49,8 @@ class DeformationReachableSet(Deformation):
 
                 if self.IsDynamicallyFeasible(DeformInfo):
                         return DEFORM_SUCCESS
+
+                #print "X2=np.array(",Wori[0:2,0:100].tolist(),")"
 
                 from deformation_module_counterwrench import *
                 from deformation_module_projection_reachable_set import *
@@ -88,5 +90,7 @@ class DeformationReachableSet(Deformation):
                                 return DEFORM_COLLISION
 
                 self.traj_deformed.new_from_waypoints(Wnext)
+                #[Wori,dWori,ddWori] = self.traj_deformed.get_waypoints_second_order()
+                #print "X1=np.array(",Wori[0:2,0:100].tolist(),")"
                 return DEFORM_OK
 

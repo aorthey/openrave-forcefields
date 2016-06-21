@@ -7,7 +7,7 @@ from util import *
 
 class DeformationModuleStretch(DeformationModule):
 
-        DEBUG = True
+        DEBUG = False
         handler = []
         def get_gradient(self, lambda_coeff):
 
@@ -19,7 +19,6 @@ class DeformationModuleStretch(DeformationModule):
                 Nwaypoints = self.DeformInfo['Nwaypoints']
                 critical_pt = self.DeformInfo['critical_pt']
 
-                dUtmp = np.zeros((Ndim,Nwaypoints))
                 tangent = dWori[:,critical_pt]
                 tangent /= np.linalg.norm(tangent)
                 normal = np.dot(Rz(pi/2),np.array((tangent[0],tangent[1],1)))
@@ -29,79 +28,67 @@ class DeformationModuleStretch(DeformationModule):
                 epsilon = 1e-2
                 dc = 0.0
 
-                ### move backwards, identify the space of allowed points
-                #while dc < epsilon:
-                #        if critical_pt-ictr >= 0:
-                #                ### check if point is STLC
-                #                [dc,Wnext] = self.GetClosestDistanceLineToPoint( Wori[:,critical_pt], Wori[:,critical_pt-ictr], tangent )
-                #                print "critical_pt:",critical_pt,"wp:",critical_pt-ictr,"dist:",dc
-                #                ictr+=1
-                #        else: 
-                #                print "done"
-                #                break
-
                 first_pt = critical_pt
-                #last_pt = critical_pt-ictr+1
                 last_pt = 0
                 print "first pt:",first_pt,"last pt:",last_pt
 
+                dUtmp = np.zeros((Ndim,Nwaypoints))
                 if self.ContainsReidemeisterTwist( tangent, Wori, first_pt, last_pt):
 
                         [idxW1,idxW2,idxW3] = self.IdentifyReidemeisterSubpaths(
                                         tangent, Wori, dWori, first_pt, last_pt)
+
+                        sf = 20.0
+                        ########################### idx1
                         Wdir = np.zeros((Ndim,Nwaypoints))
-
-                        #### apply deform potential onto reidemeister twist
-
-                        print idxW1,idxW2,idxW3
                         for idx in idxW1:
-                                Wdir[:,idx] = -tangent
+                                Wdir[:,idx] = -tangent-0.1*normal
 
-                        for idx in idxW2:
-                                Wdir[:,idx] = 0.5*normal
-
+                        dUtmp1 = np.zeros((Ndim,Nwaypoints))
                         for i in range(0,Nwaypoints):
-                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=30.0)
-                                dUtmp[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
+                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=sf)
+                                dUtmp1[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
 
-                        #### COUNTERACT any deformation on the left part of the
-                        #### twist
-                        #for idx in idxW2:
+                        Wnext = Wori + dUtmp1
+                        if traj.IsInCollision(env, Wnext):
+                                print "idx1 collision"
+                        else:
+                                dUtmp += dUtmp1
 
-                        #idx = idxW3[0]
-                        #A = self.SmoothVector(traj,idx,Wori,smoothing_factor=15.0)
-                        #for i in range(0,Nwaypoints):
-                        #        dUtmp[:,i] += -A[i]*dUtmp[:,idx]
+                        ########################### idx2
+                        Wdir = np.zeros((Ndim,Nwaypoints))
+                        for idx in idxW2:
+                                Wdir[:,idx] = normal
 
-                        #Wdirtmp = np.zeros((Ndim))
-                        #Wdirtmp[:] = dUtmp[:,idx2]
-
-                        #A = self.SmoothVector(traj,idx2,Wori,smoothing_factor=15.0)
-                        #for i in range(0,Nwaypoints):
-                                #dUtmp[:,i] += -A[i]*Wdirtmp
-
-                        Wnext = Wori + dUtmp
-                        Ic = traj.GetFirstCollisionPointIdx(env, Wnext)
-
-                        ### CHECK IF IN COLLISION
-                        return dUtmp
-                        #while Ic is not None:
-                        #print "[Stretch]",Ic
-                        #while Ic is not None:
-                        #        dW = Wnext[:,Ic] - Wnext[:,Ic-1]
-                        #        ## slide along contact
-                        #        print "[Stretch]: sliding along contact, standby"
-                        #        A = self.SmoothVector(traj,Ic,Wori,smoothing_factor=15.0)
-                        #        for i in range(0,Nwaypoints):
-                        #                dUtmp[:,i] += -A[i]*dW
-                        #        Wnext = Wori + dUtmp
-                        #        Ic = traj.GetFirstCollisionPointIdx(env, Wnext)
+                        dUtmp2 = np.zeros((Ndim,Nwaypoints))
+                        for i in range(0,Nwaypoints):
+                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=sf)
+                                dUtmp2[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
+                        Wnext = Wori + dUtmp2
+                        if traj.IsInCollision(env, Wnext):
+                                print "idx1 collision"
+                        else:
+                                dUtmp += dUtmp2
+                        ########################### idx3
+                        Wdir = np.zeros((Ndim,Nwaypoints))
+                        for idx in idxW3:
+                                Wdir[:,idx] = tangent
+                        dUtmp3 = np.zeros((Ndim,Nwaypoints))
+                        for i in range(0,Nwaypoints):
+                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=sf)
+                                dUtmp3[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
+                        Wnext = Wori + dUtmp3
+                        if traj.IsInCollision(env, Wnext):
+                                print "idx3 collision"
+                        else:
+                                dUtmp += dUtmp3
+                        ###########################
 
 
                 else:
                         ### identify the three reidemeister segments, or create them
                         print "Creating NEW infinitesimal reidemeister twist"
-                        dUtmp = self.InfinitesimalReidemeisterType1Twist(
+                        dUtmp += self.InfinitesimalReidemeisterType1Twist(
                                         traj,
                                         tangent, Wori, first_pt, last_pt,
                                         traj.DISCRETIZATION_TIME_STEP)
@@ -116,7 +103,8 @@ class DeformationModuleStretch(DeformationModule):
                 t=(i+1)/(Nprev-1.0)
                 #d = ds_ball * np.sqrt(t)
                 #d = ds_ball * np.sqrt((i+1)/(Nprev-1.0))
-                d = ds_ball*(-(1-t)**2+1.0)
+                #d = ds_ball*(-(1-t)**2+1.0)
+                d = ds_ball*(-1.2*(1-t)**2+1.0)
                 return d
 
         def ContainsReidemeisterTwist( self, tangent, W, first_pt, last_pt ):
@@ -224,6 +212,38 @@ class DeformationModuleStretch(DeformationModule):
                 pn = p1 - (gamma-gamma_step)*dp1
                 return [np.linalg.norm(pn-p2),pn]
 
+        def InsertMissingWaypoints(self,Wnext,max_dist):
+
+                np.set_printoptions(precision=2)
+                ictr=0
+                for i in range(0,Wnext.shape[1]-1):
+                        d = np.linalg.norm(Wnext[:,i]-Wnext[:,i+1])
+                        if d > max_dist:
+                                ## insert some points
+                                dW = Wnext[:,i+1]-Wnext[:,i]
+
+                                dstep = max_dist
+                                dall = np.linalg.norm(dW)
+                                Nnew = int(dall/dstep) - 1
+
+                                dcur = 0.0
+                                #print "i",i,"Nnew:",Nnew,"dstep:",dstep,"dall:",dall
+
+                                #print np.around(Wnext[:,i:i+2],2)
+                                #Wstep = dstep*dW
+                                for k in range(1,Nnew):
+                                        Wstep = (Wnext[:,i+k]-Wnext[:,i])
+                                        Wstep /= np.linalg.norm(Wstep)
+                                        Wnew = Wnext[:,i] + k*dstep*Wstep
+                                        Wnext = np.insert(Wnext, i+k, Wnew, axis=1)
+                                        ictr+=1
+                                        #print Wstep,Wnext[:,i]
+                                        #print np.around(Wnext[:,i:i+k+2],2)
+                                #sys.exit(0)
+                print "added",ictr
+                return Wnext
+
+
         def InfinitesimalReidemeisterType1Twist( self, traj, tangent, W, first_pt, last_pt, ds_ball):
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
@@ -238,7 +258,7 @@ class DeformationModuleStretch(DeformationModule):
                 Nclip = int(Mclip*N)
 
                 N = N - 2*Nclip
-                ds_ball = ds_ball*int(N/2)
+                ds_ball = ds_ball*int(N/4)
 
                 #N = int(0.66*(first_pt - last_pt))
                 if N < 3:
@@ -250,7 +270,7 @@ class DeformationModuleStretch(DeformationModule):
                                 Nmid = N/2
                         else:
                                 ## odd
-                                Nmid = (N-1)/2
+                                Nmid = (N-1)/2+1
                         Nmid += Nclip + last_pt
                         Wmid = W[:,Nmid-1] + 0.5*(W[:,Nmid] - W[:,Nmid-1])
 
@@ -293,14 +313,6 @@ class DeformationModuleStretch(DeformationModule):
                         ds_scale = self.ScaleFactorBall(Nprev-i-1, Nprev+1, ds_ball)
                         Wcirc[:,Nprev+i] = Wmid + ds_scale*Wtmp
 
-                        #if self.DEBUG:
-                        #        L1 = Wcirc[:,i]
-                        #        L2 = W[:,last_pt+Nclip+i]
-                        #        plt.plot([L1[0],L2[0]],[L1[1]+offset_new_line,L2[1]+offset_old_line],'-k',markersize=10)
-                        #        L3 = Wcirc[:,Nprev+i]
-                        #        L4 = W[:,Nmid+i]
-                        #        plt.plot([L3[0],L4[0]],[L3[1]+offset_new_line,L4[1]+offset_old_line],'-k',markersize=10)
-
                         ## left update
                         Wupdate[:,last_pt+Nclip+i] = Wcirc[:,i] - W[:,last_pt+Nclip+i]
                         Wupdate[:,Nmid+i] = Wcirc[:,Nprev+i] - W[:,Nmid+i]
@@ -310,6 +322,16 @@ class DeformationModuleStretch(DeformationModule):
                 dUtmp = Wupdate
 
                 Wnext = W + dUtmp
+                #Wnext = self.InsertMissingWaypoints(Wnext, traj.DISCRETIZATION_TIME_STEP)
+                #from trajectory import *
+                #tnext = Trajectory(Wnext)
+                #[Wnext2,tmp,tmpp] = tnext.get_waypoints_second_order(N=1000)
+
+                #first_pt2=0
+                #d = 100
+                #while d > 0.01:
+                #        d = np.linalg.norm(W[0,first_pt]-Wnext2[0,first_pt2])
+                #        first_pt2+=1
 
                 if self.DEBUG:
                         first_pt = first_pt - int(Nclip*0.4)
@@ -324,6 +346,9 @@ class DeformationModuleStretch(DeformationModule):
                         plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]+offset_new_line,'-or',linewidth=9,markersize=5)
                         plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]+offset_new_line,'ok',markersize=5)
                         plt.plot(Wmid[0],Wmid[1]+offset_new_line,'ok',markersize=12)
+
+                        #plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+offset_new_line,'-og',linewidth=9,markersize=5)
+                        #plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+offset_new_line,'ok',markersize=7)
 
                         for i in range(last_pt,first_pt):
                                 W0 = Wnext[0,i]
@@ -350,6 +375,4 @@ class DeformationModuleStretch(DeformationModule):
                         ax.yaxis.labelpad = 20
                         plt.show()
 
-                print "INSIDE:",Wnext
-                print dUtmp
                 return dUtmp

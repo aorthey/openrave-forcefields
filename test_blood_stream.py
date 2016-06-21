@@ -18,7 +18,7 @@ from deformation_naive import *
 from deformation_potentials import *
 from deformation_stretchpull import *
 from deformation_reachableset import *
-from trajectory_bspline import *
+from trajectory import *
 import numpy as np
 from motion_planner_geometrical import MotionPlannerGeometrical
 from motion_planner_kinodynamic import MotionPlannerKinodynamic
