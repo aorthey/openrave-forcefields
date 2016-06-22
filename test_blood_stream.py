@@ -44,6 +44,7 @@ if __name__ == "__main__":
 
         traj = Trajectory.from_ravetraj(rave_path)
         traj.info()
+        print "Info done"
         traj.draw(env)
         xml = env.GetName()
         traj.save('trajectories/'+xml)

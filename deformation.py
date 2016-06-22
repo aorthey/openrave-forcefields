@@ -246,30 +246,31 @@ class Deformation():
                 #### compute min/max velocity profile from path without forces
                 #### (if available). otherwise use [0,0]
 
-                self.traj_velprofile = traj.getVelocityIntervalWithoutForceField(self.env, Wori, dWori, ddWori)
                 dpmin = np.zeros((1,Nwaypoints))
                 dpmax = np.zeros((1,Nwaypoints))
-                if self.traj_velprofile is not None:
-                        Tend = self.traj_velprofile.duration
-                        Tstart = 0.0
-                        Tstep = Tend/1e4
 
-                        for i in range(0,Nwaypoints):
-                                Tcur =Tstart
-                                p = Wori[:,i]
-                                q = self.traj_velprofile.Eval(Tcur)
+                #self.traj_velprofile = traj.getVelocityIntervalWithoutForceField(self.env, Wori, dWori, ddWori)
+                #if self.traj_velprofile is not None:
+                #        Tend = self.traj_velprofile.duration
+                #        Tstart = 0.0
+                #        Tstep = Tend/1e4
 
-                                dold = 1e5
-                                dnew = np.linalg.norm(p-q)
-                                while dnew < dold:
-                                        dold = dnew
-                                        Tcur += Tstep
-                                        q = self.traj_velprofile.Eval(Tcur)
-                                        dnew = np.linalg.norm(p-q)
+                #        for i in range(0,Nwaypoints):
+                #                Tcur =Tstart
+                #                p = Wori[:,i]
+                #                q = self.traj_velprofile.Eval(Tcur)
 
-                                dq = self.traj_velprofile.Evald(Tcur)
-                                dpmax[:,i] = np.linalg.norm(dq)
-                                Tstart = Tcur
+                #                dold = 1e5
+                #                dnew = np.linalg.norm(p-q)
+                #                while dnew < dold:
+                #                        dold = dnew
+                #                        Tcur += Tstep
+                #                        q = self.traj_velprofile.Eval(Tcur)
+                #                        dnew = np.linalg.norm(p-q)
+
+                #                dq = self.traj_velprofile.Evald(Tcur)
+                #                dpmax[:,i] = np.linalg.norm(dq)
+                #                Tstart = Tcur
 
                 self.critical_pt = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, 0)
 

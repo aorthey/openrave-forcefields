@@ -175,7 +175,10 @@ class TOPPInterface():
                                 Ri = R[:,:,i]
                                 Fi = F[:,i]
                                 qdd = qddvect[i,:]
-                                a[:,i] = np.dot(Ri.T,qdd.T-Fi)
+                                atmp = np.dot(Ri.T,qdd.T-Fi)
+                                a[0,i] = atmp[0]
+                                a[1,i] = atmp[1]
+                                a[2,i] = atmp[3]
 
                 #################################
                 twvect = np.linspace(0,np.sum(self.durationVector), self.Nwaypoints)
@@ -201,10 +204,10 @@ class TOPPInterface():
 
                 ax2 = subplot(4,1,2)
                 ylabel('Velocity\n$\\left(\\frac{m}{s}\\right)$, $\\left(\\frac{rad}{s}\\right)$', fontsize=self.fs_label)
-                #plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
-                #plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
+                plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
+                plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
                 #plot(twvect, self.dW_[2,:], '--', color = color_z_coordinate, linewidth = lw)
-                #plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
+                plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
 
                 plot(tvect, qdvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\dot x$")
                 plot(tvect, qdvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\dot y$")
@@ -264,6 +267,9 @@ class TOPPInterface():
 
         def ReparameterizeTrajectory(self):
                 x = self.topp_inst.solver
+                #x.integrationtimestep = 0.001
+                #x.integrationtimestep = 0.001
+                #x.reparamtimestep = 0.01
                 ret = x.RunComputeProfiles(0.0,0.0)
                 if ret == 1:
                         x.ReparameterizeTrajectory()
@@ -276,7 +282,7 @@ class TOPPInterface():
         def getCriticalPoint(self):
                 x = self.topp_inst.solver
                 #x.integrationtimestep = 0.001
-                #x.reparamtimestep = 0.001
+                #x.reparamtimestep = 0.01
                 #x.extrareps = 10
 
                 self.critical_point = self.Nwaypoints
@@ -285,10 +291,10 @@ class TOPPInterface():
                         if ret == 4:
                                 self.critical_point = x.GetCriticalPoint()
                                 self.critical_point_value = x.GetCriticalPointValue()
-                                #print "TOPP critical pt:",self.critical_point,self.critical_point_value
+                                print "TOPP critical pt:",self.critical_point,self.critical_point_value
                                 return self.critical_point
                         if ret == 1: ##TOPP_OK
-                                #print "TOPP: success"
+                                print "TOPP: success"
                                 #x.ReparameterizeTrajectory()
                                 #ret_param = x.ReparameterizeTrajectory()
                                 #print "reparametrized"

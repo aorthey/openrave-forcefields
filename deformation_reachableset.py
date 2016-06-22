@@ -69,9 +69,9 @@ class DeformationReachableSet(Deformation):
                 dU += d3.get_update( self.lambda_3 )
                 dU += d4.get_update( self.lambda_4 )
 
-                #DeformInfo['dU'] = dU
-                #dend = DeformationModuleEndPointProjection( DeformInfo )
-                #dU += dend.get_update(0)
+                DeformInfo['dU'] = dU
+                dend = DeformationModuleEndPointProjection( DeformInfo )
+                dU += dend.get_update(0)
 
                 #################################################################
                 ## update 

@@ -23,7 +23,7 @@ class Trajectory():
 
         DISCRETIZATION_TIME_STEP = 0.01
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
-        POLYNOMIAL_DEGREE = 1
+        POLYNOMIAL_DEGREE = 3
         MIN_NUMBER_WAYPOINTS = 5
 
         rave_traj = []
@@ -69,7 +69,6 @@ class Trajectory():
                 self.Ndim = self.waypoints.shape[0]
                 self.bspline = self.computeSplineFromWaypoints(self.waypoints)
                 [self.waypoints,dW,ddW] = self.get_waypoints_second_order()
-                print self.waypoints
                 [T,D] = self.computeTrajectoryStringForTOPP(self.waypoints,dW)
                 self.trajectorystring = T
                 self.durationVector = D
@@ -162,19 +161,21 @@ class Trajectory():
                 #amax = np.array((AM,0,AM))
 
                 [Ndim,Nwaypoints] = self.getWaypointDim(W)
-                assert(Ndim==4)
-                Kdim = 3
-                R = np.zeros((Ndim,Kdim,Nwaypoints))
-                for i in range(0,Nwaypoints):
-                        if Nwaypoints>1:
-                                t = W[3,i]
-                        else:
-                                t = W[3]
+                R = params.ControlPerWaypoint(W, Ndim, Nwaypoints)
+                #[Ndim,Nwaypoints] = self.getWaypointDim(W)
+                #assert(Ndim==4)
+                #Kdim = 3
+                #R = np.zeros((Ndim,Kdim,Nwaypoints))
+                #for i in range(0,Nwaypoints):
+                #        if Nwaypoints>1:
+                #                t = W[3,i]
+                #        else:
+                #                t = W[3]
 
-                        R[0,:,i] = np.array((cos(t),-sin(t),0.0))
-                        R[1,:,i] = np.array((sin(t),cos(t),0.0))
-                        R[2,:,i] = np.array((0.0,0.0,0.0))
-                        R[3,:,i] = np.array((0.0,0.0,1.0))
+                #        R[0,:,i] = np.array((cos(t),-sin(t),0.0))
+                #        R[1,:,i] = np.array((sin(t),cos(t),0.0))
+                #        R[2,:,i] = np.array((0.0,0.0,0.0))
+                #        R[3,:,i] = np.array((0.0,0.0,1.0))
 
                 return [R,amin,amax]
 
@@ -203,7 +204,6 @@ class Trajectory():
                         durationVector[j-1] = d
                 bspline = []
 
-                #print Ninterval
                 for i in range(0,Ndim):
 
 
@@ -686,25 +686,63 @@ class Trajectory():
                 Nwaypoints = W.shape[1]
                 bspline=[]
                 for i in range(0,Ndim):
+
                         tvec = np.linspace(0,1,Nwaypoints)
-                        trajectory = splrep(tvec,W[i,:],k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
+                        WP = W[:,i]
+
+                        tvec = np.hstack((-0.1,tvec,1.1))
+
+                        epsilon = 0.01
+                        dws = np.sign(W[i,1]-W[i,0])
+                        dwe = np.sign(W[i,-2]-W[i,-1])
+                        WP = np.hstack((W[i,0]-epsilon*dws,W[i,:],W[i,-1]-epsilon*dwe))
+
+                        trajectory = splrep(tvec,WP,k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
                         bspline.append(trajectory)
                 return bspline
 
-        def computeTrajectoryStringForTOPP(self, W, dW, DEBUG=0):
+        def GetIntervalIndex(self, W):
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
+                idx = []
+                epsilon = 1e-1
+                i = 0
+                idx.append(0)
+                while i < Nwaypoints-1:
+                        k = 1
+                        d = 0.0
+                        while d < epsilon:
+                                if i+k > Nwaypoints-1:
+                                        k = Nwaypoints-i
+                                        break
+                                #print "i",i,"k",k,"d",d,Nwaypoints
+                                q0 = W[:,i]
+                                q1 = W[:,i+k]
+                                d = np.linalg.norm(q0-q1)
+                                k+=1
+                        k=k-1
+                        i = i + k
+                        idx.append(i)
+                return np.array(idx)
 
+        def computeTrajectoryStringForTOPP(self, W, dW, DEBUG=0):
+                #idx = self.GetIntervalIndex(W)
+                #W = W[:,idx]
+                #dW = dW[:,idx]
+
+                Ndim = W.shape[0]
+                Nwaypoints = W.shape[1]
                 Kcoeff = 4
                 Ninterval = Nwaypoints-1
+
                 P = np.zeros((Ninterval, Ndim, Kcoeff))
-                print "Ninterval:",Ninterval,"Nwaypoints:",Nwaypoints
+                #print "Ninterval:",Ninterval,"Nwaypoints:",Nwaypoints
 
                 durationVector = np.zeros((Ninterval))
                 for i in range(0,Ninterval):
                         durationVector[i] = 1.0/float(Ninterval)
 
-                print durationVector
+                #print durationVector
                 for i in range(0,Ndim):
 
                         for j in range(0,Ninterval):
@@ -715,19 +753,16 @@ class Trajectory():
                                 qd0 = dW[i,j]
                                 qd1 = dW[i,j+1]
 
-                                #qd0 = W[i,j+1]-W[i,j]
-
-                                #if j<Ninterval-1:
-                                #        qd1 = W[i,j+2]-W[i,j+1]
-                                #else:
-                                #        qd1 = W[i,j+1]-W[i,j]
+                                ddd = np.linalg.norm(dW[:,j])
+                                if ddd < 1e-10:
+                                        print "vel:",ddd,"at",j,"dw:",np.around(dW[:,j],4)
+                                        sys.exit(0)
 
                                 [a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
                                 P[j,i,0] = a
                                 P[j,i,1] = b
                                 P[j,i,2] = c
                                 P[j,i,3] = d
-
 
                                 qspline0 = a
                                 qspline1 = a+T*b+T*T*c+T*T*T*d
@@ -740,11 +775,12 @@ class Trajectory():
                                         sys.exit(0)
 
                                 if i == 2:
+                                        #P[j,i,0]=0
                                         P[j,i,1]=0
                                         P[j,i,2]=0
                                         P[j,i,3]=0
 
-                self.CheckPolynomial(W,P,durationVector)
+                #self.CheckPolynomial(W,P,durationVector)
                 for i in range(0,durationVector.shape[0]):
                         duration = durationVector[i]
                         if i==0:
@@ -757,7 +793,6 @@ class Trajectory():
                                 trajectorystring += "\n"
                                 trajectorystring += string.join(map(str,P[i,j,:]))
 
-                #print trajectorystring
                 return [trajectorystring, durationVector]
 
         def CheckPolynomial(self, W, P, D):
@@ -765,6 +800,8 @@ class Trajectory():
 
                 X = []
                 Y = []
+                dX = []
+                dY = []
                 for i in range(0,D.shape[0]):
                         t=0.0
                         tstep = D[i]/100
@@ -772,17 +809,37 @@ class Trajectory():
                         while t <= D[i]:
                                 j = 0
                                 x = P[i,j,0] + P[i,j,1]*t + P[i,j,2]*t*t + P[i,j,3]*t*t*t
+                                dx = P[i,j,1] + 2*P[i,j,2]*t + 3*P[i,j,3]*t*t
                                 X.append(x)
+                                dX.append(dx)
                                 j = 1
                                 y = P[i,j,0] + P[i,j,1]*t + P[i,j,2]*t*t + P[i,j,3]*t*t*t
+                                dy = P[i,j,1] + 2*P[i,j,2]*t + 3*P[i,j,3]*t*t
                                 Y.append(y)
+                                dY.append(dy)
                                 t+=tstep
 
                 X=np.array(X)
                 Y=np.array(Y)
-                plt.plot(X,Y,'or',linewidth=3)
-                plt.plot(W[0,:],W[1,:],'ok',markersize=5)
+                dX=np.array(dX)
+                dY=np.array(dY)
+                smallestdP = 1
+                imin = -1
+                for i in range(0,X.shape[0]):
+                        dP = np.array((dX[i],dY[i]))
+                        d = np.linalg.norm(dP)
+                        if d < smallestdP:
+                                smallestdP = d
+                                imin = i
+
+                        dP /= np.linalg.norm(dP)
+                        x0 = X[i]
+                        x1 = X[i]+dP[0]
+                        y0 = Y[i]
+                        y1 = Y[i]+dP[1]
+                        plt.plot([x0,x1],[y0,y1],'-r',linewidth=3)
+
+                plt.plot(X,Y,'-k',linewidth=3)
+                plt.plot(W[0,:],W[1,:],'ok',markersize=6)
                 plt.plot(P[:,0,0],P[:,1,0],'ob',markersize=6)
                 plt.show()
-
-

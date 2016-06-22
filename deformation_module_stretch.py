@@ -21,7 +21,8 @@ class DeformationModuleStretch(DeformationModule):
 
                 first_pt = critical_pt-1
                 last_pt = 0
-                print "first pt:",first_pt,"last pt:",last_pt
+                if self.DEBUG:
+                        print "first pt:",first_pt,"last pt:",last_pt
 
                 tangent = dWori[:,first_pt]
                 tangent /= np.linalg.norm(tangent)
@@ -71,7 +72,7 @@ class DeformationModuleStretch(DeformationModule):
                                 dUtmp2[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
                         Wnext = Wori + dUtmp2
                         if traj.IsInCollision(env, Wnext):
-                                print "idx1 collision"
+                                print "idx2 collision"
                         else:
                                 dUtmp += dUtmp2
                         ########################### idx3
@@ -126,7 +127,8 @@ class DeformationModuleStretch(DeformationModule):
                         dW = W[:,i]-W[:,i-1]
                         direction = np.dot(dW,tangent)
                         i-=1
-                print "Found reidemeister twist at",i
+                if self.DEBUG:
+                        print "Found reidemeister twist at",i
                 return True
 
         def IdentifyReidemeisterSubpaths( self, tangent, W, dW, first_pt, last_pt ):
@@ -138,9 +140,7 @@ class DeformationModuleStretch(DeformationModule):
 
                 while direction > 0:
                         if i <= last_pt:
-                                print "end section 1"
                                 break
-                        #dW = W[:,i]-W[:,i-1]
                         direction = np.dot(dW[:,i],tangent)
                         i-=1
 
@@ -152,13 +152,10 @@ class DeformationModuleStretch(DeformationModule):
                         sys.exit(0)
                 else:
                         sec2_start = i
-                        print "identify section 2/3"
                         epsilon = 0.01
                         while direction <= epsilon:
                                 if i <= last_pt:
-                                        print "end section 2"
                                         break
-                                #dW = W[:,i]-W[:,i-1]
                                 direction = np.dot(dW[:,i],tangent)
                                 i-=1
                         sec2_end = i
@@ -166,7 +163,6 @@ class DeformationModuleStretch(DeformationModule):
 
                         while direction > 0:
                                 if i <= last_pt:
-                                        print "end section 3"
                                         break
                                 direction = np.dot(dW[:,i],tangent)
                                 i-=1
@@ -339,10 +335,9 @@ class DeformationModuleStretch(DeformationModule):
 
                         first_pt2=0
                         d = 100
-                        while d > traj.DISCRETIZATION_TIME_STEP:
+                        while d > traj.DISCRETIZATION_TIME_STEP and first_pt2 > Wnext.shape[1]-1:
                                 d = np.linalg.norm(W[0,first_pt]-Wnext2[0,first_pt2])
                                 first_pt2+=1
-
 
                         first_pt = first_pt - int(Nclip*0.4)
                         #last_pt = last_pt + int(Nclip*0.5)
