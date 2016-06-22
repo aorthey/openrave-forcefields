@@ -3,6 +3,7 @@ import pylab as plt
 from pylab import *
 import sys
 from deformation_module import *
+from trajectory import *
 from util import *
 
 class DeformationModuleStretch(DeformationModule):
@@ -215,36 +216,6 @@ class DeformationModuleStretch(DeformationModule):
                 pn = p1 - (gamma-gamma_step)*dp1
                 return [np.linalg.norm(pn-p2),pn]
 
-        def InsertMissingWaypoints(self,Wnext,max_dist):
-
-                np.set_printoptions(precision=2)
-                ictr=0
-                for i in range(0,Wnext.shape[1]-1):
-                        d = np.linalg.norm(Wnext[:,i]-Wnext[:,i+1])
-                        if d > max_dist:
-                                ## insert some points
-                                dW = Wnext[:,i+1]-Wnext[:,i]
-
-                                dstep = max_dist
-                                dall = np.linalg.norm(dW)
-                                Nnew = int(dall/dstep) - 1
-
-                                dcur = 0.0
-                                #print "i",i,"Nnew:",Nnew,"dstep:",dstep,"dall:",dall
-
-                                #print np.around(Wnext[:,i:i+2],2)
-                                #Wstep = dstep*dW
-                                for k in range(1,Nnew):
-                                        Wstep = (Wnext[:,i+k]-Wnext[:,i])
-                                        Wstep /= np.linalg.norm(Wstep)
-                                        Wnew = Wnext[:,i] + k*dstep*Wstep
-                                        Wnext = np.insert(Wnext, i+k, Wnew, axis=1)
-                                        ictr+=1
-                                        #print Wstep,Wnext[:,i]
-                                        #print np.around(Wnext[:,i:i+k+2],2)
-                                #sys.exit(0)
-                print "added",ictr
-                return Wnext
 
 
         def InfinitesimalReidemeisterType1Twist( self, traj, tangent, W, first_pt, last_pt, ds_ball):
@@ -326,21 +297,22 @@ class DeformationModuleStretch(DeformationModule):
 
                 if self.DEBUG:
 
+                        first_pt = first_pt - int(Nclip*0.4)
                         Wnext = W + dUtmp
                         #Wnext = self.InsertMissingWaypoints(Wnext, traj.DISCRETIZATION_TIME_STEP)
-                        from trajectory import *
 
                         tnext = Trajectory(Wnext)
-                        [Wnext2,tmp,tmpp] = tnext.get_waypoints_second_order(N=100)
+                        np.savetxt("W",Wnext[0:2,:])
+                        [Wnext2,tmp,tmpp] = tnext.get_waypoints_second_order(N=1000)
 
                         first_pt2=0
                         d = 100
-                        while d > traj.DISCRETIZATION_TIME_STEP and first_pt2 > Wnext.shape[1]-1:
+                        while d > traj.DISCRETIZATION_TIME_STEP and first_pt2 < Wnext2.shape[1]-1:
                                 d = np.linalg.norm(W[0,first_pt]-Wnext2[0,first_pt2])
                                 first_pt2+=1
 
-                        first_pt = first_pt - int(Nclip*0.4)
                         #last_pt = last_pt + int(Nclip*0.5)
+                        print first_pt,first_pt2
                         fs = 22
                         ## original line
                         fig=figure(facecolor='white')
@@ -352,8 +324,9 @@ class DeformationModuleStretch(DeformationModule):
                         plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]+offset_new_line,'ok',markersize=5)
                         plt.plot(Wmid[0],Wmid[1]+offset_new_line,'ok',markersize=12)
 
-                        plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+offset_new_line,'-og',linewidth=9,markersize=5)
-                        plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+offset_new_line,'ok',markersize=7)
+                        plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+2*offset_new_line,'-og',linewidth=4,markersize=5)
+                        plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+2*offset_new_line,'ok',markersize=7)
+                        plt.plot(Wmid[0],Wmid[1]+2*offset_new_line,'ok',markersize=12)
 
                         for i in range(last_pt,first_pt):
                                 W0 = Wnext[0,i]

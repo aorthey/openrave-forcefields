@@ -843,3 +843,54 @@ class Trajectory():
                 plt.plot(W[0,:],W[1,:],'ok',markersize=6)
                 plt.plot(P[:,0,0],P[:,1,0],'ob',markersize=6)
                 plt.show()
+
+        def InsertMissingWaypoints(self,Wnext,max_dist):
+                np.set_printoptions(precision=2)
+                ictr=0
+                for i in range(0,Wnext.shape[1]-1):
+                        d = np.linalg.norm(Wnext[:,i]-Wnext[:,i+1])
+                        if d > max_dist:
+                                ## insert some points
+                                dW = Wnext[:,i+1]-Wnext[:,i]
+
+                                dstep = max_dist
+                                dall = np.linalg.norm(dW)
+                                Nnew = int(dall/dstep) - 1
+
+                                dcur = 0.0
+                                for k in range(1,Nnew):
+                                        Wstep = (Wnext[:,i+k]-Wnext[:,i])
+                                        Wstep /= np.linalg.norm(Wstep)
+                                        Wnew = Wnext[:,i] + k*dstep*Wstep
+                                        Wnext = np.insert(Wnext, i+k, Wnew, axis=1)
+                                        ictr+=1
+                print "added",ictr
+                return Wnext
+
+        def RepairTrajectory(self,W,max_dist):
+                ictr=0
+                i=0
+                while i < W.shape[1]-1:
+
+                        d = np.linalg.norm(W[:,i+1]-W[:,i])
+
+                        istep = 1
+                        if d > max_dist:
+
+                                dstep = max_dist
+                                Nnew = int(d/dstep)
+
+                                dcur = 0.0
+                                #print i,d,"/",max_dist,"d/dstep",d/dstep,Nnew
+                                for k in range(1,Nnew):
+                                        Wstep = (W[:,i+k]-W[:,i])
+                                        Wstep /= np.linalg.norm(Wstep)
+                                        Wnew = W[:,i] + k*dstep*Wstep
+                                        W= np.insert(W, i+k, Wnew, axis=1)
+                                        ictr+=1 
+                                istep = Nnew
+
+                        i = i+istep
+                print "new points:",ictr
+                return W
+

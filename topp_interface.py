@@ -315,7 +315,6 @@ class TOPPInterface():
                                 #qvect = np.array([self.traj0.Eval(t) for t in tvect])
                                 #qdvect = np.array([self.traj0.Evald(t) for t in tvect])
                                 #qddvect = np.array([self.traj0.Evaldd(t) for t in tvect])
-                                print "TOPP: unspecified error"
                                 #print "W=",repr(self.W_[0:2,0:M])
                                 #print "q=",repr(qvect[0:M,0:2].T)
                                 #print "dW=",repr(self.dW_[0:2,0:M])
@@ -323,7 +322,11 @@ class TOPPInterface():
                                 #self.critical_point = x.GetCriticalPoint()
                                 #self.critical_point_value = x.GetCriticalPointValue()
                                 #print self.critical_point,self.critical_point_value
-                                return -1
+                                self.critical_point = x.GetCriticalPoint()
+                                self.critical_point_value = x.GetCriticalPointValue()
+                                print "TOPP: unspecified error"
+                                print "TOPP critical pt:",self.critical_point,self.critical_point_value
+                                return self.critical_point
                                 #sys.exit(0)
                         else:
                                 print "TOPP: ",ret

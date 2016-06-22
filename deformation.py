@@ -50,7 +50,7 @@ class Deformation():
                 for i in range(0,N_iter):
                         res = self.deform_onestep(computeNewCriticalPoint)
 
-                        self.traj_current = copy.copy(self.traj_deformed)
+                        self.traj_current = self.traj_deformed
                         self.draw_deformation()
                         if res == DEFORM_SUCCESS:
                                 print "DEFORM_SUCCESS"
@@ -195,9 +195,6 @@ class Deformation():
                         self.handle = self.traj_current.draw(self.env, keep_handle=False)
                         return
 
-                #print self.traj_display.info()
-                #print self.traj_current.info()
-
                 t1 = time.time()
 
                 tdraw = 0.0
@@ -279,7 +276,7 @@ class Deformation():
                 DeformInfo['Nwaypoints'] = Nwaypoints
                 DeformInfo['smoothing_factor'] = self.smoothing_factor
                 DeformInfo['critical_pt'] = self.critical_pt
-                DeformInfo['traj'] = self.traj_deformed
+                DeformInfo['traj'] = traj
                 DeformInfo['Wori'] = Wori
                 DeformInfo['dWori'] = dWori
                 DeformInfo['ddWori'] = ddWori

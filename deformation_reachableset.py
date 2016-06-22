@@ -19,12 +19,12 @@ class DeformationReachableSet(Deformation):
         #lambda_3 = 0.5*1e-2
 
 
-        #lambda_1 = 0.0005
-        #lambda_2 = 0.03
-        #lambda_3 = 0.3*1e-2
-        lambda_1 = 0.0
-        lambda_2 = 0.0
-        lambda_3 = 0.0
+        lambda_1 = 0.0005
+        lambda_2 = 0.03
+        lambda_3 = 0.3*1e-2
+        #lambda_1 = 0.0
+        #lambda_2 = 0.0
+        #lambda_3 = 0.0
         lambda_4 = 0.01
         #lambda_4 = 0.0
 
@@ -33,7 +33,8 @@ class DeformationReachableSet(Deformation):
         def deform_onestep(self, computeNewCriticalPoint = True):
 
                 DeformInfo = self.extractInfoFromTrajectory(self.traj_deformed)
-                print "!!!!!!",DeformInfo['critical_pt']
+
+                print "!!!",DeformInfo['critical_pt']
 
                 Ndim = DeformInfo['Ndim']
                 Nwaypoints = DeformInfo['Nwaypoints']
@@ -89,6 +90,8 @@ class DeformationReachableSet(Deformation):
                                 print "no deformation possible -> collision"
                                 return DEFORM_COLLISION
 
+                #Wnext = traj.InsertMissingWaypoints(Wnext, traj.DISCRETIZATION_TIME_STEP/6)
+                Wnext = traj.RepairTrajectory(Wnext,1e-3)
                 self.traj_deformed.new_from_waypoints(Wnext)
                 #[Wori,dWori,ddWori] = self.traj_deformed.get_waypoints_second_order()
                 #print "X1=np.array(",Wori[0:2,0:100].tolist(),")"
