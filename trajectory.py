@@ -303,7 +303,7 @@ class Trajectory():
                         force = np.array((0.5,-2.5,0,5.0))
                         dp = np.array((1,0.1,0,0.2))
                         #force = np.array((0,-2.5,0,0))
-                        s = 0.05
+                        s = 0.2
 
                         [R,amin,amax] = self.getControlMatrix(p)
 
@@ -312,7 +312,7 @@ class Trajectory():
                         #self.reach.Plot()
 
                         from reachable_set3d import ReachableSet3D
-                        self.reach = ReachableSet3D( p, s, dp, force, R[:,:,0], amin, amax)
+                        self.reach = ReachableSet3D( self.DISCRETIZATION_TIME_STEP, p, s, dp, force, R[:,:,0], amin, amax)
                         self.reach.Plot()
                         self.reach.PlotShow()
                         self.reach.PlotSave("images/reachable_set_velocity_rot.png")
@@ -846,7 +846,6 @@ class Trajectory():
                 plt.show()
 
         def InsertMissingWaypoints(self,Wnext,max_dist):
-                np.set_printoptions(precision=2)
                 ictr=0
                 for i in range(0,Wnext.shape[1]-1):
                         d = np.linalg.norm(Wnext[:,i]-Wnext[:,i+1])

@@ -182,9 +182,6 @@ class TOPPInterface():
                                 Fi = F[:,i]
                                 qdd = qddvect[i,:]
                                 a[:,i] = np.dot(Ri.T,qdd.T-Fi)
-                                #a[0,i] = atmp[0]
-                                #a[1,i] = atmp[1]
-                                #a[2,i] = atmp[3]
 
                 #################################
                 twvect = np.linspace(0,np.sum(self.durationVector), self.Nwaypoints)

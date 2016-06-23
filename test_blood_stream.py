@@ -23,6 +23,7 @@ import numpy as np
 from motion_planner_geometrical import MotionPlannerGeometrical
 from motion_planner_kinodynamic import MotionPlannerKinodynamic
 #import statsmodels.api as sm
+np.set_printoptions(precision=2)
 
 if __name__ == "__main__":
 

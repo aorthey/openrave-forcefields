@@ -64,7 +64,7 @@ class ReachableSet3D():
                 return np.broadcast_arrays(*[x[(slice(None),)+(None,)*i]
                       for i, x in enumerate(args)])
 
-        def __init__(self, p, s, dp, force, R, amin, amax):
+        def __init__(self, ds, p, s, dp, force, R, amin, amax):
                 
                 self.pts = None
                 self.poly = []
@@ -73,10 +73,9 @@ class ReachableSet3D():
                 from mpl_toolkits.mplot3d import Axes3D
                 self.image = self.fig.gca(projection='3d')
 
-                M_time = 10000
                 tstart = 0.001
-                tend = 0.01
                 tsamples= 15
+                [qnext,dtmp,tend] = params.ForwardSimulate(p, dp, s, ds, force)
 
                 Ndim = p.shape[0]
                 poly = []
@@ -101,8 +100,8 @@ class ReachableSet3D():
                         self.add_points( q.T )
 
                 qnext = p+dt*s*dp+dt2*force
-                self.ds = np.linalg.norm(qnext-p)
-                pnext = p+self.ds*dp/np.linalg.norm(dp)
+                #self.ds = np.linalg.norm(qnext-p)
+                pnext = p+ds*dp
 
                 tstring = 'Reachable Set (<T='+str(dt)+')'
                 self.filename = 'images/reachableset_'+params.FILENAME+'_ori'+str(np.around(p[3],decimals=2))
@@ -122,8 +121,15 @@ class ReachableSet3D():
                                 s=self.point_size)
                 self.image.scatter(pnext[0],pnext[1],pnext[3], color='k',
                                 s=self.point_size)
+
+                [qnext,dtmp,dtmp] = params.ForwardSimulate(p, dp, s, ds, force)
                 self.image.scatter(qnext[0],qnext[1],qnext[3], 'ok',
                                 s=self.point_size)
+
+                qcontrol = params.GetNearestControl( p, dp, s, ds, force)
+                self.image.scatter(qcontrol[0],qcontrol[1],qcontrol[3], 'or',
+                                s=self.point_size)
+
                 text_offset_t = dt2*force[3]/5
                 text_offset_y = dt2*force[1]/2
                 text_offset_x = dt2*force[1]
@@ -161,8 +167,8 @@ class ReachableSet3D():
                                         fontsize=self.fs,
                                         loc=self.loc)
                 else:
-                        pathnext = p + 1.5*dt*s*dp
-                        pathlast = p - 0.2*dt*s*dp
+                        pathnext = p + 1.5*ds*dp
+                        pathlast = p - 0.2*ds*dp
 
                         self.PlotPathSegment( pathlast, pathnext)
 
