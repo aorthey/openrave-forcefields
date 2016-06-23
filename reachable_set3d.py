@@ -43,11 +43,12 @@ class ReachableSet3D():
         #loc = 'best'
 
         rs_color = np.array((0.5,0.5,1.0,0.2))
-        rs_last_color = np.array((0.5,0.5,1.0,0.2))
-
+        rs_last_color = np.array((0.2,0.2,1.0,0.3))
+        rs_last_edge_color = np.array((0.8,0.8,0.8,0.8))
         rs_alpha = 0.8
         rs_last_alpha = 0.9
 
+        point_size = 200
         path_lw = 3
 
         force_color = np.array((1.0,0,0))
@@ -58,6 +59,11 @@ class ReachableSet3D():
         fs_title = 46
         image = None
 
+        def ndmesh(*args):
+                args = map(np.asarray,args)
+                return np.broadcast_arrays(*[x[(slice(None),)+(None,)*i]
+                      for i, x in enumerate(args)])
+
         def __init__(self, p, s, dp, force, R, amin, amax):
                 
                 self.pts = None
@@ -67,7 +73,7 @@ class ReachableSet3D():
                 from mpl_toolkits.mplot3d import Axes3D
                 self.image = self.fig.gca(projection='3d')
 
-                M = 10000
+                M_time = 10000
                 tstart = 0.001
                 tend = 0.01
                 tsamples= 15
@@ -75,15 +81,22 @@ class ReachableSet3D():
                 Ndim = p.shape[0]
                 poly = []
                 
+                ### A all possible control input combination
+                A = np.vstack((amin,amax)).T
+                A = np.array(np.meshgrid(*A)).T.reshape(-1,amin.shape[0])
+                M_time = A.shape[0]
+
                 for dt in self.expspace(tstart,tend,tsamples):
                         print dt
                         dt2 = dt*dt*0.5
-                        q = np.zeros((Ndim,M))
-                        for i in range(0,M):
-                                ## sample random control
-                                ar = np.random.uniform(amin, amax)
-                                control = np.dot(R,ar)
-                                q[:,i] = p + dt*s*dp + dt2 * force + dt2 * control
+                        M_speed = 1
+                        speed = np.linspace(0,s,M_speed)
+                        speed=[s]
+                        q = np.zeros((Ndim,M_speed*M_time))
+                        for k in range(0,M_speed):
+                                for i in range(0,M_time):
+                                        control = np.dot(R,A[i])
+                                        q[:,i+k*M_time] = p + dt*speed[k]*dp + dt2 * force + dt2 * control
 
                         self.add_points( q.T )
 
@@ -100,15 +113,28 @@ class ReachableSet3D():
                 self.image.set_xlabel('\n\nX-Position [m]', fontsize=self.fs_label)
                 self.image.set_ylabel('\n\nY-Position [m]', fontsize=self.fs_label)
                 self.image.set_zlabel('\n\n$\\theta$-Position [rad]', fontsize=self.fs_label)
-                #self.image.xaxis.labelpad = 100
 
                 self.arrow_head_size = np.linalg.norm(dt2*force)/5
                 self.hw = 0.5*self.arrow_head_size
                 self.lw = 0.2*self.arrow_head_size
 
-                self.image.scatter(p[0], p[1], p[3], color='k', s=80)
-                self.image.scatter(pnext[0],pnext[1],pnext[3], color='k', s=80)
-                #self.image.scatter(qnext[0],qnext[1],qnext[3],  'ob', s=10)
+                self.image.scatter(p[0], p[1], p[3], color='k',
+                                s=self.point_size)
+                self.image.scatter(pnext[0],pnext[1],pnext[3], color='k',
+                                s=self.point_size)
+                self.image.scatter(qnext[0],qnext[1],qnext[3], 'ok',
+                                s=self.point_size)
+                text_offset_t = dt2*force[3]/5
+                text_offset_y = dt2*force[1]/2
+                text_offset_x = dt2*force[1]
+                self.image.text(p[0]-text_offset_x, p[1]-text_offset_y, p[3]-text_offset_t, 
+                                "$p(s)$",
+                                color='black',
+                                fontsize=self.fs)
+                self.image.text(pnext[0]-text_offset_x, pnext[1]-text_offset_y, pnext[3]-text_offset_t,
+                                "$p(s+\\Delta s)$", 
+                                color='black',
+                                fontsize=self.fs)
 
                 dori = np.zeros((Ndim))
                 dori[0:2] = np.dot(Rz(p[3]),ex)[0:2]
@@ -140,15 +166,16 @@ class ReachableSet3D():
 
                         self.PlotPathSegment( pathlast, pathnext)
 
-                        arrow0 = self.PlotArrow(p, dt*s*dori, self.orientation_color)
+                        #arrow0 = self.PlotArrow(p, dt*s*dori, self.orientation_color)
+                        arrow1 = self.PlotArrow(p+dt2*force, dt*s*dp, self.tangent_color, ls='dashed')
                         arrow1 = self.PlotArrow(p, dt*s*dp, self.tangent_color)
                         arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
 
-                        arrow0 = self.PlotArrow(qnext, dt*s*dori, self.orientation_color)
+                        #arrow0 = self.PlotArrow(qnext, dt*s*dori, self.orientation_color)
                         arrow2 = self.PlotArrow(p+dt*s*dp, dt2*force, self.force_color)
 
-                        plt.legend([arrow0,arrow1,arrow2,],
-                                        ['Orientation','Velocity/Tangent Path','Force',],
+                        plt.legend([arrow1,arrow2,],
+                                        ['Velocity/Tangent Path','Force',],
                                         fontsize=self.fs,
                                         loc=self.loc)
                 self.origin = p
@@ -191,12 +218,12 @@ class ReachableSet3D():
                 pass
 
 
-        def PlotArrow(self, pos, direction, color):
+        def PlotArrow(self, pos, direction, color, ls='solid',arrowstyle="-|>"):
 
                 v = pos + direction
                 a = Arrow3D([pos[0], v[0]], [pos[1], v[1]], 
                                 [pos[3], v[3]], mutation_scale=20, 
-                                lw=3, arrowstyle="-|>", color=color)
+                                lw=3, arrowstyle=arrowstyle, linestyle=ls, color=color)
                 self.image.add_artist(a)
                 return a
                 
@@ -222,20 +249,18 @@ class ReachableSet3D():
 
                 from mpl_toolkits.mplot3d import Axes3D
                 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+                from matplotlib.tri import Triangulation, TriAnalyzer
 
                 for i in range(0,len(self.poly)):
 
                         if i < len(self.poly)-1:
                                 X = np.vstack((self.poly[i],self.poly[i+1]))
-                                print i,i+1
                         else:
                                 X = self.poly[i]
-                                print i
 
                         X = np.vstack((X[:,0],X[:,1],X[:,3])).T
                         hull = ConvexHull(X,qhull_options=self.qhull_options)    
 
-                        from matplotlib.tri import Triangulation, TriAnalyzer
 
                         x,y,z=X.T
                         tri = Triangulation(x, y, triangles=hull.simplices)
@@ -249,7 +274,7 @@ class ReachableSet3D():
                         tri = Poly3DCollection(triangle_vertices)
                         if i == len(self.poly)-1:
                                 tri.set_color(self.rs_last_color)
-                                tri.set_edgecolor(np.array((0.5,0.5,0.5,0.5)))
+                                tri.set_edgecolor(self.rs_last_edge_color)
                                 self.image.scatter(x,y,z, 'ok', color=np.array((0,0,1.0,0.1)),s=30)
 
                         else:
@@ -284,8 +309,11 @@ class ReachableSet3D():
                 self.image.autoscale_view(True,False,True)
 
 
-        def PlotSave(self):
+        def PlotSave(self, filename=None):
 
+                if filename is not None:
+                        self.filename = filename
+                        
                 self.fig.savefig(self.filename,format='svg', dpi=1200)
 
                 svgname = self.filename

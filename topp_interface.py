@@ -172,7 +172,7 @@ class TOPPInterface():
 
                 #################################
                 path = self.trajectoryclass_
-                Adim = 3
+                Adim = params.amin.shape[0]
                 a = np.zeros((Adim, Npts))
                 if env is not None:
                         [R,amin,amax] = path.getControlMatrix(qvect.T)
@@ -181,10 +181,10 @@ class TOPPInterface():
                                 Ri = R[:,:,i]
                                 Fi = F[:,i]
                                 qdd = qddvect[i,:]
-                                atmp = np.dot(Ri.T,qdd.T-Fi)
-                                a[0,i] = atmp[0]
-                                a[1,i] = atmp[1]
-                                a[2,i] = atmp[3]
+                                a[:,i] = np.dot(Ri.T,qdd.T-Fi)
+                                #a[0,i] = atmp[0]
+                                #a[1,i] = atmp[1]
+                                #a[2,i] = atmp[3]
 
                 #################################
                 twvect = np.linspace(0,np.sum(self.durationVector), self.Nwaypoints)
@@ -364,23 +364,28 @@ class TOPPInterface():
                 c = np.zeros((self.Nwaypoints, 2*self.Ndim))
 
                 for i in range(0,self.Nwaypoints):
-                        Rmax = np.maximum(np.dot(R[:,:,i],amin),np.dot(R[:,:,i],amax))
-                        Rmin = np.minimum(np.dot(R[:,:,i],amin),np.dot(R[:,:,i],amax))
-                        H1 = F[:,i] - Rmax
-                        H2 = -F[:,i] + Rmin
-                        for j in range(self.Ndim):
-                                if H2[j] > -H1[j]:
-                                        print H2[j],"<= q[",j,"]<=",-H1[j]
-                                        sys.exit(1)
-
+                        #Rmax = np.maximum(np.dot(R[:,:,i],amin),np.dot(R[:,:,i],amax))
+                        #Rmin = np.minimum(np.dot(R[:,:,i],amin),np.dot(R[:,:,i],amax))
+                        #H1 = F[:,i] - Rmax
+                        #H2 = -F[:,i] + Rmin
                         #for j in range(self.Ndim):
-                                #print H2[j],"<= q[",j,"]<=",-H1[j]
+                        #        if H2[j] > -H1[j]:
+                        #                print H2[j],"<= q[",j,"]<=",-H1[j]
+                        #                sys.exit(1)
 
-                        c[i,:] = np.hstack((H1,H2)).flatten()
-                #sys.exit(0)
+                        #c[i,:] = np.hstack((H1,H2)).flatten()
+                        ### G*qdd + h <= 0
+                        [G,h] = params.GetControlConstraintMatricesFromControl(R[:,:,i], F[:,i])
 
-                for i in range(0,self.Nwaypoints):
                         a[i,:] = np.dot(G,qs[:,i]).flatten()
                         b[i,:] = np.dot(G,qss[:,i]).flatten()
+                        c[i,:] = h
+
+                #print G,qs[:,i],qss[:,i]
+
+                #for i in range(0,self.Nwaypoints):
+                        #print "i",i,"/",self.Nwaypoints
+                        #a[i,:] = np.dot(G,qs[:,i]).flatten()
+                        #b[i,:] = np.dot(G,qss[:,i]).flatten()
                 return [a,b,c]
 
