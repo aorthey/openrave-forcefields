@@ -4,7 +4,7 @@ import abc
 class DeformationModule():
         __metaclass__ = abc.ABCMeta
         DeformInfo = {}
-        COLLISION_ENABLED = False
+        COLLISION_ENABLED = True
         lambda_coeff = None
 
         def __init__(self, DeformInfoIn):
@@ -17,6 +17,7 @@ class DeformationModule():
                 env = self.DeformInfo['env']
                 eta = self.DeformInfo['eta']
                 Wori = self.DeformInfo['Wori']
+                dWori = self.DeformInfo['dWori']
 
                 dUtmp = self.get_gradient(lambda_coeff)
 
@@ -46,6 +47,7 @@ class DeformationModule():
         def SmoothVector(self, traj, Ncritical, W, smoothing_factor=None):
                 if smoothing_factor is None:
                         smoothing_factor = self.DeformInfo['smoothing_factor']
+
                 [Ndim, Nwaypoints] = traj.getWaypointDim(W)
                 A = np.zeros(Nwaypoints)
 

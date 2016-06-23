@@ -398,7 +398,8 @@ class Trajectory():
 
         def getVelocityIntervalWithoutForceField(self, env, W, dW, ddW):
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                Fzero = np.zeros((Ndim, Nwaypoints))
+                #Fzero = np.zeros((Ndim, Nwaypoints))
+                Fzero = 0.0*self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
                 self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, Fzero,R,amin,amax,W,dW)
@@ -407,8 +408,8 @@ class Trajectory():
                 else:
                         print "WARNING: without force field, TOPP couldn't find a valid \
                         velocity profile. Path not continuous or system not STLC"
-                        sys.exit(1)
-                        #return None
+                        #sys.exit(1)
+                        return None
 
 
         def getCriticalPointFromWaypoints(self, env, W, dW, ddW, oldNc = 0):
@@ -423,7 +424,27 @@ class Trajectory():
                 if Nc < 0:
                         print "return oldNc=",oldNc
                         Nc = oldNc
+                return Nc
 
+        def GetSpeedIntervalAtCriticalPoint(self, env, Win, dWin, Nc):
+
+                W = Win[:,0:Nc]
+                dW = dWin[:,0:Nc]
+
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                F = self.get_forces_at_waypoints(W, env)
+                [R,amin,amax] = self.getControlMatrix(W)
+
+                [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc)
+                self.topp = TOPPInterface(self, durationVector, trajsubstr, -F,R,amin,amax,W,dW)
+
+                print "topp substring"
+                [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
+                                Nc,
+                                durationVector,
+                                trajsubstr)
+
+                return [semin,semax]
                 ### AVP on the subtrajectory between 0 and Nc
                 #if Nc > 0:
                 #        [bspline, trajstr, durationVector] = self.computeTrajectorySubstringForTOPP(W, Nc)
@@ -433,7 +454,11 @@ class Trajectory():
                 #        semax = 0.0
                 #print "MAX SPEED AT CRITICAL PT",Nc,"/",Nwaypoints," is:",semin,semax
 
-                return Nc
+        def computeTrajectorySubstringForTOPP(self, Win, dWin, Nc):
+                W = Win[:,0:Nc]
+                dW = dWin[:,0:Nc]
+                return self.computeTrajectoryStringForTOPP(W,dW)
+
 
         def getCriticalPoint(self, env):
                 L = self.get_length()
@@ -503,29 +528,6 @@ class Trajectory():
                         ctr = ctr+1
                 return [pts,dpts,ddpts]
 
-        def get_waypoints_second_order_deprecated(self, N=None):
-                ###############################################################
-                ### obtain waypoints along the trajectory at constant spacing of
-                ### DISCRETIZATION_TIME_STEP
-                ###############################################################
-                if N is None:
-                        dt = self.DISCRETIZATION_TIME_STEP
-                        L = self.get_length()
-                        N = int(L/dt)
-                        #print N,"WAYPOINTS <<<<<<<<<<<"
-                ###############################################################
-                K = self.get_dimension()
-                pts = np.zeros((K,N))
-                dpts = np.zeros((K,N))
-                ddpts = np.zeros((K,N))
-                ctr = 0
-                for t in np.linspace(0.0, 1.0, num=N):
-                        [f0,df0,ddf0] = self.evaluate_at(t,der=2)
-                        pts[:,ctr] = f0
-                        dpts[:,ctr] = df0
-                        ddpts[:,ctr] = ddf0
-                        ctr = ctr+1
-                return [pts,dpts,ddpts]
 
         def get_waypoints(self, N = None):
                 [pts,dpts,ddpts]=self.get_waypoints_second_order(N)

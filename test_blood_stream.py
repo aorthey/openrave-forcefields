@@ -49,7 +49,7 @@ if __name__ == "__main__":
         xml = env.GetName()
         traj.save('trajectories/'+xml)
 
-        time.sleep(2)
+        time.sleep(1)
         traj.draw_delete()
 
         td = DeformationReachableSet(traj, env)

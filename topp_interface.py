@@ -12,8 +12,10 @@ from TOPP import Trajectory
 from TOPP import TOPPopenravepy
 
 class TOPPInterface():
-        fs_title = 40
-        fs_label = 30
+        fs_title = 45
+        fs_labels = 35
+        fs_ticks = 24
+        fs_legend = 31
 
         #DURATION_DISCRETIZATION = 0.0001
         #DURATION_DISCRETIZATION = 1
@@ -54,9 +56,10 @@ class TOPPInterface():
                 dendpoint = np.linalg.norm(self.traj0.Eval(self.length)-W[:,-1])
 
                 if dendpoint > self.TRAJECTORY_ACCURACY_REQUIRED:
-                        print self.length
                         print "###############"
-                        print self.trajstr
+                        print "TOPP INTERFACE ERROR"
+                        print "path duration:",self.length
+                        print "###############"
                         print "FINAL POINT on piecewise C^2 traj:",self.traj0.Eval(self.length)
                         print "FINAL WAYPOINT                   :",W[:,-1]
                         print "###############"
@@ -99,32 +102,34 @@ class TOPPInterface():
                 #[semin,semax] = self.topp_inst.AVP(0.0, 0.0)
                 return_code = x.RunVIP(0.0, 0.0)
                 if return_code != 1:
-                        print "TOPP Error:", return_code
-                        print "waypoint: ",N,"/",self.Nwaypoints
+                        #print "TOPP Error:", return_code
+                        #print "waypoint: ",N,"/",self.Nwaypoints
                         self.critical_point = x.GetCriticalPoint()
                         self.critical_point_value = x.GetCriticalPointValue()
-                        print "CRITICAL POINT:",self.critical_point,self.critical_point_value
-                        sys.exit(1)
-
-                semin = x.sdendmin
-                semax = x.sdendmax
+                        #print "CRITICAL POINT:",self.critical_point,self.critical_point_value
+                        #sys.exit(1)
+                        semin = 0.0
+                        semax = 0.0
+                else:
+                        semin = x.sdendmin
+                        semax = x.sdendmax
                 return [semin, semax]
 
-        def PlotPrettifiedAxes(self, ax, fs):
+        def PlotPrettifiedAxes(self, ax):
                 plt.axvspan(0, 1.0, facecolor='k', alpha=0.1)
                 plt.axvspan(1.0, self.traj0.duration, facecolor='g', alpha=0.1)
                 box = ax.get_position()
                 ax.set_position([box.x0, box.y0, box.width * 0.9, box.height])
-                ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=fs)
+                ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=self.fs_legend)
                 ax.tick_params(axis='both', which='major', pad=15)
                 ax.tick_params(axis='both', which='minor', pad=15)
-                ax.yaxis.get_offset_text().set_size(fs)
-                ax.xaxis.get_offset_text().set_size(fs)
+                ax.yaxis.get_offset_text().set_size(self.fs_labels)
+                ax.xaxis.get_offset_text().set_size(self.fs_labels)
 
                 for tick in ax.xaxis.get_major_ticks():
-                        tick.label.set_fontsize(fs) 
+                        tick.label.set_fontsize(self.fs_ticks) 
                 for tick in ax.yaxis.get_major_ticks():
-                        tick.label.set_fontsize(fs) 
+                        tick.label.set_fontsize(self.fs_ticks) 
                 ax.xaxis.labelpad = 20
                 ax.yaxis.labelpad = 20
 
@@ -136,7 +141,7 @@ class TOPPInterface():
 
         def PlotTrajectory(self, env=None):
                 lw = 4
-                fs = 22
+                fs = self.fs_legend
                 limit_ls = ':'
                 limit_lw = 4
                 color_x_coordinate = 'b'
@@ -159,6 +164,7 @@ class TOPPInterface():
                 while dt > self.traj0.duration:
                         dt/=2.0
                 Npts = int(self.traj0.duration/dt)
+                print "dt",dt,"duration:",self.traj0.duration
                 tvect = np.linspace(0,self.traj0.duration, Npts)
                 qvect = np.array([self.traj0.Eval(t) for t in tvect])
                 qdvect = np.array([self.traj0.Evald(t) for t in tvect])
@@ -197,13 +203,13 @@ class TOPPInterface():
                 plot(tvect, qvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\\theta$")
                 #plot(tvect, qdvect, f, linewidth=2)
                 #plot(tvect, qddvect, f, linewidth=2)
-                title('TOPP-Profile '+str(params.system_name), fontsize=self.fs_title, y=1.05)
-                ylabel('Position \n$\\left(m\\right)$,$\\left(rad\\right)$', fontsize=self.fs_label)
+                title('TOPP-Profile '+str(params.system_name), fontsize=self.fs_title, y=1.1)
+                ylabel('Position \n$\\left(m\\right)$,$\\left(rad\\right)$', fontsize=self.fs_labels)
                 ax1.set_xticklabels(())
-                self.PlotPrettifiedAxes(ax1, fs)
+                self.PlotPrettifiedAxes(ax1)
 
                 ax2 = subplot(4,1,2)
-                ylabel('Velocity\n$\\left(\\frac{m}{s}\\right)$, $\\left(\\frac{rad}{s}\\right)$', fontsize=self.fs_label)
+                ylabel('Velocity\n$\\left(\\frac{m}{s}\\right)$, $\\left(\\frac{rad}{s}\\right)$', fontsize=self.fs_labels)
                 plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
                 plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
                 #plot(twvect, self.dW_[2,:], '--', color = color_z_coordinate, linewidth = lw)
@@ -214,24 +220,22 @@ class TOPPInterface():
                 #plot(tvect, qdvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\dot z$")
                 plot(tvect, qdvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\dot \\theta$")
                 ax2.set_xticklabels(())
-                self.PlotPrettifiedAxes(ax2, fs)
+                self.PlotPrettifiedAxes(ax2)
 
                 ax3 = subplot(4,1,3)
-                ylabel('Acceleration\n$\\left(\\frac{m^2}{s^2}\\right)$,$\\left(\\frac{rad^2}{s^2}\\right)$',
-                                fontsize=self.fs_label)
+                ylabel('Acceleration\n$\\left(\\frac{m^2}{s^2}\\right)$,$\\left(\\frac{rad^2}{s^2}\\right)$', fontsize=self.fs_labels)
                 plot(tvect, qddvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\ddot{x}$")
                 plot(tvect, qddvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\ddot{y}$")
                 #plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
                 plot(tvect, qddvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\ddot{\\theta}$")
-                plot(tvect, F[0,:], color = color_fx_coordinate, linewidth = lw, label = "$F_{x}$")
-                plot(tvect, F[1,:], color = color_fy_coordinate, linewidth = lw, label = "$F_{y}$")
+                #plot(tvect, F[0,:], color = color_fx_coordinate, linewidth = lw, label = "$F_{x}$")
+                #plot(tvect, F[1,:], color = color_fy_coordinate, linewidth = lw, label = "$F_{y}$")
                 ax3.set_xticklabels(())
-                self.PlotPrettifiedAxes(ax3, fs)
+                self.PlotPrettifiedAxes(ax3)
 
                 if env is not None:
                         ax4 = subplot(4,1,4)
-                        ylabel('Control\n$\\left(\\frac{m^2}{s^2}\\right)$,$\\left(\\frac{rad^2}{s^2}\\right)$',
-                                        fontsize=self.fs_label)
+                        ylabel('Control\n$\\left(\\frac{m^2}{s^2}\\right)$,$\\left(\\frac{rad^2}{s^2}\\right)$', fontsize=self.fs_labels)
                         plot(tvect, a[0,:], color = color_a1_coordinate, linewidth = lw, label = "${a_1}(Thruster)$")
                         plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
                         plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")
@@ -244,14 +248,16 @@ class TOPPInterface():
 
                         plot(tvect, np.repeat(amin[0]-offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
                         plot(tvect, np.repeat(amax[0]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
-                        xlabel('Time ($s$)',fontsize=self.fs_label)
-                        self.PlotPrettifiedAxes(ax4, fs)
+                        xlabel('Time ($s$)',fontsize=self.fs_labels)
+                        self.PlotPrettifiedAxes(ax4)
                         self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3, ax4)
                         self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3, ax4)
                 else:
                         self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3)
                         self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3)
 
+                #plt.gca().tight_layout()
+                plt.gcf().subplots_adjust(bottom=0.15,right=0.8)
                 plt.show()
 
                 fig.savefig(self.filename,format='svg', dpi=1200)

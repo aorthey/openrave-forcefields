@@ -32,12 +32,6 @@ class DeformationModuleEndPointProjection(DeformationModule):
                         dUtmp[:,i] += -AEnd[i]*dEnd
                         dUtmp[:,i] += -AStart[i]*dStart
 
-                ### set all static points to zero
-                #for i in range(0,Mstatic):
-                #        dUtmp[:,i] = -dU[:,i]
-                #        k = Nwaypoints-i-1
-                #        dUtmp[:,k] = -dU[:,k]
-
                 return dUtmp
 
 

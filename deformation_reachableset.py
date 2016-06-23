@@ -8,10 +8,12 @@ class DeformationReachableSet(Deformation):
         Nc_handle = []
 
         ###############################################################
-        ### LAMBDA1: (smooth) move against force
-        ### LAMBDA2: (smooth) project onto reachable set
+        ### LAMBDA1: move against force
+        ### LAMBDA2: project onto reachable set
         ### LAMBDA3: orientation
+        ### LAMBDA4: stretching
         ###############################################################
+
         #lambda_1 = 0.001
         #lambda_1 = 0.0005
         #lambda_1 = 0.0005
@@ -19,14 +21,15 @@ class DeformationReachableSet(Deformation):
         #lambda_3 = 0.5*1e-2
 
 
-        lambda_1 = 0.0005
-        lambda_2 = 0.03
-        lambda_3 = 0.3*1e-2
-        #lambda_1 = 0.0
-        #lambda_2 = 0.0
-        #lambda_3 = 0.0
-        lambda_4 = 0.01
-        #lambda_4 = 0.0
+        #lambda_1 = 0.001
+        #lambda_2 = 0.01
+        #lambda_3 = 0.1*1e-2
+        #lambda_4 = 0.01
+
+        lambda_1 = 0.0
+        lambda_2 = 1.0
+        lambda_3 = 0.0
+        lambda_4 = 0.0
 
         smoothing_factor = 20.0
 
@@ -34,12 +37,11 @@ class DeformationReachableSet(Deformation):
 
                 DeformInfo = self.extractInfoFromTrajectory(self.traj_deformed)
 
-                print "!!!",DeformInfo['critical_pt']
-
                 Ndim = DeformInfo['Ndim']
                 Nwaypoints = DeformInfo['Nwaypoints']
                 traj = DeformInfo['traj']
                 Wori = DeformInfo['Wori']
+                dWori = DeformInfo['dWori']
                 eta = DeformInfo['eta']
 
                 dU = np.zeros((Ndim,Nwaypoints))
@@ -54,7 +56,6 @@ class DeformationReachableSet(Deformation):
                 #print "X2=np.array(",Wori[0:2,0:100].tolist(),")"
 
                 from deformation_module_counterwrench import *
-                from deformation_module_projection_reachable_set import *
                 from deformation_module_projection_reachable_set2 import *
                 from deformation_module_stretch import *
                 from deformation_module_orientation import *
@@ -63,12 +64,12 @@ class DeformationReachableSet(Deformation):
                 d1 = DeformationModuleCounterWrench( DeformInfo )
                 d2 = DeformationModuleProjectionReachableSet2( DeformInfo )
                 d3 = DeformationModuleOrientation( DeformInfo )
-                d4 = DeformationModuleStretch( DeformInfo )
+                #d4 = DeformationModuleStretch( DeformInfo )
 
                 dU += d1.get_update( self.lambda_1 )
                 dU += d2.get_update( self.lambda_2 )
                 dU += d3.get_update( self.lambda_3 )
-                dU += d4.get_update( self.lambda_4 )
+                #dU += d4.get_update( self.lambda_4 )
 
                 DeformInfo['dU'] = dU
                 dend = DeformationModuleEndPointProjection( DeformInfo )
@@ -77,7 +78,6 @@ class DeformationReachableSet(Deformation):
                 #################################################################
                 ## update 
                 #################################################################
-
                 self.SafetyCheckUpdate(dU)
                 Wnext = Wori + eta*dU
 
