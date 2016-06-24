@@ -57,51 +57,69 @@ def GetControlConstraintMatricesFromControl(R, F):
         A = np.vstack((I,-I))
         return [A,b]
 
-def GetNearestControl(p, dp, speed, ds, F):
+def GetNearestControlPoint(ax, p, dp, speed, ds, F):
+
         [qnext,dqnext,dt] = ForwardSimulate(p, dp, speed, ds, F)
         dt2 = dt*dt*0.5
         Ndim = qnext.shape[0]
-
-        [A,b] = GetControlConstraintMatrices(p, F)
 
         ## solve LP
         ### min x^T*c
         ### s.t. A*x + b <= 0
 
         [A,bcontrol] = GetControlConstraintMatrices(p,F)
-        A = 2*A/dt2
 
+        for i in range(0,Ndim):
+                print bcontrol[i+Ndim],"<=","x[",i,"] <=",-bcontrol[i]
+
+        #M = 1000
+        #qq = np.zeros((Ndim,M))
+        #qq = []
+        #A = matrix(A)
+        #b = matrix(bcontrol)
+        #for i in range(0,M):
+        #        qx = np.random.uniform(-5,5)
+        #        qy = np.random.uniform(-5,5)
+        #        qz = np.random.uniform(-5,5)
+        #        qt = np.random.uniform(-6,5)
+        #        q = np.array((qx,qy,qz,qt))
+        #        #qc = np.dot(A,q) + bcontrol 
+        #        q = matrix(q)
+        #        sol=solvers.lp(q,-A,-b)
+        #        qc = np.array(sol['x']).flatten()
+        #        qqc = p + dt*speed*dp + dt2*qc
+        #        qq.append(qqc)
+
+        ##qq = p + dt*speed*dp + dt2*F
+        ##qq = np.dot(A,qnext) + np.dot(A, (-p-dt*speed*dp))+bcontrol
+        #qq = np.array(qq)
+        #ax.scatter(qq[:,0],qq[:,1],qq[:,3], 'or',
+        #                s=50)
+
+        A = -A
+        A = (2*A)/(dt*dt)
         b = bcontrol + np.dot(A,(-p - dt*speed*dp))
-
-        #poffset = p+dt*speed*dp
-
-        #b[0:Ndim] += poffset
-        #b[Ndim:] -= poffset
-
         A = matrix(A)
         b = matrix(b)
 
-        #for i in range(0,Ndim):
-                #print b[i+Ndim],"<=","x","<=",-b[i]
+        for i in range(0,Ndim):
+                print b[i+Ndim],"<=","x[",i,"] <=",-b[i]
 
         nF = F/np.linalg.norm(F)
         ndP = dp/np.linalg.norm(dp)
         gamma = 0.1
         c = matrix(nF - gamma*ndP)
 
+        solvers.options['show_progress'] = False
         sol=solvers.lp(c,A,-b)
         x = (sol['x'])
 
         return x
 
-        #dq = x - pnext
-        #dnp = dpnext/np.linalg.norm(dpnext)
-        #Wmove[:,i] = dq - np.dot(dq,dnp)*dnp
-
 def ForwardSimulate(p, dp, smax, ds, F):
         if np.linalg.norm(F)>1e-3:
                 qnext = copy.copy(p)
-                tstep = 1e-2
+                tstep = 1e-3
                 dt = 0.0
 
                 dnew = 0.0

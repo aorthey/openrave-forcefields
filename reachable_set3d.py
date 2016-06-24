@@ -99,9 +99,12 @@ class ReachableSet3D():
 
                         self.add_points( q.T )
 
+                dt = tend
+                dt2 = dt*dt*0.5
+
                 qnext = p+dt*s*dp+dt2*force
-                #self.ds = np.linalg.norm(qnext-p)
                 pnext = p+ds*dp
+                #pnext = p+dt*s*dp
 
                 tstring = 'Reachable Set (<T='+str(dt)+')'
                 self.filename = 'images/reachableset_'+params.FILENAME+'_ori'+str(np.around(p[3],decimals=2))
@@ -119,20 +122,25 @@ class ReachableSet3D():
 
                 self.image.scatter(p[0], p[1], p[3], color='k',
                                 s=self.point_size)
-                self.image.scatter(pnext[0],pnext[1],pnext[3], color='k',
+
+                self.image.scatter(pnext[0],pnext[1],pnext[3], 'ok', color='k',
+                                s=self.point_size)
+                self.image.scatter(pnext[0],pnext[1],pnext[3], 'ok', color='k',
                                 s=self.point_size)
 
-                [qnext,dtmp,dtmp] = params.ForwardSimulate(p, dp, s, ds, force)
                 self.image.scatter(qnext[0],qnext[1],qnext[3], 'ok',
                                 s=self.point_size)
 
-                qcontrol = params.GetNearestControl( p, dp, s, ds, force)
+                qcontrol = params.GetNearestControlPoint(self.image, p, dp, s, ds, force)
+
                 self.image.scatter(qcontrol[0],qcontrol[1],qcontrol[3], 'or',
+                                color='r',
                                 s=self.point_size)
 
                 text_offset_t = dt2*force[3]/5
                 text_offset_y = dt2*force[1]/2
                 text_offset_x = dt2*force[1]
+
                 self.image.text(p[0]-text_offset_x, p[1]-text_offset_y, p[3]-text_offset_t, 
                                 "$p(s)$",
                                 color='black',

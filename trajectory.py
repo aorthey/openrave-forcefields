@@ -292,7 +292,7 @@ class Trajectory():
 
         def plot_reachableset(self, env):
                 thetavec = [-pi/2,-pi/4,0,pi/4,pi/2]
-                thetavec = [pi/4]
+                thetavec = [0]
                 for theta in thetavec:
                         p = np.array((0,1e-4,0,theta))
 
