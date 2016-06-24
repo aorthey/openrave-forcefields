@@ -315,7 +315,34 @@ class Trajectory():
                         self.reach = ReachableSet3D( self.DISCRETIZATION_TIME_STEP, p, s, dp, force, R[:,:,0], amin, amax)
                         self.reach.Plot()
                         self.reach.PlotShow()
-                        self.reach.PlotSave("images/reachable_set_velocity_rot.png")
+                        self.reach.PlotSave("images/reachable_set_projection.png")
+
+        def test_domain_error(self, env):
+                thetavec = [-pi/2,-pi/4,0,pi/4,pi/2]
+                thetavec = [0]
+                #p: [-2.73 -0.19  0.1  -3.01]
+                #dp: [-17.15  -3.61   0.     1.27]
+                #ds: 0.0107685557768
+                #speed: 0.535567483719
+                #F: [ 0.    2.5   0.   -1.24]
+                p = np.array( [-2.73, -0.19, 0.1, -3.01])
+                dp = np.array([-17.15, -3.61, 0., 1.27])
+                force = np.array((0.0,2.5,0,-1.24))
+                #force = np.array((0,-2.5,0,0))
+                speed = 0.535567483719
+                ds = 0.0107685557768
+                [R,amin,amax] = self.getControlMatrix(p)
+
+                #from reachable_set import ReachableSet
+                #self.reach = ReachableSet( p, s, dp, force, R[:,:,0], amin, amax)
+                #self.reach.Plot()
+
+                from reachable_set3d import ReachableSet3D
+                self.reach = ReachableSet3D( ds, p,
+                                speed, dp/np.linalg.norm(dp), force, R[:,:,0], amin, amax)
+                self.reach.Plot()
+                self.reach.PlotShow()
+                #self.reach.PlotSave("images/reachable_set_projection.png")
 
 
         def get_dimension(self):
@@ -506,6 +533,7 @@ class Trajectory():
                 L = self.get_length()
                 N = int(L/dt)
                 return N
+
         def get_waypoints_second_order(self, N=None):
                 ###############################################################
                 ### obtain waypoints along the trajectory at constant spacing of
@@ -689,8 +717,7 @@ class Trajectory():
                 for i in range(0,Ndim):
 
                         tvec = np.linspace(0,1,Nwaypoints)
-                        WP = W[:,i]
-
+                        WP = W[i,:]
                         tvec = np.hstack((-0.1,tvec,1.1))
 
                         epsilon = 0.01

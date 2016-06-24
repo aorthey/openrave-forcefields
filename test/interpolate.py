@@ -4,14 +4,16 @@ from scipy.interpolate import PPoly
 from scipy.interpolate import splev, splrep
 
 W = np.array([-2.,-2.5 ,-3.7538003,-5.00760061,-5.50760061])
-#W = np.hstack((W[0],W[:],W[-1]))
 
 tvec = np.linspace(0,1,W.shape[0])
-#tvec = np.hstack((-0.5,tvec,1.5))
 
-tck = splrep(tvec, W, s=0, k=2)
+#W = np.hstack((W[0],W[:],W[-1]))
+#tvec = np.hstack((-0.2,tvec,1.5))
 
-x2 = np.linspace(0.0, 1.0, 100)
+tck = splrep(tvec, W, s=0, k=3)
+
+x2 = np.linspace(0, 1, 100)
+#x2 = np.linspace(tvec[0], tvec[-1], 100)
 y2 = splev(x2, tck)
 
 print splev(0,tck)

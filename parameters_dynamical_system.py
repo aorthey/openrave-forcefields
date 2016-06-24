@@ -39,7 +39,6 @@ def ControlPerWaypoint(W, Ndim, Nwaypoints):
 def GetControlConstraintMatrices(p, F):
         Ndim = p.shape[0]
         R = ControlPerWaypoint(p, Ndim, 1)[:,:,0]
-        print R
         return GetControlConstraintMatricesFromControl(R,F)
 
 def GetControlConstraintMatricesFromControl(R, F):
@@ -57,7 +56,7 @@ def GetControlConstraintMatricesFromControl(R, F):
         A = np.vstack((I,-I))
         return [A,b]
 
-def GetNearestControlPoint(ax, p, dp, speed, ds, F):
+def GetNearestControlPoint(p, dp, speed, ds, F):
 
         [qnext,dqnext,dt] = ForwardSimulate(p, dp, speed, ds, F)
         dt2 = dt*dt*0.5
@@ -69,8 +68,8 @@ def GetNearestControlPoint(ax, p, dp, speed, ds, F):
 
         [A,bcontrol] = GetControlConstraintMatrices(p,F)
 
-        for i in range(0,Ndim):
-                print bcontrol[i+Ndim],"<=","x[",i,"] <=",-bcontrol[i]
+        #for i in range(0,Ndim):
+                #print bcontrol[i+Ndim],"<=","x[",i,"] <=",-bcontrol[i]
 
         #M = 1000
         #qq = np.zeros((Ndim,M))
@@ -102,8 +101,8 @@ def GetNearestControlPoint(ax, p, dp, speed, ds, F):
         A = matrix(A)
         b = matrix(b)
 
-        for i in range(0,Ndim):
-                print b[i+Ndim],"<=","x[",i,"] <=",-b[i]
+        #for i in range(0,Ndim):
+                #print b[i+Ndim],"<=","x[",i,"] <=",-b[i]
 
         nF = F/np.linalg.norm(F)
         ndP = dp/np.linalg.norm(dp)
@@ -111,8 +110,21 @@ def GetNearestControlPoint(ax, p, dp, speed, ds, F):
         c = matrix(nF - gamma*ndP)
 
         solvers.options['show_progress'] = False
-        sol=solvers.lp(c,A,-b)
-        x = (sol['x'])
+        try:
+                sol=solvers.lp(c,A,-b)
+                x = np.array(sol['x']).flatten()
+        except Exception as e:
+                print e
+                print "A:",A
+                print "b:",b
+                print "c:",c
+                print "p:",p
+                print "dp:",dp
+                print "ds:",ds
+                print "speed:",speed
+                print "F:",F
+                #VisualizeReachableSet3D(p, dp, dp, speed, ds, F)
+                sys.exit(0)
 
         return x
 
@@ -134,3 +146,12 @@ def ForwardSimulate(p, dp, smax, ds, F):
                 dqnext = smax*dp + dt*F
                 return [qnext,dqnext,dt]
         return None
+
+def VisualizeReachableSet3D(p, dp, dwori, speed, ds, F):
+        from reachable_set3d import ReachableSet3D
+        Ndim = p.shape[0]
+        R = ControlPerWaypoint(p, Ndim, 1)[:,:,0]
+        reach = ReachableSet3D( ds, p, speed, dp, F, R, amin, amax)
+        reach.Plot()
+        reach.PlotShow()
+

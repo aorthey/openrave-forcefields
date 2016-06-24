@@ -41,7 +41,7 @@ class DeformationModuleStretch(DeformationModule):
                         [idxW1,idxW2,idxW3] = self.IdentifyReidemeisterSubpaths(
                                         tangent, Wori, dWori, first_pt, last_pt)
 
-                        sf = 15.0
+                        sf = 30.0
                         ########################### idx1
                         Wdir = np.zeros((Ndim,Nwaypoints))
                         idxW1
@@ -49,7 +49,7 @@ class DeformationModuleStretch(DeformationModule):
                         idxW1_end = idxW1[-1]
 
                         for idx in idxW1:
-                                Wdir[:,idx] = -tangent-0.0*normal
+                                Wdir[:,idx] = -tangent-0.1*normal
 
                         dUtmp1 = np.zeros((Ndim,Nwaypoints))
                         for i in range(0,Nwaypoints):
@@ -65,7 +65,7 @@ class DeformationModuleStretch(DeformationModule):
                         ########################### idx2
                         Wdir = np.zeros((Ndim,Nwaypoints))
                         for idx in idxW2:
-                                Wdir[:,idx] = -tangent + 0.2*normal
+                                Wdir[:,idx] = -tangent + 0.3*normal
 
                         dUtmp2 = np.zeros((Ndim,Nwaypoints))
                         for i in range(0,Nwaypoints):

@@ -49,7 +49,6 @@ class Deformation():
                 computeNewCriticalPoint = True
                 for i in range(0,N_iter):
                         res = self.deform_onestep(computeNewCriticalPoint)
-
                         self.traj_current = self.traj_deformed
                         self.draw_deformation()
                         if res == DEFORM_SUCCESS:
@@ -188,6 +187,7 @@ class Deformation():
                 [W0,dW] = self.traj_display.get_waypoints() 
                 Nwaypoints = W0.shape[1]
                 [W1,dW] = self.traj_current.get_waypoints(Nwaypoints) 
+                self.traj_current.new_from_waypoints(W1)
 
                 self.forcehandle = []
                 if np.linalg.norm(W0-W1)<1e-10:

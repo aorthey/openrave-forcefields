@@ -103,7 +103,7 @@ class ReachableSet3D():
                 dt2 = dt*dt*0.5
 
                 qnext = p+dt*s*dp+dt2*force
-                pnext = p+ds*dp
+                pnext = p+ds*dp/np.linalg.norm(dp)
                 #pnext = p+dt*s*dp
 
                 tstring = 'Reachable Set (<T='+str(dt)+')'
@@ -131,7 +131,15 @@ class ReachableSet3D():
                 self.image.scatter(qnext[0],qnext[1],qnext[3], 'ok',
                                 s=self.point_size)
 
-                qcontrol = params.GetNearestControlPoint(self.image, p, dp, s, ds, force)
+                qcontrol = params.GetNearestControlPoint(p, dp, s, ds, force)
+
+                dq = qcontrol - pnext
+                dnp = dp/np.linalg.norm(dp)
+                wmove = dq - np.dot(dq,dnp)*dnp
+
+                self.PlotPathSegment( pnext, pnext+wmove)
+
+                ds = np.linalg.norm(p-pnext)
 
                 self.image.scatter(qcontrol[0],qcontrol[1],qcontrol[3], 'or',
                                 color='r',
@@ -155,50 +163,31 @@ class ReachableSet3D():
                 dori[0:2] = 0.5*(dori[0:2]/np.linalg.norm(dori[0:2]))
                 dori[3] = p[3]
 
-                if s < 0.001:
-                        dnf = np.linalg.norm(force)
-                        nforce = force/dnf
-                        si = np.linalg.norm(dt2*dnf/(dt*np.linalg.norm(dp)))
+                pathnext = p + 1.5*ds*dp/np.linalg.norm(dp)
+                pathlast = p - 0.2*ds*dp/np.linalg.norm(dp)
 
-                        ## visualize path
-                        pathnext = p + 1.5*dt*si*dp
-                        pathlast = p - 0.2*dt*si*dp
+                self.PlotPathSegment( pathlast, pathnext)
 
-                        self.PlotPathSegment( pathlast, pathnext)
+                #arrow0 = self.PlotArrow(p, dt*s*dori, self.orientation_color)
+                arrow1 = self.PlotArrow(p+dt2*force, dt*s*dp, self.tangent_color, ls='dashed')
+                arrow1 = self.PlotArrow(p, dt*s*dp, self.tangent_color)
+                arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
 
-                        arrow0 = self.PlotArrow(p, dt*si*dori, self.orientation_color)
-                        arrow0 = self.PlotArrow(qnext, dt*si*dori, self.orientation_color)
-                        arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
+                #arrow0 = self.PlotArrow(qnext, dt*s*dori, self.orientation_color)
+                arrow2 = self.PlotArrow(p+dt*s*dp, dt2*force, self.force_color)
 
-                        plt.legend([arrow0,arrow2,],
-                                        ['Orientation','Force',],
-                                        fontsize=self.fs,
-                                        loc=self.loc)
-                else:
-                        pathnext = p + 1.5*ds*dp
-                        pathlast = p - 0.2*ds*dp
-
-                        self.PlotPathSegment( pathlast, pathnext)
-
-                        #arrow0 = self.PlotArrow(p, dt*s*dori, self.orientation_color)
-                        arrow1 = self.PlotArrow(p+dt2*force, dt*s*dp, self.tangent_color, ls='dashed')
-                        arrow1 = self.PlotArrow(p, dt*s*dp, self.tangent_color)
-                        arrow2 = self.PlotArrow(p, dt2*force, self.force_color)
-
-                        #arrow0 = self.PlotArrow(qnext, dt*s*dori, self.orientation_color)
-                        arrow2 = self.PlotArrow(p+dt*s*dp, dt2*force, self.force_color)
-
-                        plt.legend([arrow1,arrow2,],
-                                        ['Velocity/Tangent Path','Force',],
-                                        fontsize=self.fs,
-                                        loc=self.loc)
+                plt.legend([arrow1,arrow2,],
+                                ['Velocity/Tangent Path','Force',],
+                                fontsize=self.fs,
+                                loc=self.loc)
                 self.origin = p
                 self.tangent = dp
 
+                #draw sphere
                 ts1 = acos( np.dot(dp[0:2],ex[0:2])/np.linalg.norm(dp[0:2]))
                 ts2 = acos( np.dot((qnext-p)[0:2],ex[0:2])/np.linalg.norm((qnext-p)[0:2]))
 
-                toffset = pi/16
+                toffset = pi/8
                 toffsetz = pi/4
                 ori1 = np.cross(ex[0:2],(dp)[0:2])
                 ori2 = np.cross(ex[0:2],(qnext-p)[0:2])
@@ -213,15 +202,14 @@ class ReachableSet3D():
                 else:
                         tlimL = ts1-toffset
                         tlimU = ts2+2*toffset
-                #draw sphere
-                #u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
-                #u, v = np.mgrid[tlimL:tlimU:20j, 0+toffsetz:np.pi-toffsetz:10j]
-                #x=self.ds*np.cos(u)*np.sin(v) + p[0]
-                #y=self.ds*np.sin(u)*np.sin(v) + p[1]
-                #z=self.ds*np.cos(v) + p[3]
-                #self.image.plot_surface( x, y, z,  rstride=1, cstride=1,
-                #                color='c', alpha=0.3, linewidth=2,
-                #                edgecolors=np.array((0.5,0.5,0.5,0.5)))
+
+                u, v = np.mgrid[tlimL:tlimU:10j, 0+toffsetz:np.pi/2:10j]
+                x=ds*np.cos(u)*np.sin(v) + p[0]
+                y=ds*np.sin(u)*np.sin(v) + p[1]
+                z=ds*np.cos(v) + p[3]
+                self.image.plot_surface( x, y, z,  rstride=5, cstride=3,
+                                color='c', alpha=0.3, linewidth=2,
+                                edgecolors=np.array((0.5,0.5,0.5,0.5)))
 
                 plt.axis('equal')
 

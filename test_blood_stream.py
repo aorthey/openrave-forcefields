@@ -49,6 +49,8 @@ if __name__ == "__main__":
         xml = env.GetName()
         traj.save('trajectories/'+xml)
 
+        #raw_input('Press <ENTER> to deform.')
+
         time.sleep(1)
         traj.draw_delete()
 

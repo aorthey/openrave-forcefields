@@ -124,7 +124,7 @@ if __name__ == "__main__":
                 env.env.StopSimulation()
                 robot.GetLinks()[0].SetStatic(True)
                 W = env.env.GetKinBody('world')
-                env.env.GetPhysicsEngine().SetGravity(np.array((0,0,-0.5)))
+                env.env.GetPhysicsEngine().SetGravity(np.array((0,0,0)))
 
         surfaces = env.GetSurfaces()
         S = SurfaceModule(surfaces)
@@ -213,7 +213,7 @@ if __name__ == "__main__":
                         env.DrawFootContactPatchFromTransform(right_leg_tf, cpatch=green)
                         S.DrawCoordinateFrames(env)
 
-                env.env.StepSimulation(0.002)
+                #env.env.StepSimulation(0.0002)
                 time.sleep(0.2)
                 if t<=0:
                         raw_input('Press <ENTER> to execute com traj.')
