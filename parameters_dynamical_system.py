@@ -1,7 +1,9 @@
 import numpy as np
+import sys
 import copy
 from numpy import sqrt,sin,cos,pi
 from cvxopt import matrix, solvers
+from util import PrintNumpy
 
 FILENAME = 'virus2'
 DYNAMICAL_SYTEM_NAME = 'non-holonomic differential drive (deform)'
@@ -59,6 +61,7 @@ def GetControlConstraintMatricesFromControl(R, F):
 def GetNearestControlPoint(p, dp, speed, ds, F):
 
         [qnext,dqnext,dt] = ForwardSimulate(p, dp, speed, ds, F)
+
         dt2 = dt*dt*0.5
         Ndim = qnext.shape[0]
 
@@ -67,33 +70,6 @@ def GetNearestControlPoint(p, dp, speed, ds, F):
         ### s.t. A*x + b <= 0
 
         [A,bcontrol] = GetControlConstraintMatrices(p,F)
-
-        #for i in range(0,Ndim):
-                #print bcontrol[i+Ndim],"<=","x[",i,"] <=",-bcontrol[i]
-
-        #M = 1000
-        #qq = np.zeros((Ndim,M))
-        #qq = []
-        #A = matrix(A)
-        #b = matrix(bcontrol)
-        #for i in range(0,M):
-        #        qx = np.random.uniform(-5,5)
-        #        qy = np.random.uniform(-5,5)
-        #        qz = np.random.uniform(-5,5)
-        #        qt = np.random.uniform(-6,5)
-        #        q = np.array((qx,qy,qz,qt))
-        #        #qc = np.dot(A,q) + bcontrol 
-        #        q = matrix(q)
-        #        sol=solvers.lp(q,-A,-b)
-        #        qc = np.array(sol['x']).flatten()
-        #        qqc = p + dt*speed*dp + dt2*qc
-        #        qq.append(qqc)
-
-        ##qq = p + dt*speed*dp + dt2*F
-        ##qq = np.dot(A,qnext) + np.dot(A, (-p-dt*speed*dp))+bcontrol
-        #qq = np.array(qq)
-        #ax.scatter(qq[:,0],qq[:,1],qq[:,3], 'or',
-        #                s=50)
 
         A = -A
         A = (2*A)/(dt*dt)
@@ -109,8 +85,34 @@ def GetNearestControlPoint(p, dp, speed, ds, F):
         gamma = 0.1
         c = matrix(nF - gamma*ndP)
 
-        solvers.options['show_progress'] = False
+        #print "A:",A
+        #print "b:",b
+        #print "c:",c
+        #print "p:",p
+        #print "dp:",dp
+        #print "ds:",ds
+        #print "speed:",speed
+        #print "F:",F
+        #b = np.array(([-1.38e+06, -9.82e+04, 5.00e+04, -1.50e+06, 1.38e+06, 9.82e+04, -5.00e+04, 1.50e+06])) 
+        #c = np.array(([ 9.76e-02, 9.17e-01, 0.00e+00, -4.51e-01]))
+        #b = matrix(b)
+        #c = matrix(c)
+        #print "A:",A
+        #print "b:",b
+        #print "c:",c
+        #print "qnext:",qnext
+        #PrintNumpy('p', p)
+        #PrintNumpy('dp', dp)
+        #PrintNumpy('force', F)
+        #print "ds=",ds
+        #print "speed=",speed
+
         try:
+                solvers.options['show_progress'] = False
+                solvers.options['maxiters'] = 100 ##default: 100
+                solvers.options['abstol'] = 1e-03 ## below 1e-11 some weird behavior
+                solvers.options['reltol'] = 1e-03 ## below 1e-11 some weird behavior
+                solvers.options['feastol'] = 1e-03 ## below 1e-11 some weird behavior
                 sol=solvers.lp(c,A,-b)
                 x = np.array(sol['x']).flatten()
         except Exception as e:
@@ -118,17 +120,18 @@ def GetNearestControlPoint(p, dp, speed, ds, F):
                 print "A:",A
                 print "b:",b
                 print "c:",c
-                print "p:",p
-                print "dp:",dp
-                print "ds:",ds
-                print "speed:",speed
-                print "F:",F
+                print "qnext:",qnext
+                PrintNumpy('p', p)
+                PrintNumpy('dp', dp)
+                PrintNumpy('force', F)
+                print "ds=",ds
+                print "speed=",speed
                 #VisualizeReachableSet3D(p, dp, dp, speed, ds, F)
                 sys.exit(0)
 
         return x
 
-def ForwardSimulate(p, dp, smax, ds, F):
+def ForwardSimulate_deprecated(p, dp, smax, ds, F):
         if np.linalg.norm(F)>1e-3:
                 qnext = copy.copy(p)
                 tstep = 1e-3
@@ -136,14 +139,51 @@ def ForwardSimulate(p, dp, smax, ds, F):
 
                 dnew = 0.0
                 ictr=0
+
+                tolerance = 1e-6
                 while dnew < ds:
                         dt += tstep
                         dt2 = dt*dt/2
                         qnext = p + dt*smax*dp + dt2*F
                         dnew = np.linalg.norm(p-qnext)
+                        #print "FS:",dnew,"/",ds,dt
                         ictr+=1
 
                 dqnext = smax*dp + dt*F
+                return [qnext,dqnext,dt]
+        return None
+def ForwardSimulate(p, dp, smax, ds, F):
+        if np.linalg.norm(F)>1e-3:
+                qnext = copy.copy(p)
+                tstep = 1e-3
+                dt = 0.0
+                dnew = 0.0
+                #ictr=0
+
+                tolerance = 1e-6
+
+                ### slide along dynamical path until ds-ball is hit with some
+                ### tolerance
+
+
+                while np.linalg.norm(dnew-ds) > tolerance:
+                #while dnew < ds:
+                        #dt += tstep
+                        if dnew < ds:
+                                dt += tstep
+                        else:
+                                ## overshoot
+                                tstep = tstep/2.0
+                                dt -= tstep
+                        dt2 = dt*dt/2
+                        qnext = p + dt*smax*dp + dt2*F
+                        dnew = np.linalg.norm(p-qnext)
+                        #print "FS:",dnew,"/",ds,dt
+                        #ictr+=1
+                        #if ictr > 100:
+                                #print "FS:",dnew,"/",ds,dt
+                dqnext = smax*dp + dt*F
+                #print qnext
                 return [qnext,dqnext,dt]
         return None
 

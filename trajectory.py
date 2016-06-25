@@ -5,7 +5,7 @@ from scipy.interpolate import PPoly
 import abc
 import time
 import numpy as np
-from util import Rz
+from util import Rz, PrintNumpy
 from scipy.interpolate import interp1d,splev,splrep,splprep
 from scipy.misc import derivative
 from pylab import plot,title,xlabel,ylabel,figure
@@ -21,9 +21,9 @@ class Trajectory():
         __metaclass__ = abc.ABCMeta
         DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.01
+        DISCRETIZATION_TIME_STEP = 0.1
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
-        POLYNOMIAL_DEGREE = 3
+        POLYNOMIAL_DEGREE = 1
         MIN_NUMBER_WAYPOINTS = 5
 
         rave_traj = []
@@ -36,7 +36,7 @@ class Trajectory():
         ptsize = 0.03
         critical_pt_size = 0.08
 
-        show_tangent_vector = False
+        show_tangent_vector = True
         show_orientation_vector = True
 
         lw_path = 10
@@ -149,37 +149,11 @@ class Trajectory():
                 import parameters_dynamical_system as params
                 #AM = 1
 
-                ### car/sailboat
-                #amin = np.array((-AM,-AM,-0.5*AM))
-                #amax = np.array((AM,AM,0.5*AM))
-
                 amin = params.amin
                 amax = params.amax
-
-                ### bacteriophage
-                #amin = np.array((0,0,-AM))
-                #amax = np.array((AM,0,AM))
-
                 [Ndim,Nwaypoints] = self.getWaypointDim(W)
                 R = params.ControlPerWaypoint(W, Ndim, Nwaypoints)
-                #[Ndim,Nwaypoints] = self.getWaypointDim(W)
-                #assert(Ndim==4)
-                #Kdim = 3
-                #R = np.zeros((Ndim,Kdim,Nwaypoints))
-                #for i in range(0,Nwaypoints):
-                #        if Nwaypoints>1:
-                #                t = W[3,i]
-                #        else:
-                #                t = W[3]
-
-                #        R[0,:,i] = np.array((cos(t),-sin(t),0.0))
-                #        R[1,:,i] = np.array((sin(t),cos(t),0.0))
-                #        R[2,:,i] = np.array((0.0,0.0,0.0))
-                #        R[3,:,i] = np.array((0.0,0.0,1.0))
-
                 return [R,amin,amax]
-
-
 
         def computeTrajectoryStringForTOPP_deprecated(self, W, DEBUG=0):
                 Ndim = W.shape[0]
@@ -318,19 +292,23 @@ class Trajectory():
                         self.reach.PlotSave("images/reachable_set_projection.png")
 
         def test_domain_error(self, env):
-                thetavec = [-pi/2,-pi/4,0,pi/4,pi/2]
-                thetavec = [0]
                 #p: [-2.73 -0.19  0.1  -3.01]
                 #dp: [-17.15  -3.61   0.     1.27]
                 #ds: 0.0107685557768
                 #speed: 0.535567483719
                 #F: [ 0.    2.5   0.   -1.24]
-                p = np.array( [-2.73, -0.19, 0.1, -3.01])
-                dp = np.array([-17.15, -3.61, 0., 1.27])
-                force = np.array((0.0,2.5,0,-1.24))
-                #force = np.array((0,-2.5,0,0))
-                speed = 0.535567483719
-                ds = 0.0107685557768
+
+                ### input triggers domain error
+
+                p =np.array( [-2.7537641217345197, -0.0011810441040757407, 0.1, -3.1344791352449533] )
+                dp =np.array( [-6.008460113299763, -0.01208129664035183, 0.0, 0.07268125163682375] )
+                force =np.array( [0.0, 3.5, 0.0, -1.749955651773389] )
+                ds= 0.0231029684977
+                speed= 9.04956311496
+
+                import parameters_dynamical_system as params
+                qcontrol = params.GetNearestControlPoint(p, dp, speed, ds, force)
+
                 [R,amin,amax] = self.getControlMatrix(p)
 
                 #from reachable_set import ReachableSet
@@ -339,7 +317,7 @@ class Trajectory():
 
                 from reachable_set3d import ReachableSet3D
                 self.reach = ReachableSet3D( ds, p,
-                                speed, dp/np.linalg.norm(dp), force, R[:,:,0], amin, amax)
+                                speed, dp, force, R[:,:,0], amin, amax)
                 self.reach.Plot()
                 self.reach.PlotShow()
                 #self.reach.PlotSave("images/reachable_set_projection.png")
@@ -445,30 +423,35 @@ class Trajectory():
                 [R,amin,amax] = self.getControlMatrix(W)
 
                 self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, -F,R,amin,amax,W,dW)
-                Nc = self.topp.getCriticalPoint()
+                Nc = self.topp.getCriticalPoint()-1
 
                 if Nc < 0:
                         print "return oldNc=",oldNc
                         Nc = oldNc
                 return Nc
 
-        def GetSpeedIntervalAtCriticalPoint(self, env, Win, dWin, Nc):
+        def GetSpeedIntervalAtCriticalPoint(self, env, Win, dWin, Nc_in):
 
-                W = Win[:,0:Nc]
-                dW = dWin[:,0:Nc]
+                for Nc in range(int(Nc_in/2),Nc_in):
+                        W = Win[:,0:Nc]
+                        dW = dWin[:,0:Nc]
 
-                [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                F = self.get_forces_at_waypoints(W, env)
-                [R,amin,amax] = self.getControlMatrix(W)
+                        [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                        F = self.get_forces_at_waypoints(W, env)
+                        [R,amin,amax] = self.getControlMatrix(W)
 
-                [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc)
-                self.topp = TOPPInterface(self, durationVector, trajsubstr, -F,R,amin,amax,W,dW)
+                        [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc)
 
-                print "topp substring"
-                [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
-                                Nc,
-                                durationVector,
-                                trajsubstr)
+                        self.topp = TOPPInterface(self, durationVector, trajsubstr, -F,R,amin,amax,W,dW)
+
+                        #print durationVector,trajsubstr
+                        #print W,dW
+                        [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
+                                        Nc,
+                                        durationVector,
+                                        trajsubstr)
+                        print "TOPP velocity at CP",Nc,":",semin,semax
+                sys.exit(0)
 
                 return [semin,semax]
                 ### AVP on the subtrajectory between 0 and Nc
@@ -718,12 +701,16 @@ class Trajectory():
 
                         tvec = np.linspace(0,1,Nwaypoints)
                         WP = W[i,:]
-                        tvec = np.hstack((-0.1,tvec,1.1))
 
-                        epsilon = 0.01
-                        dws = np.sign(W[i,1]-W[i,0])
-                        dwe = np.sign(W[i,-2]-W[i,-1])
-                        WP = np.hstack((W[i,0]-epsilon*dws,W[i,:],W[i,-1]-epsilon*dwe))
+                        #dws = (W[i,1]-W[i,0])
+                        #tws = tvec[1]
+                        #dwe = (W[i,-1]-W[i,-2])
+                        #twe = 1.0-tvec[-2]
+
+                        #M = 10
+                        #for k in range(1,M):
+                        #        tvec = np.hstack((-k*tws,tvec,k*twe+1.0))
+                        #        WP = np.hstack((W[i,0]-k*dws,WP,W[i,-1]+k*dwe))
 
                         trajectory = splrep(tvec,WP,k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
                         bspline.append(trajectory)
@@ -762,51 +749,101 @@ class Trajectory():
                 Nwaypoints = W.shape[1]
                 Kcoeff = 4
                 Ninterval = Nwaypoints-1
-
                 P = np.zeros((Ninterval, Ndim, Kcoeff))
-                #print "Ninterval:",Ninterval,"Nwaypoints:",Nwaypoints
+
+                #poly= PPoly.from_spline(self.bspline[0])
+                #Ninterval = poly.c.shape[1]
+                ##print "Ninterval:",Ninterval,"Nwaypoints:",Nwaypoints
+
+                #for i in range(0,Ndim):
+                #        T = 1.0/float(Ninterval)
+                #        poly= PPoly.from_spline(self.bspline[i])
+                #        dpoly = poly.derivative(1)
+                #        ddpoly = poly.derivative(2)
+                #        coeff = poly.c
+                #        c = coeff[0]
+                #        b = coeff[1]
+                #        a = coeff[2]
+
+                #        P[:,i,0] = a
+                #        P[:,i,1] = b
+                #        P[:,i,2] = c
+
+                #        qq = a[0] + T*b[0] + T*T*c[0]
+                #        print a,b,c
+                #        print qq
+
+                #print coeff.shape
 
                 durationVector = np.zeros((Ninterval))
-                for i in range(0,Ninterval):
-                        durationVector[i] = 1.0/float(Ninterval)
 
-                #print durationVector
-                for i in range(0,Ndim):
+                for j in range(0,Ninterval):
+                        q0 = W[:,j]
+                        q1 = W[:,j+1]
+                        qd0 = dW[:,j]
+                        qd1 = dW[:,j+1]
+                        print q0,q1,qd0,qd1
+                        durationVector[j] = np.linalg.norm(q0-q1)/1000.0
+                        T = durationVector[j]
+                        [a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
+                        #P[j,i,0]=0
+                        P[j,:,0] = a
+                        P[j,:,1] = b
+                        P[j,:,2] = c
+                        P[j,:,3] = d
+                        #P[j,2,1]=0
+                        #P[j,2,2]=0
+                        #P[j,2,3]=0
 
-                        for j in range(0,Ninterval):
-                                T = durationVector[j]
+                        qspline0 = a
+                        qspline1 = a+T*b+T*T*c+T*T*T*d
+                        #print a,b,c,d,T,qspline1,q1
+                        if np.linalg.norm(qspline1-q1)>1e-5 \
+                                or np.linalg.norm(qspline0-q0)>1e-5:
+                                print "qnext mismatch"
+                                print "qnext",qnext
+                                print "q1",q1
+                                print a,b,c,d,T
+                                sys.exit(0)
 
-                                q0 = W[i,j]
-                                q1 = W[i,j+1]
-                                qd0 = dW[i,j]
-                                qd1 = dW[i,j+1]
+                print durationVector
+                #for i in range(0,Ndim):
 
-                                ddd = np.linalg.norm(dW[:,j])
-                                if ddd < 1e-10:
-                                        print "vel:",ddd,"at",j,"dw:",np.around(dW[:,j],4)
-                                        sys.exit(0)
+                #        for j in range(0,Ninterval):
+                #                T = durationVector[j]
 
-                                [a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
-                                P[j,i,0] = a
-                                P[j,i,1] = b
-                                P[j,i,2] = c
-                                P[j,i,3] = d
+                #                q0 = W[i,j]
+                #                q1 = W[i,j+1]
+                #                qd0 = dW[i,j]
+                #                qd1 = dW[i,j+1]
 
-                                qspline0 = a
-                                qspline1 = a+T*b+T*T*c+T*T*T*d
-                                if np.linalg.norm(qspline1-q1)>1e-5 \
-                                        or np.linalg.norm(qspline0-q0)>1e-5:
-                                        print "qnext mismatch"
-                                        print "qnext",qnext
-                                        print "q1",q1
-                                        print a,b,c,d,T
-                                        sys.exit(0)
+                #                ddd = np.linalg.norm(dW[:,j])
+                #                if ddd < 1e-10:
+                #                        print "vel:",ddd,"at",j,"dw:",np.around(dW[:,j],4)
+                #                        sys.exit(0)
 
-                                if i == 2:
-                                        #P[j,i,0]=0
-                                        P[j,i,1]=0
-                                        P[j,i,2]=0
-                                        P[j,i,3]=0
+                #                [a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
+                #                P[j,i,0] = a
+                #                P[j,i,1] = b
+                #                P[j,i,2] = c
+                #                P[j,i,3] = d
+
+                #                qspline0 = a
+                #                qspline1 = a+T*b+T*T*c+T*T*T*d
+                #                #print a,b,c,d,T,qspline1,q1
+                #                if np.linalg.norm(qspline1-q1)>1e-5 \
+                #                        or np.linalg.norm(qspline0-q0)>1e-5:
+                #                        print "qnext mismatch"
+                #                        print "qnext",qnext
+                #                        print "q1",q1
+                #                        print a,b,c,d,T
+                #                        sys.exit(0)
+
+                #                if i == 2:
+                #                        #P[j,i,0]=0
+                #                        P[j,i,1]=0
+                #                        P[j,i,2]=0
+                #                        P[j,i,3]=0
 
                 #self.CheckPolynomial(W,P,durationVector)
                 for i in range(0,durationVector.shape[0]):

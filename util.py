@@ -125,3 +125,5 @@ def getGlobalTransformation(tau, dtau):
         return Hglob
 
 
+def PrintNumpy(name, p):
+        print name,"=np.array(","".join(str(p.tolist())),")"

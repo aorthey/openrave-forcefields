@@ -7,8 +7,8 @@ W = np.array([-2.,-2.5 ,-3.7538003,-5.00760061,-5.50760061])
 
 tvec = np.linspace(0,1,W.shape[0])
 
-#W = np.hstack((W[0],W[:],W[-1]))
-#tvec = np.hstack((-0.2,tvec,1.5))
+W = np.hstack((W[0],W[0],W[:],W[-1]-0.1,W[-1]-0.2))
+tvec = np.hstack((-0.1,-0.05,tvec,1.05,1.1))
 
 tck = splrep(tvec, W, s=0, k=3)
 

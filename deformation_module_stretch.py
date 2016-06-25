@@ -36,6 +36,11 @@ class DeformationModuleStretch(DeformationModule):
 
 
                 dUtmp = np.zeros((Ndim,Nwaypoints))
+                [cp_semin, cp_semax] = traj.GetSpeedIntervalAtCriticalPoint(env, Wori, dWori, critical_pt)
+                if cp_semax > 0.5:
+                        return dUtmp
+
+
                 if self.ContainsReidemeisterTwist( tangent, Wori, first_pt, last_pt):
 
                         [idxW1,idxW2,idxW3] = self.IdentifyReidemeisterSubpaths(
@@ -53,14 +58,16 @@ class DeformationModuleStretch(DeformationModule):
 
                         dUtmp1 = np.zeros((Ndim,Nwaypoints))
                         for i in range(0,Nwaypoints):
-                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=sf)
+                                A = self.SmoothVectorStretch(traj,critical_pt,i,Wori,smoothing_factor=sf)
                                 dUtmp1[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
 
-                        Wnext = Wori + dUtmp1
-                        if traj.IsInCollision(env, Wnext):
-                                print "idx1 collision"
-                        else:
-                                dUtmp += dUtmp1
+                        dUtmp += dUtmp1
+                        #COLLISION_ENABLED=False
+                        #Wnext = Wori + dUtmp1
+                        #if traj.IsInCollision(env, Wnext):
+                        #        print "idx1 collision"
+                        #else:
+                        #        dUtmp += dUtmp1
 
                         ########################### idx2
                         Wdir = np.zeros((Ndim,Nwaypoints))
@@ -69,13 +76,14 @@ class DeformationModuleStretch(DeformationModule):
 
                         dUtmp2 = np.zeros((Ndim,Nwaypoints))
                         for i in range(0,Nwaypoints):
-                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=sf)
+                                A = self.SmoothVectorStretch(traj,critical_pt,i,Wori,smoothing_factor=sf)
                                 dUtmp2[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
-                        Wnext = Wori + dUtmp2
-                        if traj.IsInCollision(env, Wnext):
-                                print "idx2 collision"
-                        else:
-                                dUtmp += dUtmp2
+                        dUtmp += dUtmp2
+                        #Wnext = Wori + dUtmp2
+                        #if traj.IsInCollision(env, Wnext):
+                        #        print "idx2 collision"
+                        #else:
+                        #        dUtmp += dUtmp2
                         ########################### idx3
                         Wdir = np.zeros((Ndim,Nwaypoints))
                         for idx in idxW3:
@@ -83,14 +91,15 @@ class DeformationModuleStretch(DeformationModule):
                         dUtmp3 = np.zeros((Ndim,Nwaypoints))
 
                         for i in range(0,Nwaypoints):
-                                A = self.SmoothVector(traj,i,Wori,smoothing_factor=sf)
+                                A = self.SmoothVectorStretch(traj,critical_pt,i,Wori,smoothing_factor=sf)
                                 dUtmp3[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
 
-                        Wnext = Wori + dUtmp3
-                        if traj.IsInCollision(env, Wnext):
-                                print "idx3 collision"
-                        else:
-                                dUtmp += dUtmp3
+                        dUtmp += dUtmp3
+                        #Wnext = Wori + dUtmp3
+                        #if traj.IsInCollision(env, Wnext):
+                        #        print "idx3 collision"
+                        #else:
+                                #dUtmp += dUtmp3
                         ###########################
                         #sys.exit(0)
 
@@ -355,3 +364,21 @@ class DeformationModuleStretch(DeformationModule):
                         plt.show()
 
                 return dUtmp
+
+        def SmoothVectorStretch(self, traj, Ncritical, Ncur, W, smoothing_factor=None):
+                if smoothing_factor is None:
+                        smoothing_factor = self.DeformInfo['smoothing_factor']
+
+                [Ndim, Nwaypoints] = traj.getWaypointDim(W)
+                A = np.zeros(Nwaypoints)
+
+                assert(Ncritical<Nwaypoints)
+
+                i = Nwaypoints-1
+                while i >= 0:
+                        if i < Ncritical:
+                                A[i] = self.avalue(Ncur, i, smoothing_factor)
+                        else:
+                                A[i]= 0.0
+                        i -= 1
+                return A

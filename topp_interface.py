@@ -102,17 +102,24 @@ class TOPPInterface():
                 #[semin,semax] = self.topp_inst.AVP(0.0, 0.0)
                 return_code = x.RunVIP(0.0, 0.0)
                 if return_code != 1:
-                        #print "TOPP Error:", return_code
-                        #print "waypoint: ",N,"/",self.Nwaypoints
+                        print "TOPP Error:", return_code
+                        print "waypoint: ",N,"/",self.Nwaypoints
+                        print "force:",Fc
                         self.critical_point = x.GetCriticalPoint()
                         self.critical_point_value = x.GetCriticalPointValue()
-                        #print "CRITICAL POINT:",self.critical_point,self.critical_point_value
-                        #sys.exit(1)
+                        print "CRITICAL POINT:",self.critical_point,self.critical_point_value
+                        plt.plot(Wc[0,:],Wc[1,:],'-r',linewidth=3)
+                        plt.show()
+
+                        sys.exit(1)
                         semin = 0.0
                         semax = 0.0
                 else:
                         semin = x.sdendmin
                         semax = x.sdendmax
+                #print Subtraj_dvec
+                #print Wc
+                #print dWc
                 return [semin, semax]
 
         def PlotPrettifiedAxes(self, ax):
@@ -220,7 +227,7 @@ class TOPPInterface():
                 self.PlotPrettifiedAxes(ax2)
 
                 ax3 = subplot(4,1,3)
-                ylabel('Acceleration\n$\\left(\\frac{m^2}{s^2}\\right)$,$\\left(\\frac{rad^2}{s^2}\\right)$', fontsize=self.fs_labels)
+                ylabel('Acceleration\n$\\left(\\frac{m}{s^2}\\right)$,$\\left(\\frac{rad}{s^2}\\right)$', fontsize=self.fs_labels)
                 plot(tvect, qddvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\ddot{x}$")
                 plot(tvect, qddvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\ddot{y}$")
                 #plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
@@ -232,7 +239,7 @@ class TOPPInterface():
 
                 if env is not None:
                         ax4 = subplot(4,1,4)
-                        ylabel('Control\n$\\left(\\frac{m^2}{s^2}\\right)$,$\\left(\\frac{rad^2}{s^2}\\right)$', fontsize=self.fs_labels)
+                        ylabel('Control\n$\\left(\\frac{m}{s^2}\\right)$,$\\left(\\frac{rad}{s^2}\\right)$', fontsize=self.fs_labels)
                         plot(tvect, a[0,:], color = color_a1_coordinate, linewidth = lw, label = "${a_1}(Thruster)$")
                         plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
                         plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")
