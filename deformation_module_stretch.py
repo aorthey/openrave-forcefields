@@ -36,10 +36,9 @@ class DeformationModuleStretch(DeformationModule):
 
 
                 dUtmp = np.zeros((Ndim,Nwaypoints))
-                [cp_semin, cp_semax] = traj.GetSpeedIntervalAtCriticalPoint(env, Wori, dWori, critical_pt)
-                if cp_semax > 0.5:
-                        return dUtmp
-
+                #[cp_semin, cp_semax] = traj.GetSpeedIntervalAtCriticalPoint(env, Wori, dWori, critical_pt)
+                #if cp_semax > 0.5:
+                        #return dUtmp
 
                 if self.ContainsReidemeisterTwist( tangent, Wori, first_pt, last_pt):
 

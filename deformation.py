@@ -305,7 +305,7 @@ class Deformation():
                 print "###########################################"
                 print "CRITICAL WAYPOINT: ",self.critical_pt,"/",Nwaypoints
 
-                if self.critical_pt >= Nwaypoints:
+                if self.critical_pt >= Nwaypoints-1:
                         print "No deformation necessary => Trajectory dynamically feasible"
                         print traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.critical_pt)
                         print "###########################################"

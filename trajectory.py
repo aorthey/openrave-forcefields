@@ -21,7 +21,7 @@ class Trajectory():
         __metaclass__ = abc.ABCMeta
         DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.1
+        DISCRETIZATION_TIME_STEP = 0.01
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
         POLYNOMIAL_DEGREE = 1
         MIN_NUMBER_WAYPOINTS = 5
@@ -412,7 +412,12 @@ class Trajectory():
                 else:
                         print "WARNING: without force field, TOPP couldn't find a valid \
                         velocity profile. Path not continuous or system not STLC"
-                        #sys.exit(1)
+                        print W.shape
+                        print Fzero
+                        print W
+                        print self.trajectorystring
+                        self.info()
+                        sys.exit(1)
                         return None
 
 
@@ -431,29 +436,46 @@ class Trajectory():
                 return Nc
 
         def GetSpeedIntervalAtCriticalPoint(self, env, Win, dWin, Nc_in):
+#
+#                for Nc in range(3,Nc_in):
+#                        W = Win[:,0:Nc]
+#                        dW = dWin[:,0:Nc]
+#
+#                        [Ndim, Nwaypoints] = self.getWaypointDim(W)
+#                        F = self.get_forces_at_waypoints(W, env)
+#                        [R,amin,amax] = self.getControlMatrix(W)
+#
+#                        [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc)
+#
+#                        self.topp = TOPPInterface(self, durationVector, trajsubstr, -F,R,amin,amax,W,dW)
+#
+#                        #print durationVector,trajsubstr
+#                        #print W,dW
+#                        [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
+#                                        Nc,
+#                                        durationVector,
+#                                        trajsubstr)
+#                        print "TOPP velocity at CP",Nc,":",semin,semax
+#                sys.exit(0)
 
-                for Nc in range(int(Nc_in/2),Nc_in):
-                        W = Win[:,0:Nc]
-                        dW = dWin[:,0:Nc]
+                W = Win[:,0:Nc_in]
+                dW = dWin[:,0:Nc_in]
 
-                        [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                        F = self.get_forces_at_waypoints(W, env)
-                        [R,amin,amax] = self.getControlMatrix(W)
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                F = self.get_forces_at_waypoints(W, env)
+                [R,amin,amax] = self.getControlMatrix(W)
 
-                        [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc)
+                [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc_in)
 
-                        self.topp = TOPPInterface(self, durationVector, trajsubstr, -F,R,amin,amax,W,dW)
+                self.topp = TOPPInterface(self, durationVector, trajsubstr, -F,R,amin,amax,W,dW)
 
-                        #print durationVector,trajsubstr
-                        #print W,dW
-                        [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
-                                        Nc,
-                                        durationVector,
-                                        trajsubstr)
-                        print "TOPP velocity at CP",Nc,":",semin,semax
-                sys.exit(0)
-
-                return [semin,semax]
+                #print durationVector,trajsubstr
+                #print W,dW
+                [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
+                                Nc_in,
+                                durationVector,
+                                trajsubstr)
+                print "TOPP velocity at CP",Nc_in,":",semin,semax
                 ### AVP on the subtrajectory between 0 and Nc
                 #if Nc > 0:
                 #        [bspline, trajstr, durationVector] = self.computeTrajectorySubstringForTOPP(W, Nc)
@@ -462,6 +484,7 @@ class Trajectory():
                 #        semin = 0.0
                 #        semax = 0.0
                 #print "MAX SPEED AT CRITICAL PT",Nc,"/",Nwaypoints," is:",semin,semax
+                return [semin,semax]
 
         def computeTrajectorySubstringForTOPP(self, Win, dWin, Nc):
                 W = Win[:,0:Nc]
@@ -747,16 +770,18 @@ class Trajectory():
 
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
-                Kcoeff = 4
+                Kcoeff = 2
                 Ninterval = Nwaypoints-1
                 P = np.zeros((Ninterval, Ndim, Kcoeff))
 
                 #poly= PPoly.from_spline(self.bspline[0])
                 #Ninterval = poly.c.shape[1]
                 ##print "Ninterval:",Ninterval,"Nwaypoints:",Nwaypoints
+                durationVector = np.zeros((Ninterval))
 
                 #for i in range(0,Ndim):
                 #        T = 1.0/float(Ninterval)
+                #        durationVector[i] = T
                 #        poly= PPoly.from_spline(self.bspline[i])
                 #        dpoly = poly.derivative(1)
                 #        ddpoly = poly.derivative(2)
@@ -775,75 +800,48 @@ class Trajectory():
 
                 #print coeff.shape
 
-                durationVector = np.zeros((Ninterval))
 
+                qd0 = np.zeros((Ndim))
+                qd0 += dW[:,0]
+                #print W[0,:]
+                #print dW[0,:]
                 for j in range(0,Ninterval):
                         q0 = W[:,j]
                         q1 = W[:,j+1]
                         qd0 = dW[:,j]
+                        #qd0 += dW[:,j]
+                        #qd0 += dW[:,j]
                         qd1 = dW[:,j+1]
-                        print q0,q1,qd0,qd1
-                        durationVector[j] = np.linalg.norm(q0-q1)/1000.0
+                        #print q0,q1,qd0,qd1
+                        #durationVector[j] = np.linalg.norm(q0-q1)
+                        #[a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
+                        a = q0
+
+                        dq = np.linalg.norm(q1-q0)
+                        durationVector[j] = dq
                         T = durationVector[j]
-                        [a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
+                        qnd = (q1-q0)/dq
+                        b = dq/T*qnd
+                        #c = (qd1-qd0)/(T)
+                        #c = (q1-q0-qd0*T)/(T*T)
+
+                        #print qd0
+                        #qd0 = qd0 + (qd1-qd0) + 2*c*T
+
+                        #qd0 = qd0 + 2*c*T
+                        #c = (qd1-qd0)/(2*T)
                         #P[j,i,0]=0
                         P[j,:,0] = a
                         P[j,:,1] = b
-                        P[j,:,2] = c
-                        P[j,:,3] = d
+                        #P[j,:,2] = c
+                        #P[j,:,3] = d
                         #P[j,2,1]=0
                         #P[j,2,2]=0
                         #P[j,2,3]=0
 
-                        qspline0 = a
-                        qspline1 = a+T*b+T*T*c+T*T*T*d
+                        #qspline0 = a
+                        #qspline1 = a+T*b+T*T*c+T*T*T*d
                         #print a,b,c,d,T,qspline1,q1
-                        if np.linalg.norm(qspline1-q1)>1e-5 \
-                                or np.linalg.norm(qspline0-q0)>1e-5:
-                                print "qnext mismatch"
-                                print "qnext",qnext
-                                print "q1",q1
-                                print a,b,c,d,T
-                                sys.exit(0)
-
-                print durationVector
-                #for i in range(0,Ndim):
-
-                #        for j in range(0,Ninterval):
-                #                T = durationVector[j]
-
-                #                q0 = W[i,j]
-                #                q1 = W[i,j+1]
-                #                qd0 = dW[i,j]
-                #                qd1 = dW[i,j+1]
-
-                #                ddd = np.linalg.norm(dW[:,j])
-                #                if ddd < 1e-10:
-                #                        print "vel:",ddd,"at",j,"dw:",np.around(dW[:,j],4)
-                #                        sys.exit(0)
-
-                #                [a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
-                #                P[j,i,0] = a
-                #                P[j,i,1] = b
-                #                P[j,i,2] = c
-                #                P[j,i,3] = d
-
-                #                qspline0 = a
-                #                qspline1 = a+T*b+T*T*c+T*T*T*d
-                #                #print a,b,c,d,T,qspline1,q1
-                #                if np.linalg.norm(qspline1-q1)>1e-5 \
-                #                        or np.linalg.norm(qspline0-q0)>1e-5:
-                #                        print "qnext mismatch"
-                #                        print "qnext",qnext
-                #                        print "q1",q1
-                #                        print a,b,c,d,T
-                #                        sys.exit(0)
-
-                #                if i == 2:
-                #                        #P[j,i,0]=0
-                #                        P[j,i,1]=0
-                #                        P[j,i,2]=0
-                #                        P[j,i,3]=0
 
                 #self.CheckPolynomial(W,P,durationVector)
                 for i in range(0,durationVector.shape[0]):
@@ -860,53 +858,90 @@ class Trajectory():
 
                 return [trajectorystring, durationVector]
 
+        def EvalPoly(self, P,i,t):
+                Ndim = P.shape[1]
+                Kcoeff = P.shape[2]
+                x = np.zeros((Ndim))
+                dx = np.zeros((Ndim))
+                for k in range(0,Kcoeff):
+                        x += P[i,:,k]*(t**k)
+                        dx += k*P[i,:,k]*(t**(max(k-1,0)))
+                return [x,dx]
         def CheckPolynomial(self, W, P, D):
                 [Ninterval, Ndim, Kcoeff] = P.shape
 
                 X = []
-                Y = []
                 dX = []
-                dY = []
-                for i in range(0,D.shape[0]):
+                tvec = []
+                M = D.shape[0]
+                Wplt = []
+                WTplt =[]
+                #M = 10
+                tall = 0.0
+                Dall = 0.0
+                for i in range(0,M):
                         t=0.0
-                        tstep = D[i]/100
+                        tstep = D[i]/1000
 
+                        WTplt.append(Dall)
+                        Wplt.append(P[i,:,1])
+                        Dall+=D[i]
                         while t <= D[i]:
-                                j = 0
-                                x = P[i,j,0] + P[i,j,1]*t + P[i,j,2]*t*t + P[i,j,3]*t*t*t
-                                dx = P[i,j,1] + 2*P[i,j,2]*t + 3*P[i,j,3]*t*t
+                                tvec.append(tall)
+
+                                [x,dx] = self.EvalPoly(P,i,t)
+                                #x = np.zeros((Ndim))
+                                #dx = np.zeros((Ndim))
+                                #for k in range(0,Kcoeff):
+                                #        x += P[i,:,k]*(t**k)
+                                #        dx += k*P[i,:,k]*(t**(max(k-1,0)))
+
+                                #x = P[i,:,0] + P[i,:,1]*t + P[i,:,2]*t*t + P[i,:,3]*t*t*t
+                                #dx = P[i,:,1] + 2*P[i,:,2]*t + 3*P[i,:,3]*t*t
                                 X.append(x)
                                 dX.append(dx)
-                                j = 1
-                                y = P[i,j,0] + P[i,j,1]*t + P[i,j,2]*t*t + P[i,j,3]*t*t*t
-                                dy = P[i,j,1] + 2*P[i,j,2]*t + 3*P[i,j,3]*t*t
-                                Y.append(y)
-                                dY.append(dy)
                                 t+=tstep
+                                tall += tstep
 
-                X=np.array(X)
-                Y=np.array(Y)
-                dX=np.array(dX)
-                dY=np.array(dY)
-                smallestdP = 1
-                imin = -1
-                for i in range(0,X.shape[0]):
-                        dP = np.array((dX[i],dY[i]))
-                        d = np.linalg.norm(dP)
-                        if d < smallestdP:
-                                smallestdP = d
-                                imin = i
+                        [q1spl,qd1spl] = self.EvalPoly(P,i,D[i])
+                        q1 = W[:,i+1]
 
-                        dP /= np.linalg.norm(dP)
-                        x0 = X[i]
-                        x1 = X[i]+dP[0]
-                        y0 = Y[i]
-                        y1 = Y[i]+dP[1]
-                        plt.plot([x0,x1],[y0,y1],'-r',linewidth=3)
+                        if np.linalg.norm(q1-q1spl)>1e-5:
+                                print "qnext mismatch"
+                                print "q1",q1
+                                print "q1spl",q1spl
+                                sys.exit(0)
 
-                plt.plot(X,Y,'-k',linewidth=3)
-                plt.plot(W[0,:],W[1,:],'ok',markersize=6)
-                plt.plot(P[:,0,0],P[:,1,0],'ob',markersize=6)
+                        q0 = W[:,i]
+                        [q0spl,qd0spl] = self.EvalPoly(P,i,0)
+
+                        if np.linalg.norm(q0-q0spl)>1e-5:
+                                print "q0 mismatch"
+                                print "q0",q0
+                                print "q0spl",q0spl
+                                sys.exit(0)
+
+                tvec=np.array(tvec)
+                X=np.array(X).T
+                dX=np.array(dX).T
+                WTplt=np.array(WTplt).T
+                Wplt=np.array(Wplt).T
+                print WTplt.shape
+                print Wplt.shape
+                #plt.plot(tvec,dX[0,:],'-k',linewidth=3)
+                plt.plot(X[0,:],X[1,:],'-r',linewidth=3)
+                #plt.plot(tvec,X[0,:],'-r',linewidth=3)
+
+                #plt.plot(WTplt,Wplt[0,:],'-ok',linewidth=3)
+                #plt.plot(tvec,X[1,:],'-k',linewidth=3)
+                #plt.plot(tvec,X[2,:],'-b',linewidth=3)
+                #plt.plot(tvec,X[3,:],'-g',linewidth=3)
+                #plt.plot(tvec,dX[0,:],'--r',linewidth=3)
+                #plt.plot(tvec,dX[1,:],'--k',linewidth=3)
+                #plt.plot(tvec,dX[2,:],'--b',linewidth=3)
+                #plt.plot(tvec,dX[3,:],'--g',linewidth=3)
+                #plt.plot(W[0,0:M+1],W[1,0:M+1],'ok',markersize=6)
+                #plt.plot(P[0:M,0,0],P[0:M,1,0],'ob',markersize=6)
                 plt.show()
 
         def InsertMissingWaypoints(self,Wnext,max_dist):
