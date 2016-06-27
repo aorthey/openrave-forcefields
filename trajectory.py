@@ -279,6 +279,12 @@ class Trajectory():
                         #force = np.array((0,0,0,0))
                         s = 0.2
 
+                        #p =np.array( [-2.608897298112661, -0.2047366548132623, 0.1000000008651387, -2.987014267911084] )
+                        #dp =np.array( [-16.487757154509474, -4.837209926510647, 0.0, 4.899656054155726] )
+                        #force =np.array( [0.0, 3.0, 0.0, -1.4821147977289577] )
+                        #s= 3.86342505425
+
+
                         [R,amin,amax] = self.getControlMatrix(p)
 
                         #from reachable_set import ReachableSet
@@ -289,7 +295,7 @@ class Trajectory():
                         self.reach = ReachableSet3D( self.DISCRETIZATION_TIME_STEP, p, s, dp, force, R[:,:,0], amin, amax)
                         self.reach.Plot()
                         self.reach.PlotShow()
-                        self.reach.PlotSave("images/reachable_set_projection.png")
+                        self.reach.PlotSave("images/reachable_set_projection2.png")
 
 
         def get_dimension(self):

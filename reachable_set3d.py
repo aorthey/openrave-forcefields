@@ -73,9 +73,10 @@ class ReachableSet3D():
                 from mpl_toolkits.mplot3d import Axes3D
                 self.image = self.fig.gca(projection='3d')
 
-                tstart = 0.001
                 tsamples= 15
                 [qnext,dtmp,tend] = params.ForwardSimulate(p, dp, s, ds, force)
+                #print "TEND:",tend
+                tstart = 0.0#tend/100
 
                 Ndim = p.shape[0]
                 poly = []
@@ -86,7 +87,6 @@ class ReachableSet3D():
                 M_time = A.shape[0]
 
                 for dt in self.expspace(tstart,tend,tsamples):
-                        print dt
                         dt2 = dt*dt*0.5
                         M_speed = 1
                         speed = np.linspace(0,s,M_speed)
@@ -103,8 +103,8 @@ class ReachableSet3D():
                 dt2 = dt*dt*0.5
 
                 qnext = p+dt*s*dp+dt2*force
+
                 pnext = p+ds*dp/np.linalg.norm(dp)
-                #pnext = p+dt*s*dp
 
                 tstring = 'Reachable Set (<T='+str(dt)+')'
                 self.filename = 'images/reachableset_'+params.FILENAME+'_ori'+str(np.around(p[3],decimals=2))
@@ -123,11 +123,8 @@ class ReachableSet3D():
                 self.image.scatter(p[0], p[1], p[3], color='k',
                                 s=self.point_size)
 
-                self.image.scatter(pnext[0],pnext[1],pnext[3], 'ok', color='k',
+                self.image.scatter(pnext[0],pnext[1],pnext[3], 'og', color='g',
                                 s=self.point_size)
-                self.image.scatter(pnext[0],pnext[1],pnext[3], 'ok', color='k',
-                                s=self.point_size)
-
                 self.image.scatter(qnext[0],qnext[1],qnext[3], 'ok',
                                 s=self.point_size)
 

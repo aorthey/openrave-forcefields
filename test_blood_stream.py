@@ -38,13 +38,13 @@ if __name__ == "__main__":
         env.DisplayForces()
         time.sleep(0.5)
 
-        #planner = MotionPlannerGeometrical(robot, env)
+        planner = MotionPlannerGeometrical(robot, env)
         ##planner = MotionPlannerKinodynamic(robot, env)
 
-        #rave_path = planner.GetPath()
+        rave_path = planner.GetPath()
 
-        #traj = Trajectory.from_ravetraj(rave_path)
-        traj = Trajectory.from_file('deform1')
+        traj = Trajectory.from_ravetraj(rave_path)
+        #traj = Trajectory.from_file('deform1')
         traj.info()
         traj.draw(env)
         xml = env.GetName()
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         td = DeformationReachableSet(traj, env)
         deform_success = td.deform(N_iter=100)
 
-        td.traj_deformed.save('trajectories/'+xml+'_deformed')
+        #td.traj_deformed.save('trajectories/'+xml+'_deformed')
 
         if deform_success:
                 td.traj_deformed.PlotParametrization(env)

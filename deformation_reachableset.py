@@ -26,10 +26,10 @@ class DeformationReachableSet(Deformation):
         #lambda_3 = 0.1*1e-2
         #lambda_4 = 0.01
 
-        lambda_1 = 0.001
-        lambda_2 = 0.001
-        lambda_3 = 0.1*1e-2
-        lambda_4 = 0.01
+        lambda_1 = 0.0
+        lambda_2 = 1
+        lambda_3 = 0.0
+        lambda_4 = 0.0
 
         smoothing_factor = 20.0
 
