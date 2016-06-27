@@ -29,6 +29,9 @@ def rand_interval_NM( a, b, n, m):
         return rab
 
 
+inf = float('inf')
+black=np.array((0,0,0))
+white=np.array((1,1,1))
 red=np.array((1,0,0))
 green=np.array((0,1,0))
 blue=np.array((0,0,1))

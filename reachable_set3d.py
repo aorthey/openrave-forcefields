@@ -131,7 +131,7 @@ class ReachableSet3D():
                 self.image.scatter(qnext[0],qnext[1],qnext[3], 'ok',
                                 s=self.point_size)
 
-                qcontrol = params.GetNearestControlPoint(p, dp, s, ds, force)
+                [qcontrol,qtmp,dtmp] = params.ForwardSimulate(p, dp, s, ds, force)
 
                 dq = qcontrol - pnext
                 dnp = dp/np.linalg.norm(dp)
@@ -143,7 +143,7 @@ class ReachableSet3D():
 
                 self.image.scatter(qcontrol[0],qcontrol[1],qcontrol[3], 'or',
                                 color='r',
-                                s=self.point_size)
+                                s=2*self.point_size)
 
                 text_offset_t = dt2*force[3]/5
                 text_offset_y = dt2*force[1]/2

@@ -276,7 +276,7 @@ class Trajectory():
                         ##car
                         force = np.array((0.5,-2.5,0,5.0))
                         dp = np.array((1,0.1,0,0.2))
-                        #force = np.array((0,-2.5,0,0))
+                        #force = np.array((0,0,0,0))
                         s = 0.2
 
                         [R,amin,amax] = self.getControlMatrix(p)
@@ -290,37 +290,6 @@ class Trajectory():
                         self.reach.Plot()
                         self.reach.PlotShow()
                         self.reach.PlotSave("images/reachable_set_projection.png")
-
-        def test_domain_error(self, env):
-                #p: [-2.73 -0.19  0.1  -3.01]
-                #dp: [-17.15  -3.61   0.     1.27]
-                #ds: 0.0107685557768
-                #speed: 0.535567483719
-                #F: [ 0.    2.5   0.   -1.24]
-
-                ### input triggers domain error
-
-                p =np.array( [-2.7537641217345197, -0.0011810441040757407, 0.1, -3.1344791352449533] )
-                dp =np.array( [-6.008460113299763, -0.01208129664035183, 0.0, 0.07268125163682375] )
-                force =np.array( [0.0, 3.5, 0.0, -1.749955651773389] )
-                ds= 0.0231029684977
-                speed= 9.04956311496
-
-                import parameters_dynamical_system as params
-                qcontrol = params.GetNearestControlPoint(p, dp, speed, ds, force)
-
-                [R,amin,amax] = self.getControlMatrix(p)
-
-                #from reachable_set import ReachableSet
-                #self.reach = ReachableSet( p, s, dp, force, R[:,:,0], amin, amax)
-                #self.reach.Plot()
-
-                from reachable_set3d import ReachableSet3D
-                self.reach = ReachableSet3D( ds, p,
-                                speed, dp, force, R[:,:,0], amin, amax)
-                self.reach.Plot()
-                self.reach.PlotShow()
-                #self.reach.PlotSave("images/reachable_set_projection.png")
 
 
         def get_dimension(self):

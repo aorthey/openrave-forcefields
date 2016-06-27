@@ -3,6 +3,7 @@ import os
 from pylab import *
 import numpy as np
 from openravepy import *
+from util import black
 import parameters_dynamical_system as params
 import TOPP
 from TOPP import Utilities
@@ -218,7 +219,6 @@ class TOPPInterface():
                 plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
                 #plot(twvect, self.dW_[2,:], '--', color = color_z_coordinate, linewidth = lw)
                 plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
-
                 plot(tvect, qdvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\dot x$")
                 plot(tvect, qdvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\dot y$")
                 #plot(tvect, qdvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\dot z$")
@@ -228,6 +228,7 @@ class TOPPInterface():
 
                 ax3 = subplot(4,1,3)
                 ylabel('Acceleration\n$\\left(\\frac{m}{s^2}\\right)$,$\\left(\\frac{rad}{s^2}\\right)$', fontsize=self.fs_labels)
+                plot(twvect, 0*self.dW_[0,:], '-', color=black)
                 plot(tvect, qddvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\ddot{x}$")
                 plot(tvect, qddvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\ddot{y}$")
                 #plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
@@ -240,6 +241,7 @@ class TOPPInterface():
                 if env is not None:
                         ax4 = subplot(4,1,4)
                         ylabel('Control\n$\\left(\\frac{m}{s^2}\\right)$,$\\left(\\frac{rad}{s^2}\\right)$', fontsize=self.fs_labels)
+                        plot(twvect, 0*self.dW_[0,:], '-', color=black)
                         plot(tvect, a[0,:], color = color_a1_coordinate, linewidth = lw, label = "${a_1}(Thruster)$")
                         plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
                         plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")

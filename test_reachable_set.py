@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
         #trajectory = MotionPlannerDeformation(path, robot, env)
         traj = Trajectory.from_ravetraj(rave_path)
-        #traj.plot_reachableset(env)
-        traj.test_domain_error(env)
+        traj.plot_reachableset(env)
+        #traj.test_domain_error(env)
 
         raw_input('Enter any key to quit. ')
