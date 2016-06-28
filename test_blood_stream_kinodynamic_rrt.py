@@ -39,15 +39,18 @@ if __name__ == "__main__":
 
         #planner = MotionPlannerGeometrical(robot, env)
         fh = open('trajectories/time_stream_krrt.txt','w')
-        for i in range(0,100):
+
+        for i in range(0,3):
                 t1 = time.time()
                 planner = MotionPlannerKinodynamic(robot, env)
                 t2 = time.time()
-                fh.write('%d %f\n'%(i,t2-t1))
+                tall = t2-t1
+                fh.write('%d %f\n'%(i,tall))
+                print "time:",tall
                 rave_path = planner.GetPath()
                 traj = Trajectory.from_ravetraj(rave_path)
                 traj.info()
-                traj.draw(env)
+                #traj.draw(env)
                 traj.save('trajectories/bloodstream_kinodynamic'+str(i))
         fh.close()
 

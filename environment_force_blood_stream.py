@@ -15,10 +15,9 @@ class EnvironmentBloodStream(ForceEnvironment):
                 return self.cells
 
         def GetForces(self):
-                ##
                 self.forces = np.array((0.0,0.0,0.0))
                 #self.forces = np.vstack([self.forces,(6.5,0.0,0.0)])
-                self.forces = np.vstack([self.forces,(0.0,1.5,0.0)])
+                self.forces = np.vstack([self.forces,(0.0,0.12,0.0)])
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
 
                 return self.forces
@@ -27,7 +26,7 @@ class EnvironmentBloodStream(ForceEnvironment):
                 return [-2.0,0.0,0.1,-pi,0,0,0,0]
 
         def RobotGetGoalPosition(self):
-                return [-5.5,0.0,0.1,-pi,0,0,0,0]
+                return [-6.5,0.0,0.1,-pi,0,0,0,0]
 
 if __name__ == "__main__":
         env = EnvironmentBloodStream()

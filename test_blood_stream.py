@@ -40,26 +40,22 @@ if __name__ == "__main__":
 
         planner = MotionPlannerGeometrical(robot, env)
         ##planner = MotionPlannerKinodynamic(robot, env)
-
         rave_path = planner.GetPath()
 
-        #traj = Trajectory.from_ravetraj(rave_path)
-        traj = Trajectory.from_file('deform1')
+        traj = Trajectory.from_ravetraj(rave_path)
+        #traj = Trajectory.from_file('deform1')
         traj.info()
         traj.draw(env)
         xml = env.GetName()
         traj.save('trajectories/'+xml)
 
         #raw_input('Press <ENTER> to deform.')
-
         time.sleep(1)
         traj.draw_delete()
-
         td = DeformationReachableSet(traj, env)
         deform_success = td.deform(N_iter=100)
 
         #td.traj_deformed.save('trajectories/'+xml+'_deformed')
-
         if deform_success:
                 td.traj_deformed.PlotParametrization(env)
                 td.traj_deformed.execute(env, robot, tsleep=0.005,

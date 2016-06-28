@@ -75,7 +75,7 @@ class ReachableSet3D():
 
                 tsamples= 15
                 [qnext,dtmp,tend] = params.ForwardSimulate(p, dp, s, ds, force)
-                #print "TEND:",tend
+                print "TEND:",tend
                 tstart = 0.0#tend/100
 
                 Ndim = p.shape[0]
