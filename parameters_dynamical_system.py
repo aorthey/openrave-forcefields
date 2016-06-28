@@ -173,7 +173,7 @@ def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol):
         Ndim = p.shape[0]
         if dt < 1e-100:
                 #print "dt<1e-100",dt
-                return [p,ds_next]
+                return [p,dp,ds_next]
 
         dt2 = dt*dt/2
 
@@ -191,14 +191,24 @@ def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol):
                         quad_form(x-p,Id) <= ds_next]
 
         prob = Problem(objective, constraints)
-        dnew = np.abs(prob.solve(solver=ECOS, max_iters=100, feastol_inacc=1e-5))
+        try:
+                #dnew = np.abs(prob.solve(solver=ECOS, verbose=True, max_iters=200, feastol_inacc=1e-5))
+                dnew = np.abs(prob.solve(solver=ECOS, max_iters=200, feastol_inacc=1e-5))
+        except Exception as e:
+                dnew = inf
+                pass
+                #sys.exit(0)
+        print dnew,dt,speed,p,dp
 
         if dnew < inf:
                 qcontrol =np.array(x.value).flatten()
+                qdd = 2*(qcontrol-p-dt*speed*dp)/(dt*dt)
+                qdcontrol = speed*dp + dt*qdd
         else:
                 qcontrol = None
+                qdcontrol = None
 
-        return [qcontrol, dnew]
+        return [qcontrol, qdcontrol, dnew]
 
 def ForwardSimulate(p, dp, speed, ds, F):
         ### should best follow path!
@@ -212,7 +222,7 @@ def ForwardSimulate(p, dp, speed, ds, F):
         dt = 0.0
 
         ## distance from RS boundary
-        boundary_distance = 0
+        boundary_distance = 0.0
         ### slide along dynamical path until ds-ball is hit with some
         ### tolerance
 
@@ -236,14 +246,15 @@ def ForwardSimulate(p, dp, speed, ds, F):
         #plt.plot(pnext[0],pnext[1],'og',markersize=20)
         while True:
                 #### Solve QCQP -> get new distance
-                [qcontrol, dcontrol_to_pnext] = GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol)
-                #print ictr,"dt:",dt,"d",dcontrol_to_pnext
+                [qcontrol, qdcontrol, dcontrol_to_pnext] = GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol)
+
+                dt2 = 0.5*dt*dt
+                #p + speed*dp*dt + dt2 * F + dt2 * control
 
                 if qcontrol is None:
                         dt -= tstep
-                        tstep /= 2.0
+                        tstep /= 1e10
                 else:
-                        #plt.plot(qcontrol[0],qcontrol[1],'or')
                         if dcontrol_to_pnext < dbest:
                                 dbest = dcontrol_to_pnext
                                 dtbest = dt
@@ -257,11 +268,10 @@ def ForwardSimulate(p, dp, speed, ds, F):
                 ictr+=1
                 #dt += tstep
 
-        #print "DT:",dtbest,dbest
-        [qcontrol, dcontrol_to_pnext] = GetNearestControlPoint(p, dp, pnext, F, dtbest, speed, Acontrol, bcontrol)
+        [qcontrol, qdcontrol, dcontrol_to_pnext] = GetNearestControlPoint(p, dp, pnext, F, dtbest, speed, Acontrol, bcontrol)
         #plt.plot(qcontrol[0],qcontrol[1],'or',markersize=10)
         #plt.show()
-        return [qcontrol,None,dtbest]
+        return [qcontrol,qdcontrol,dtbest]
 
 def VisualizeReachableSet3D(p, dp, dwori, speed, ds, F):
         from reachable_set3d import ReachableSet3D

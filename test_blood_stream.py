@@ -43,8 +43,8 @@ if __name__ == "__main__":
 
         rave_path = planner.GetPath()
 
-        traj = Trajectory.from_ravetraj(rave_path)
-        #traj = Trajectory.from_file('deform1')
+        #traj = Trajectory.from_ravetraj(rave_path)
+        traj = Trajectory.from_file('deform1')
         traj.info()
         traj.draw(env)
         xml = env.GetName()

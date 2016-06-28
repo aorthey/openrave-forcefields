@@ -38,15 +38,20 @@ if __name__ == "__main__":
         time.sleep(0.5)
 
         #planner = MotionPlannerGeometrical(robot, env)
-        planner = MotionPlannerKinodynamic(robot, env)
+        fh = open('trajectories/time_stream_krrt.txt','w')
+        for i in range(0,100):
+                t1 = time.time()
+                planner = MotionPlannerKinodynamic(robot, env)
+                t2 = time.time()
+                fh.write('%d %f\n'%(i,t2-t1))
+                rave_path = planner.GetPath()
+                traj = Trajectory.from_ravetraj(rave_path)
+                traj.info()
+                traj.draw(env)
+                traj.save('trajectories/bloodstream_kinodynamic'+str(i))
+        fh.close()
 
-        rave_path = planner.GetPath()
 
-        traj = Trajectory.from_ravetraj(rave_path)
-        traj.info()
-        traj.draw(env)
-        raw_input('Press <ENTER> to save trajectory')
-        traj.save('trajectories/bloodstream_kinodynamic')
         raw_input('Press <ENTER> to start deforming.')
         time.sleep(1)
         traj.draw_delete()

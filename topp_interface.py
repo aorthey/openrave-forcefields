@@ -291,6 +291,35 @@ class TOPPInterface():
                 else:
                         return False
 
+### TOPP ERROR CODES
+#       TOPP_UNSPEC = 0
+#       TOPP_OK = 1
+#       TOPP_CANNOT_PREPROCESS = 2
+#       TOPP_SHORT_TRAJ = 3
+#       TOPP_MVC_HIT_ZERO = 4
+#       TOPP_CLC_ERROR = 5
+#       TOPP_SDBEGMIN_TOO_HIGH = 6
+#       TOPP_SDENDMIN_TOO_HIGH = 7
+#       TOPP_FWD_HIT_ZERO = 8
+#       TOPP_BWD_HIT_ZERO = 9
+#       TOPP_FWD_FAIL = 10
+#       TOPP_BWD_FAIL = 11
+#       
+#       MESSAGES = {
+#           TOPP_UNSPEC: "unspecified error",
+#           TOPP_OK: "everything OK",
+#           TOPP_CANNOT_PREPROCESS: "cannot preprocess trajectory",
+#           TOPP_SHORT_TRAJ: "trajectory too short",
+#           TOPP_MVC_HIT_ZERO: "MVC hit the sd=0 axis",
+#           TOPP_CLC_ERROR: "some CLC error",
+#           TOPP_SDBEGMIN_TOO_HIGH: "sdbegmin is too high",
+#           TOPP_SDENDMIN_TOO_HIGH: "sdendmin is too high",
+#           TOPP_FWD_HIT_ZERO: "forward integration hit the sd=0 axis",
+#           TOPP_BWD_HIT_ZERO: "backward integration hit the sd=0 axis",
+#           TOPP_FWD_FAIL: "forward integration failed",
+#           TOPP_BWD_FAIL: "backward integration failed"
+#       }
+
         def getCriticalPoint(self):
                 x = self.topp_inst.solver
                 #x.integrationtimestep = 0.001
@@ -301,6 +330,7 @@ class TOPPInterface():
                 try:
                         ret = x.RunComputeProfiles(0.0,0.0)
                         if ret == 4:
+                                ### MVC Hit Zero
                                 self.critical_point = x.GetCriticalPoint()
                                 self.critical_point_value = x.GetCriticalPointValue()
                                 print "TOPP critical pt:",self.critical_point,self.critical_point_value
