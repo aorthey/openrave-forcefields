@@ -75,7 +75,7 @@ class ReachableSet3D():
 
                 tsamples= 15
                 [qnext,dtmp,tend] = params.ForwardSimulate(p, dp, s, ds, force)
-                print "TEND:",tend
+                print "TEND:",tend,qnext
                 tstart = 0.0#tend/100
 
                 Ndim = p.shape[0]
@@ -106,7 +106,7 @@ class ReachableSet3D():
 
                 pnext = p+ds*dp/np.linalg.norm(dp)
 
-                tstring = 'Reachable Set (<T='+str(dt)+')'
+                tstring = 'Reachable Set (<T='+str("%10.2e"%dt)+')'
                 self.filename = 'images/reachableset_'+params.FILENAME+'_ori'+str(np.around(p[3],decimals=2))
                 self.filename = re.sub('[.]', '-', self.filename)
                 self.filename += '.png'
@@ -129,6 +129,7 @@ class ReachableSet3D():
                                 s=self.point_size)
 
                 [qcontrol,qtmp,dtmp] = params.ForwardSimulate(p, dp, s, ds, force)
+                print "TEND:",dtmp,qcontrol
 
                 dq = qcontrol - pnext
                 dnp = dp/np.linalg.norm(dp)
@@ -142,9 +143,9 @@ class ReachableSet3D():
                                 color='r',
                                 s=2*self.point_size)
 
-                text_offset_t = dt2*force[3]/5
-                text_offset_y = dt2*force[1]/2
-                text_offset_x = dt2*force[1]
+                text_offset_t = ds/10.0
+                text_offset_y = ds/10.0
+                text_offset_x = ds/10.0
 
                 self.image.text(p[0]-text_offset_x, p[1]-text_offset_y, p[3]-text_offset_t, 
                                 "$p(s)$",
@@ -174,7 +175,7 @@ class ReachableSet3D():
                 arrow2 = self.PlotArrow(p+dt*s*dp, dt2*force, self.force_color)
 
                 plt.legend([arrow1,arrow2,],
-                                ['Velocity/Tangent Path','Force',],
+                                ['Velocity Displacement','Wrench Displacement',],
                                 fontsize=self.fs,
                                 loc=self.loc)
                 self.origin = p
@@ -200,11 +201,11 @@ class ReachableSet3D():
                         tlimL = ts1-toffset
                         tlimU = ts2+2*toffset
 
-                u, v = np.mgrid[tlimL:tlimU:10j, 0+toffsetz:np.pi/2:10j]
+                u, v = np.mgrid[tlimL:tlimU:10j, 0+toffsetz:np.pi/2+toffsetz/4:10j]
                 x=ds*np.cos(u)*np.sin(v) + p[0]
                 y=ds*np.sin(u)*np.sin(v) + p[1]
                 z=ds*np.cos(v) + p[3]
-                self.image.plot_surface( x, y, z,  rstride=5, cstride=3,
+                self.image.plot_surface( x, y, z,  rstride=2, cstride=2,
                                 color='c', alpha=0.3, linewidth=2,
                                 edgecolors=np.array((0.5,0.5,0.5,0.5)))
 

@@ -252,6 +252,8 @@ class Trajectory():
         def info(self):
                 print "#### TRAJECTORY CLASS ######"
                 print "LENGTH: ", self.get_length()
+                print "DISCRETIZATION:",self.DISCRETIZATION_TIME_STEP
+                print "WAYPOINTS: ", self.waypoints.shape[1]
 
                 [f0,df0] = np.around(self.evaluate_at(0),2)
                 [f1,df1] = np.around(self.evaluate_at(1),2)
@@ -268,27 +270,48 @@ class Trajectory():
                 thetavec = [-pi/2,-pi/4,0,pi/4,pi/2]
                 thetavec = [0]
                 for theta in thetavec:
-                        p = np.array((0,1e-4,0,theta))
 
                         ##sailboat
                         force = np.array((2.5,-3.5,0,5.0))
                         dp = np.array((1,0.0,0,0.2))
                         ##car
-                        force = np.array((0.5,-2.5,0,5.0))
-                        dp = np.array((1,0.1,0,0.2))
-                        #force = np.array((0,0,0,0))
-                        s = 0.2
 
-                        #p =np.array( [-2.608897298112661, -0.2047366548132623, 0.1000000008651387, -2.987014267911084] )
-                        #dp =np.array( [-16.487757154509474, -4.837209926510647, 0.0, 4.899656054155726] )
-                        #force =np.array( [0.0, 3.0, 0.0, -1.4821147977289577] )
-                        #s= 3.86342505425
+                        ds= 0.01
 
+                        ### extra large dp
+                        p =np.array( [-2.608897298112661, -0.2047366548132623, 0.1000000008651387, -2.987014267911084] )
+                        dp =np.array( [-16.487757154509474, -4.837209926510647, 0.0, 4.899656054155726] )
+                        force =np.array( [0.0, 3.0, 0.0, -1.4821147977289577] )
+                        speed= 3.86342505425
+                        ### no force, no dp
                         p =np.array( [-2.644855145592143, 1.1657167012260294, 0.10000000000235312, -3.7242126663188597] )
                         dp =np.array( [-1.1866896124736256e-20, 1.910882585951823e-18, 1.4346537045461183e-27, -9.702129945467387e-19] )
                         force =np.array( [0.0, 0.0, 0.0, 0.0] )
-                        ds= 0.01
-                        s= 0.341259539422
+                        speed= 0.341259539422
+                        ### no force, no dp
+                        p =np.array( [-2.644855145592143, 1.1657167012260294, 0.10000000000235312, -3.7242126663188597] )
+                        dp =np.array( [0.0, 0.0, 0.0, 0.0] )
+                        force =np.array( [0.0, 0.0, 0.0, 0.0] )
+                        speed= 0.0
+
+                        ### close to large dp
+                        p =np.array( [-4.113833032000303, -0.0026206376782298216, 0.0999999999999477, -3.139440349128482] )
+                        dp =np.array( [-982166.3702744454, -1372.8293479195447, -8.057068259496254e-08, 1124.7453741523088] )
+                        force =np.array( [0.0, 0.0, 0.0, 0.0] )
+                        speed= 1.07398453113
+
+                        p = np.array( [ -5.05e+00, -4.08e-03, 1.00e-01, -3.14e+00] )
+                        dp = np.array([ -2.97e+08, -4.32e+05, 5.76e-06, 3.48e+05] )
+                        F = np.array( [ 0.       ,      0.  , 0.      , 0.])
+                        speed = 1.07398453113 
+                        #ds 1.19162456455 
+                        #dt 2.19793777714e-11
+
+                        ### nice vis
+                        p = np.array((0,1e-4,0,0))
+                        force = np.array((0.5,-2.5,0,5.0))
+                        dp = np.array((1,0.1,0,0.2))
+                        speed = 0.2
 
 
 
@@ -299,7 +322,7 @@ class Trajectory():
                         #self.reach.Plot()
 
                         from reachable_set3d import ReachableSet3D
-                        self.reach = ReachableSet3D( self.DISCRETIZATION_TIME_STEP, p, s, dp, force, R[:,:,0], amin, amax)
+                        self.reach = ReachableSet3D( self.DISCRETIZATION_TIME_STEP, p, speed, dp, force, R[:,:,0], amin, amax)
                         self.reach.Plot()
                         self.reach.PlotShow()
                         self.reach.PlotSave("images/reachable_set_projection2.png")
@@ -559,44 +582,6 @@ class Trajectory():
                         dd = dd + np.linalg.norm(ft-ftdt)
                 return dd
 
-        def forward_simulate_one_step(self, dt, oldspeed, W, dW, F, A):
-                dt2=dt*dt/2.0
-                x = W[0]
-                y = W[1]
-                z = W[2]
-                theta = W[3]
-
-                speedinc = A[0]*np.array((cos(theta),sin(theta),0,0)) + A[1]*np.array((0,0,0,1))
-                Wcur = W + dW*oldspeed*dt + speedinc*dt2 + F*dt2
-                dWcur = oldspeed*dW + F*dt + speedinc*dt
-                speed = np.linalg.norm(dWcur)
-                dWcur = dWcur/speed
-
-                return [Wcur,dWcur,speed]
-
-        def forward_simulate(self, acc_profile, env):
-                Ndim = self.get_dimension()
-                Nwaypoints=acc_profile.shape[0]
-                W = np.zeros((Ndim,Nwaypoints))
-                dW = np.zeros((Ndim,Nwaypoints))
-
-                [f0,df0] = self.evaluate_at(0)
-                W[:,0] = f0
-                dW[:,0] = df0
-                dt = 0.01
-
-                S = np.linspace(0.0,1.0,num=Nwaypoints)
-                oldspeed = 0.0
-
-                for i in range(0,Nwaypoints-1):
-                        scur = S[i]
-                        F = self.waypoint_to_force(env, W[:,i])
-                        A = acc_profile[i,:]
-                        [W[:,i+1],dW[:,i+1],oldspeed]=self.forward_simulate_one_step(dt, oldspeed, W[:,i], dW[:,i], F, A)
-                        #print W[:,i+1],dt,dW[:,i]
-
-                self.handle = self.get_handle_draw_waypoints(env, W, dW)
-
         def get_handle_draw_waypoints(self, env, W, dW, ddW):
                 Ndims = W.shape[0]
                 Nwaypoints = W.shape[1]
@@ -752,7 +737,7 @@ class Trajectory():
 
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
-                Kcoeff = 2
+                Kcoeff = 3
                 Ninterval = Nwaypoints-1
                 P = np.zeros((Ninterval, Ndim, Kcoeff))
 
@@ -802,9 +787,15 @@ class Trajectory():
                         dq = np.linalg.norm(q1-q0)
                         durationVector[j] = dq
                         T = durationVector[j]
-                        qnd = (q1-q0)/dq
-                        b = dq/T*qnd
+
+                        b = (q1-q0)/dq
+                        #b = dq/T*qnd
                         #c = (qd1-qd0)/(T)
+                        c=0
+
+                        if T<1e-5:
+                                print "T=",T
+                                sys.exit(0)
                         #c = (q1-q0-qd0*T)/(T*T)
 
                         #print qd0
@@ -815,10 +806,10 @@ class Trajectory():
                         #P[j,i,0]=0
                         P[j,:,0] = a
                         P[j,:,1] = b
-                        #P[j,:,2] = c
+                        P[j,:,2] = c
                         #P[j,:,3] = d
-                        #P[j,2,1]=0
-                        #P[j,2,2]=0
+                        P[j,2,1]=0
+                        P[j,2,2]=0
                         #P[j,2,3]=0
 
                         #qspline0 = a

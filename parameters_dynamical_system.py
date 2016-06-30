@@ -10,17 +10,17 @@ from cvxpy import *
 from cvxopt import matrix, solvers
 from util import PrintNumpy,inf
 
-FILENAME = 'virus2'
+FILENAME = 'ddrive'
 DYNAMICAL_SYTEM_NAME = 'non-holonomic differential drive (deform)'
 system_name = DYNAMICAL_SYTEM_NAME
 
-AM = 0.1
-DEBUG = True
+AM = 1
+DEBUG = False
 ### car/sailboat
 #amin = np.array((-AM,-AM,-AM,0))
 #amax = np.array((AM,AM,AM,0))
-amin = np.array((-AM,-AM,-0.5*AM))
-amax = np.array((AM,AM,0.5*AM))
+amin = np.array((-0*AM,-AM,-0.3*AM))
+amax = np.array((AM,AM,0.3*AM))
 
 def ControlPerWaypoint(W, Ndim, Nwaypoints):
         assert(Ndim==4)
@@ -65,37 +65,40 @@ def GetControlConstraintMatricesFromControlAdjust(R, F, epsilon=0):
         for i in range(0,Adim):
                 aminE[i]=amin[i]+epsilon
                 amaxE[i]=amax[i]-epsilon
-                if aminE[i]>amaxE[i]:
+                if np.linalg.norm(aminE[i]-amaxE[i])<1e-5:
                         amid = amin[i]+0.5*(amax[i]-amin[i])
-                        aminE[i] = amid
-                        amaxE[i] = amid
+                        admin = np.linalg.norm(amid-amin[i])
+                        admax = np.linalg.norm(amid-amax[i])
+                        aminE[i] = amid-admin/10.0
+                        amaxE[i] = amid+admax/10.0
 
-        #print "amin",amin,"->",aminE
-        #print "amax",amax,"->",amaxE
         Ndim = R.shape[0]
-        Rmin = np.minimum(np.dot(R,aminE),np.dot(R,amaxE))
-        Rmax = np.maximum(np.dot(R,aminE),np.dot(R,amaxE))
-        H1 = F - Rmax
-        H2 = -F + Rmin
-        for j in range(Ndim):
+        #Rmin = np.minimum(np.dot(R,aminE),np.dot(R,amaxE))
+        #Rmax = np.maximum(np.dot(R,aminE),np.dot(R,amaxE))
+        #H1 = F - Rmax
+        #H2 = -F + Rmin
+
+        Rinv = np.linalg.pinv(R)
+        H1 = np.dot(Rinv,F)-amaxE
+        H2 = -np.dot(Rinv,F)+aminE
+        for j in range(Adim):
                 if H2[j] > -H1[j]:
                         print H2[j],"<= q[",j,"]<=",-H1[j]
                         sys.exit(1)
         b = np.hstack((H1,H2)).flatten()
-        I = np.identity(Ndim)
-        A = np.vstack((I,-I))
+        RxI = np.dot(Rinv,np.identity(Ndim))
+        A = np.vstack((RxI,-RxI))
         return [A,b]
 
 def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol):
         ds_next = np.linalg.norm(p-pnext)
+        ds_next += ds_next/10.0
         dt2 = dt*dt/2
         Ndim = p.shape[0]
 
-        if dt < 1e-10:
-                qnext = p + dt*speed*dp + dt2*F
-                dqnext = speed*dp + dt*F
-                ds_next = np.linalg.norm(qnext-pnext)
-                return [qnext,dqnext,ds_next]
+        if dt < 1e-20:
+                ## cannot make progress in near zero time
+                return [p,dp,ds_next]
 
 
         A = np.zeros((Acontrol.shape))
@@ -111,12 +114,14 @@ def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol):
         x = Variable(Ndim)
         objective = Minimize( norm(x - pnext))
         constraints = [ A*x <= -b,
-                        quad_form(x-p,Id) <= ds_next]
+                        quad_form(x-p,Id) <= ds_next*ds_next]
         prob = Problem(objective, constraints)
         qcontrol = None
         try:
                 #dnew = np.abs(prob.solve(solver=ECOS, verbose=False, max_iters=500, feastol_inacc=1e-20))
-                dnew = np.abs(prob.solve(solver=ECOS, max_iters=500, feastol_inacc=1e-3))
+                ### default ECOS: max_iters=100, feastol=1e-7, abstol=1e-7, reltol = 1e-6
+                dnew = np.abs(prob.solve(solver=ECOS, max_iters=500,
+                        feastol=1e-10,abstol=1e-10,reltol=1e-10))
                 #dnew = np.abs(prob.solve(solver=SCS, max_iters=5000, eps=1e-200))
                 #dnew = np.abs(prob.solve(solver=CVXOPT))
                 #dnew = np.abs(prob.solve(solver=ECOS_BB, mi_rel_eps=1e-100))
@@ -125,12 +130,18 @@ def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol):
                         qdd = 2*(qcontrol-p-dt*speed*dp)/(dt*dt)
                         qdnext = speed*dp + dt*qdd
                         qnext = p + dt*speed*dp + dt2*qdd
+                        #print "ECOS dt",dt,"dp2x",np.linalg.norm(p-qcontrol),"dx2pnext",np.linalg.norm(pnext-qcontrol),"qcontrol",qcontrol,"p",p,"pnext",pnext
                 else:
                         qnext = None
                         qdnext = None
         except Exception as e:
-                dnew = inf
-                pass
+                print e
+                PrintNumpy('p', p)
+                PrintNumpy('dp', dp)
+                PrintNumpy('force', F)
+                print "speed=",speed
+                print "ds:",ds_next,"dnew",dnew
+                sys.exit(0)
 
 ###############################################################################
 ##### LP
@@ -202,6 +213,15 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
 
         if pnext is None:
                 pnext = p + ds*dp/np.linalg.norm(dp)
+                if np.isnan(pnext).any():
+                        print "there is no valid tangent information"
+                        print "algorithm does not know to which point to go"
+                        print "ds",ds
+                        print "p",p
+                        print "dp",dp
+                        print "pnext",pnext
+                        sys.exit(0)
+
 
         ### estimate tstep
         dds = speed*np.linalg.norm(dp)
@@ -213,11 +233,16 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
         tstep = tall_predict/10.0
         dt = 0.0
         if DEBUG:
-                print tv,tf,tall_predict,tstep
-        #sys.exit(0)
+                print "tv",tv,"tf",tf,"tc",tc,"tmin",tall_predict,"tstep",tstep
 
+        #if np.linalg.norm(speed*dp)<1e-3 and np.linalg.norm(F) < 1e-4:
+        #        return [pnext, dp, tc]
 
-        boundary_distance = 0
+        ###### compute center of RS
+        #dt = 0
+        d = 0.0
+
+        boundary_distance = 1.0
 
         ### slide along dynamical path until ds-ball is hit with some
         ### tolerance
@@ -227,26 +252,9 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
         dbest = 1e5
         dtbest = 0
 
+        tolerance=ds/10.0
         ####################
-
         qcontrol = None
-        #print "speed=",speed
-        #dt = ds/(np.linalg.norm(dp)*speed)
-        #while qcontrol is None:
-        #        [qcontrol, qdcontrol, dcontrol_to_pnext] = GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol)
-        #        print dt,dcontrol_to_pnext
-        #        dt *= 0.5
-        #dtbest = 2*dt
-        #[qcontrol, qdcontrol, dcontrol_to_pnext] = GetNearestControlPoint(p, dp, pnext, F, dtbest, speed, Acontrol, bcontrol)
-        #sys.exit(0)
-        ####################
-
-        #PrintNumpy('pnext2', pnext)
-        #PrintNumpy('p', p)
-        #PrintNumpy('dp', dp)
-        #PrintNumpy('force', F)
-        #print "ds=",ds
-        #print "speed=",speed
 
         ictr = 0
         
@@ -256,23 +264,28 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
                 [qcontrol, qdcontrol, dcontrol_to_pnext] = GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol)
 
                 if qcontrol is not None:
-                        ddd = np.linalg.norm(qcontrol-p)
+                        dp2qnext = np.linalg.norm(qcontrol-p)
 
-                        if ddd > ds-ds/10:
-                                dt -= tstep
+                        if np.abs(dp2qnext - ds)<tolerance:
+                                dbest = dcontrol_to_pnext
+                                dtbest = dt
                                 if DEBUG:
                                         print "dtend:",dt,dbest
                                 break
                         else:
-                                dbest = dcontrol_to_pnext
-                                dtbest = dt
-                                if DEBUG:
-                                        print "dnext",ddd,"dt:",dt,"d",dcontrol_to_pnext,"dbest",dbest,"dtbest:",dtbest
-                                dt += tstep
+                                if dp2qnext<ds:
+                                        dt += tstep
+                                        if DEBUG:
+                                                print "time",dt,"d(qnext2pnext):",dcontrol_to_pnext
+                                else:
+                                        dt -= tstep
+                                        tstep *= 0.5
                 else:
                         dt -= tstep
-                        tstep /=2
+                        tstep /= 2
                         
+                if dt > 10:
+                        break
                         
                 #dt2 = 0.5*dt*dt
                 #p + speed*dp*dt + dt2 * F + dt2 * control
@@ -313,6 +326,7 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
                 print "ds=",ds
                 print "s=",speed
                 #sys.exit(0)
+
 
         if dtbest > 5:
                 print "dtbest",dtbest

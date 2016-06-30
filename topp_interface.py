@@ -20,10 +20,11 @@ class TOPPInterface():
 
         #DURATION_DISCRETIZATION = 0.0001
         #DURATION_DISCRETIZATION = 1
-        DURATION_DISCRETIZATION = 0.001
+        DURATION_DISCRETIZATION = 0.01
 
         TRAJECTORY_ACCURACY_REQUIRED = 1e-1
         traj0 = []
+        traj1 = []
         trajstr = []
         durationVector = []
         length = -1
@@ -125,7 +126,7 @@ class TOPPInterface():
 
         def PlotPrettifiedAxes(self, ax):
                 plt.axvspan(0, 1.0, facecolor='k', alpha=0.1)
-                plt.axvspan(1.0, self.traj0.duration, facecolor='g', alpha=0.1)
+                plt.axvspan(1.0, self.traj1.duration, facecolor='g', alpha=0.1)
                 box = ax.get_position()
                 ax.set_position([box.x0, box.y0, box.width * 0.9, box.height])
                 ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=self.fs_legend)
@@ -161,7 +162,7 @@ class TOPPInterface():
                 color_a1_coordinate = (1.0,0.0,0.0)
                 color_a2_coordinate = (1.0,0.5,0.0)
                 color_a3_coordinate = (1.0,0.8,0.6)
-                offset_a_coordinate = 0.3
+                offset_a_coordinate = 0.1
 
                 #################################
                         #dt = self.DISCRETIZATION_TIME_STEP
@@ -169,14 +170,21 @@ class TOPPInterface():
                         #N = int(L/dt)
                         #Npts = int(self.path_length/dt)
                 dt = float(self.DURATION_DISCRETIZATION)
-                while dt > self.traj0.duration:
+                while dt > self.traj1.duration:
                         dt/=2.0
-                Npts = int(self.traj0.duration/dt)
-                print "dt",dt,"duration:",self.traj0.duration
-                tvect = np.linspace(0,self.traj0.duration, Npts)
-                qvect = np.array([self.traj0.Eval(t) for t in tvect])
-                qdvect = np.array([self.traj0.Evald(t) for t in tvect])
-                qddvect = np.array([self.traj0.Evaldd(t) for t in tvect])
+                Npts = int(self.traj1.duration/dt)
+                print "dt",dt,"duration:",self.traj1.duration
+
+                tvect = np.linspace(0,self.traj1.duration, Npts)
+                qvect = np.array([self.traj1.Eval(t) for t in tvect])
+                qdvect = np.array([self.traj1.Evald(t) for t in tvect])
+                qddvect = np.array([self.traj1.Evaldd(t) for t in tvect])
+
+                Noripts = int(self.traj0.duration/dt)
+                tvect_ori= np.linspace(0,self.traj0.duration, Noripts)
+                qori_vect = np.array([self.traj0.Eval(t) for t in tvect_ori])
+                qori_dvect = np.array([self.traj0.Evald(t) for t in tvect_ori])
+                qori_ddvect = np.array([self.traj0.Evaldd(t) for t in tvect_ori])
 
                 #################################
                 path = self.trajectoryclass_
@@ -189,11 +197,24 @@ class TOPPInterface():
                                 Ri = R[:,:,i]
                                 Fi = F[:,i]
                                 qdd = qddvect[i,:]
-                                a[:,i] = np.dot(Ri.T,qdd.T-Fi)
-
+                                Rinv = np.linalg.pinv(Ri)
+                                I = np.identity(self.Ndim)
+                                a[:,i] = np.dot(Rinv,np.dot(I,qdd)-Fi)
+                                #if (a[:,i]>amax).any():
+                                #        print "i",i,"/",Npts
+                                #        print "a[:,",i,",]=",a[:,i],">",amax
+                                #        for k in range(0,Adim):
+                                #                print amin[k],"<=",a[k,i],"<=",amax[k]
+                                #        print "R",Ri,Rinv
+                                #        print "W",W
+                                #        print "Fi",Fi
+                                #        print "I",I
+                                #        print "qdd",qdd
+                                #        sys.exit(0)
                 #################################
+
                 twvect = np.linspace(0,np.sum(self.durationVector), self.Nwaypoints)
-                tavect = np.linspace(0,self.traj0.duration, self.Nwaypoints)
+                tavect = np.linspace(0,self.traj1.duration, self.Nwaypoints)
                 
                 fig=figure(facecolor='white')
 
@@ -215,10 +236,11 @@ class TOPPInterface():
 
                 ax2 = subplot(4,1,2)
                 ylabel('Velocity\n$\\left(\\frac{m}{s}\\right)$, $\\left(\\frac{rad}{s}\\right)$', fontsize=self.fs_labels)
-                plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
-                plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
-                #plot(twvect, self.dW_[2,:], '--', color = color_z_coordinate, linewidth = lw)
-                plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
+                plot(twvect, 0*self.dW_[0,:], '-', color=black)
+                #plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
+                #plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
+                #plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
+
                 plot(tvect, qdvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\dot x$")
                 plot(tvect, qdvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\dot y$")
                 #plot(tvect, qdvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\dot z$")
@@ -229,12 +251,18 @@ class TOPPInterface():
                 ax3 = subplot(4,1,3)
                 ylabel('Acceleration\n$\\left(\\frac{m}{s^2}\\right)$,$\\left(\\frac{rad}{s^2}\\right)$', fontsize=self.fs_labels)
                 plot(twvect, 0*self.dW_[0,:], '-', color=black)
+                plot(tvect_ori, qori_ddvect[:,0], '--', color = color_x_coordinate, linewidth = lw)
+                plot(tvect_ori, qori_ddvect[:,1], '--', color = color_y_coordinate, linewidth = lw)
+                plot(tvect_ori, qori_ddvect[:,3], '--', color = color_t_coordinate, linewidth = lw)
+                #plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
+                #plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
+
                 plot(tvect, qddvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$\ddot{x}$")
                 plot(tvect, qddvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\ddot{y}$")
                 #plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
                 plot(tvect, qddvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\ddot{\\theta}$")
-                #plot(tvect, F[0,:], color = color_fx_coordinate, linewidth = lw, label = "$F_{x}$")
-                #plot(tvect, F[1,:], color = color_fy_coordinate, linewidth = lw, label = "$F_{y}$")
+                plot(tvect, F[0,:], color = color_fx_coordinate, linewidth = lw, label = "$F_{x}$")
+                plot(tvect, F[1,:], color = color_fy_coordinate, linewidth = lw, label = "$F_{y}$")
                 ax3.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax3)
 
@@ -256,10 +284,10 @@ class TOPPInterface():
                         plot(tvect, np.repeat(amax[0]+offset_a_coordinate,tvect.size), lw = limit_lw, ls = limit_ls, color = color_a1_coordinate)
                         xlabel('Time ($s$)',fontsize=self.fs_labels)
                         self.PlotPrettifiedAxes(ax4)
-                        self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3, ax4)
+                        self.PlotVerticalLineOverSubplots(self.traj1.duration, ax1, ax2, ax3, ax4)
                         self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3, ax4)
                 else:
-                        self.PlotVerticalLineOverSubplots(self.traj0.duration, ax1, ax2, ax3)
+                        self.PlotVerticalLineOverSubplots(self.traj1.duration, ax1, ax2, ax3)
                         self.PlotVerticalLineOverSubplots(1.0, ax1, ax2, ax3)
 
                 #plt.gca().tight_layout()
@@ -286,7 +314,7 @@ class TOPPInterface():
                 if ret == 1:
                         x.ReparameterizeTrajectory()
                         x.WriteResultTrajectory()
-                        self.traj0 = Trajectory.PiecewisePolynomialTrajectory.FromString(x.restrajectorystring)
+                        self.traj1 = Trajectory.PiecewisePolynomialTrajectory.FromString(x.restrajectorystring)
                         return True
                 else:
                         return False
@@ -337,33 +365,8 @@ class TOPPInterface():
                                 return self.critical_point
                         if ret == 1: ##TOPP_OK
                                 print "TOPP: success"
-                                #x.ReparameterizeTrajectory()
-                                #ret_param = x.ReparameterizeTrajectory()
-                                #print "reparametrized"
-                                #x.WriteProfilesList()
-                                #x.WriteSwitchPointsList()
-                                #profileslist = TOPPpy.ProfilesFromString(x.resprofilesliststring)
-                                #switchpointslist = TOPPpy.SwitchPointsFromString(x.switchpointsliststring)
-                                #TOPPpy.PlotProfiles(profileslist,switchpointslist,4)
-                                #x.WriteResultTrajectory()
-                                #self.traj0 = Trajectory.PiecewisePolynomialTrajectory.FromString(x.restrajectorystring)
-                                #print "reparametrized"
-                                #TOPPpy.PlotKinematics(self.traj0,traj1)
                                 return self.Nwaypoints
                         if ret== 0:
-                                #M = 10
-                                #np.set_printoptions(precision=3)
-                                #tvect = np.linspace(0,self.traj0.duration, self.traj0.duration/dt)
-                                #qvect = np.array([self.traj0.Eval(t) for t in tvect])
-                                #qdvect = np.array([self.traj0.Evald(t) for t in tvect])
-                                #qddvect = np.array([self.traj0.Evaldd(t) for t in tvect])
-                                #print "W=",repr(self.W_[0:2,0:M])
-                                #print "q=",repr(qvect[0:M,0:2].T)
-                                #print "dW=",repr(self.dW_[0:2,0:M])
-                                #print "dq=",repr(qdvect[0:M,0:2].T)
-                                #self.critical_point = x.GetCriticalPoint()
-                                #self.critical_point_value = x.GetCriticalPointValue()
-                                #print self.critical_point,self.critical_point_value
                                 self.critical_point = x.GetCriticalPoint()
                                 self.critical_point_value = x.GetCriticalPointValue()
                                 print "TOPP: unspecified error"
@@ -383,6 +386,7 @@ class TOPPInterface():
 
         def GetABC(self, F, R, amin, amax):
                 ### compute a,b,c
+                Adim = amin.shape[0]
                 q = np.zeros((self.Ndim,self.Nwaypoints))
                 qs = np.zeros((self.Ndim,self.Nwaypoints))
                 qss = np.zeros((self.Ndim,self.Nwaypoints))
@@ -392,12 +396,9 @@ class TOPPInterface():
                         qs[:,i] = self.traj0.Evald(duration)
                         qss[:,i] = self.traj0.Evaldd(duration)
 
-                I = np.identity(self.Ndim)
-                G = np.vstack((I,-I))
-
-                a = np.zeros((self.Nwaypoints, 2*self.Ndim))
-                b = np.zeros((self.Nwaypoints, 2*self.Ndim))
-                c = np.zeros((self.Nwaypoints, 2*self.Ndim))
+                a = np.zeros((self.Nwaypoints, 2*Adim))
+                b = np.zeros((self.Nwaypoints, 2*Adim))
+                c = np.zeros((self.Nwaypoints, 2*Adim))
 
                 for i in range(0,self.Nwaypoints):
                         #Rmax = np.maximum(np.dot(R[:,:,i],amin),np.dot(R[:,:,i],amax))
@@ -409,19 +410,13 @@ class TOPPInterface():
                         #                print H2[j],"<= q[",j,"]<=",-H1[j]
                         #                sys.exit(1)
 
-                        #c[i,:] = np.hstack((H1,H2)).flatten()
                         ### G*qdd + h <= 0
                         [G,h] = params.GetControlConstraintMatricesFromControl(R[:,:,i], F[:,i])
-
                         a[i,:] = np.dot(G,qs[:,i]).flatten()
                         b[i,:] = np.dot(G,qss[:,i]).flatten()
                         c[i,:] = h
+                        print a[i,:],b[i,:],c[i,:]
+                
 
-                #print G,qs[:,i],qss[:,i]
-
-                #for i in range(0,self.Nwaypoints):
-                        #print "i",i,"/",self.Nwaypoints
-                        #a[i,:] = np.dot(G,qs[:,i]).flatten()
-                        #b[i,:] = np.dot(G,qss[:,i]).flatten()
                 return [a,b,c]
 
