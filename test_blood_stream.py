@@ -45,13 +45,14 @@ if __name__ == "__main__":
         traj = Trajectory.from_ravetraj(rave_path)
         #traj = Trajectory.from_file('deform1')
         traj.info()
-        traj.draw(env)
+        #traj.draw(env)
         xml = env.GetName()
         traj.save('trajectories/'+xml)
 
         #raw_input('Press <ENTER> to deform.')
-        time.sleep(1)
-        traj.draw_delete()
+        #time.sleep(1)
+        #traj.draw_delete()
+
         td = DeformationReachableSet(traj, env)
         deform_success = td.deform(N_iter=100)
 

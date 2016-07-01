@@ -313,6 +313,12 @@ class Trajectory():
                         dp = np.array((1,0.1,0,0.2))
                         speed = 0.2
 
+                        p =np.array( [-2.5974191119628514, -0.0004997370983040311, 0.0999999999999989, -3.141179458965877] )
+                        dp =np.array( [-1.2469468647720259, -0.002999767139199421, 0.0, 0.0017880891982438346] )
+                        force =np.array( [0.0, 0.0, 0.0, 0.0] )
+                        speed= 1.51000061035
+                        #ds: 0.00305489294111
+
 
 
                         [R,amin,amax] = self.getControlMatrix(p)
@@ -398,7 +404,7 @@ class Trajectory():
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, -F,R,amin,amax,W,dW)
+                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, F,R,amin,amax,W,dW)
                 if self.topp.ReparameterizeTrajectory():
                         self.topp.PlotTrajectory(env)
                         print self.topp
@@ -432,7 +438,7 @@ class Trajectory():
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, -F,R,amin,amax,W,dW)
+                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, F,R,amin,amax,W,dW)
                 Nc = self.topp.getCriticalPoint()-1
 
                 if Nc < 0:
@@ -452,7 +458,7 @@ class Trajectory():
 #
 #                        [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc)
 #
-#                        self.topp = TOPPInterface(self, durationVector, trajsubstr, -F,R,amin,amax,W,dW)
+#                        self.topp = TOPPInterface(self, durationVector, trajsubstr, F,R,amin,amax,W,dW)
 #
 #                        #print durationVector,trajsubstr
 #                        #print W,dW
@@ -472,7 +478,7 @@ class Trajectory():
 
                 [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc_in)
 
-                self.topp = TOPPInterface(self, durationVector, trajsubstr, -F,R,amin,amax,W,dW)
+                self.topp = TOPPInterface(self, durationVector, trajsubstr, F,R,amin,amax,W,dW)
 
                 #print durationVector,trajsubstr
                 #print W,dW
@@ -517,7 +523,7 @@ class Trajectory():
                 ### acceleration limits
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                S = getSpeedProfileRManifold(-F,R,amin,amax,W,dW,ddW,ploting)
+                S = getSpeedProfileRManifold(F,R,amin,amax,W,dW,ddW,ploting)
                 #if S is None:
                         #self.speed_profile = S
                         #print "No parametrization solution -- sorry :-((("
@@ -737,7 +743,7 @@ class Trajectory():
 
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
-                Kcoeff = 3
+                Kcoeff = 4
                 Ninterval = Nwaypoints-1
                 P = np.zeros((Ninterval, Ndim, Kcoeff))
 
@@ -773,25 +779,25 @@ class Trajectory():
                 #print W[0,:]
                 #print dW[0,:]
                 for j in range(0,Ninterval):
+
                         q0 = W[:,j]
-                        q1 = W[:,j+1]
                         qd0 = dW[:,j]
-                        #qd0 += dW[:,j]
-                        #qd0 += dW[:,j]
+                        q1 = W[:,j+1]
                         qd1 = dW[:,j+1]
+                        #qd0 += dW[:,j]
+                        #qd0 += dW[:,j]
                         #print q0,q1,qd0,qd1
                         #durationVector[j] = np.linalg.norm(q0-q1)
+                        dq = np.linalg.norm(q1-q0)
+                        durationVector[j] = 0.01
+                        T = durationVector[j]
                         #[a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
                         a = q0
-
-                        dq = np.linalg.norm(q1-q0)
-                        durationVector[j] = dq
-                        T = durationVector[j]
-
                         b = (q1-q0)/dq
-                        #b = dq/T*qnd
+                        ##b = dq/T*qnd
                         #c = (qd1-qd0)/(T)
                         c=0
+                        d=0
 
                         if T<1e-5:
                                 print "T=",T
@@ -807,10 +813,11 @@ class Trajectory():
                         P[j,:,0] = a
                         P[j,:,1] = b
                         P[j,:,2] = c
-                        #P[j,:,3] = d
+                        P[j,:,3] = d
+
                         P[j,2,1]=0
                         P[j,2,2]=0
-                        #P[j,2,3]=0
+                        P[j,2,3]=0
 
                         #qspline0 = a
                         #qspline1 = a+T*b+T*T*c+T*T*T*d
@@ -899,8 +906,8 @@ class Trajectory():
                 dX=np.array(dX).T
                 WTplt=np.array(WTplt).T
                 Wplt=np.array(Wplt).T
-                print WTplt.shape
-                print Wplt.shape
+                #print WTplt.shape
+                #print Wplt.shape
                 #plt.plot(tvec,dX[0,:],'-k',linewidth=3)
                 plt.plot(X[0,:],X[1,:],'-r',linewidth=3)
                 #plt.plot(tvec,X[0,:],'-r',linewidth=3)

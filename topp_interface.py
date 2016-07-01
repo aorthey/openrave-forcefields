@@ -20,7 +20,7 @@ class TOPPInterface():
 
         #DURATION_DISCRETIZATION = 0.0001
         #DURATION_DISCRETIZATION = 1
-        DURATION_DISCRETIZATION = 0.01
+        DURATION_DISCRETIZATION = 0.001
 
         TRAJECTORY_ACCURACY_REQUIRED = 1e-1
         traj0 = []
@@ -401,6 +401,7 @@ class TOPPInterface():
                 c = np.zeros((self.Nwaypoints, 2*Adim))
 
                 for i in range(0,self.Nwaypoints):
+
                         #Rmax = np.maximum(np.dot(R[:,:,i],amin),np.dot(R[:,:,i],amax))
                         #Rmin = np.minimum(np.dot(R[:,:,i],amin),np.dot(R[:,:,i],amax))
                         #H1 = F[:,i] - Rmax
@@ -415,7 +416,7 @@ class TOPPInterface():
                         a[i,:] = np.dot(G,qs[:,i]).flatten()
                         b[i,:] = np.dot(G,qss[:,i]).flatten()
                         c[i,:] = h
-                        print a[i,:],b[i,:],c[i,:]
+                        #print a[i,:],b[i,:],c[i,:]
                 
 
                 return [a,b,c]

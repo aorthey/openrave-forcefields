@@ -19,7 +19,7 @@ DEBUG = False
 ### car/sailboat
 #amin = np.array((-AM,-AM,-AM,0))
 #amax = np.array((AM,AM,AM,0))
-amin = np.array((-0*AM,-AM,-0.3*AM))
+amin = np.array((-AM,-AM,-0.3*AM))
 amax = np.array((AM,AM,0.3*AM))
 
 def ControlPerWaypoint(W, Ndim, Nwaypoints):
@@ -65,7 +65,7 @@ def GetControlConstraintMatricesFromControlAdjust(R, F, epsilon=0):
         for i in range(0,Adim):
                 aminE[i]=amin[i]+epsilon
                 amaxE[i]=amax[i]-epsilon
-                if np.linalg.norm(aminE[i]-amaxE[i])<1e-5:
+                if amaxE[i] < aminE[i]:
                         amid = amin[i]+0.5*(amax[i]-amin[i])
                         admin = np.linalg.norm(amid-amin[i])
                         admax = np.linalg.norm(amid-amax[i])
@@ -79,12 +79,17 @@ def GetControlConstraintMatricesFromControlAdjust(R, F, epsilon=0):
         #H2 = -F + Rmin
 
         Rinv = np.linalg.pinv(R)
-        H1 = np.dot(Rinv,F)-amaxE
-        H2 = -np.dot(Rinv,F)+aminE
+        H1 = -np.dot(Rinv,F)-amaxE
+        H2 = np.dot(Rinv,F)+aminE
         for j in range(Adim):
                 if H2[j] > -H1[j]:
                         print H2[j],"<= q[",j,"]<=",-H1[j]
+                        print "H1",H1,"H2",H2
+                        print "amin",amin,"amax",amax
+                        print "epsilon",epsilon,"->"
+                        print "amin",aminE,"amax",amaxE
                         sys.exit(1)
+
         b = np.hstack((H1,H2)).flatten()
         RxI = np.dot(Rinv,np.identity(Ndim))
         A = np.vstack((RxI,-RxI))
@@ -136,11 +141,12 @@ def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol):
                         qdnext = None
         except Exception as e:
                 print e
+                PrintNumpy('pnext', pnext)
                 PrintNumpy('p', p)
                 PrintNumpy('dp', dp)
                 PrintNumpy('force', F)
                 print "speed=",speed
-                print "ds:",ds_next,"dnew",dnew
+                print "ds:",ds_next
                 sys.exit(0)
 
 ###############################################################################
@@ -242,7 +248,7 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
         #dt = 0
         d = 0.0
 
-        boundary_distance = 1.0
+        boundary_distance = 0.1
 
         ### slide along dynamical path until ds-ball is hit with some
         ### tolerance
@@ -287,34 +293,6 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
                 if dt > 10:
                         break
                         
-                #dt2 = 0.5*dt*dt
-                #p + speed*dp*dt + dt2 * F + dt2 * control
-
-
-                #if qcontrol is None:
-                #        dt -= tstep
-                #        tstep /= 2
-                #else:
-                #        if dcontrol_to_pnext <= dbest:
-                #                dbest = dcontrol_to_pnext
-                #                dtbest = dt
-                #        else:
-                #                dt -= tstep
-                #                print "dtend:",dt,dbest
-                #                break
-
-                #dt += tstep
-
-
-                #if ictr > ICTR_STOP:
-                #        if qcontrol is None:
-                #                print "ICTR:",ICTR_STOP
-                #                ICTR_STOP += ICTR_STOP
-                #        else:
-                #                dt -= tstep
-                #                break
-                #ictr+=1
-
         [qcontrol, qdcontrol, dcontrol_to_pnext] = GetNearestControlPoint(p, dp, pnext, F, dtbest, speed, Acontrol, bcontrol)
         #ictr = 0
 
