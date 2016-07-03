@@ -306,6 +306,11 @@ class Trajectory():
                         speed = 1.07398453113 
                         #ds 1.19162456455 
                         #dt 2.19793777714e-11
+                        p =np.array( [-2.5974191119628514, -0.0004997370983040311, 0.0999999999999989, -3.141179458965877] )
+                        dp =np.array( [-1.2469468647720259, -0.002999767139199421, 0.0, 0.0017880891982438346] )
+                        force =np.array( [0.0, 0.0, 0.0, 0.0] )
+                        speed= 1.51000061035
+                        #ds: 0.00305489294111
 
                         ### nice vis
                         p = np.array((0,1e-4,0,0))
@@ -313,11 +318,6 @@ class Trajectory():
                         dp = np.array((1,0.1,0,0.2))
                         speed = 0.2
 
-                        p =np.array( [-2.5974191119628514, -0.0004997370983040311, 0.0999999999999989, -3.141179458965877] )
-                        dp =np.array( [-1.2469468647720259, -0.002999767139199421, 0.0, 0.0017880891982438346] )
-                        force =np.array( [0.0, 0.0, 0.0, 0.0] )
-                        speed= 1.51000061035
-                        #ds: 0.00305489294111
 
 
 
@@ -343,13 +343,14 @@ class Trajectory():
                 pt = np.array(((W[0],W[1],-0.1,W[3])))
                 F = np.zeros((Ndims))
                 F[0:3] = env.GetForceAtX(pt)
-                r = 0.5
+                r = 0.3
 
                 theta = W[3]
                 rcom = r * np.dot(Rz(theta),ex)
                 torque = np.cross(rcom,F[0:2])
 
-                F[3] = np.sign(torque[2])*np.linalg.norm(torque)
+                ### TORQUE application
+                #F[3] = np.sign(torque[2])*np.linalg.norm(torque)
                 return F
         
         def IsInCollision(self, env, W):
@@ -447,27 +448,32 @@ class Trajectory():
                 return Nc
 
         def GetSpeedIntervalAtCriticalPoint(self, env, Win, dWin, Nc_in):
-#
-#                for Nc in range(3,Nc_in):
-#                        W = Win[:,0:Nc]
-#                        dW = dWin[:,0:Nc]
-#
-#                        [Ndim, Nwaypoints] = self.getWaypointDim(W)
-#                        F = self.get_forces_at_waypoints(W, env)
-#                        [R,amin,amax] = self.getControlMatrix(W)
-#
-#                        [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc)
-#
-#                        self.topp = TOPPInterface(self, durationVector, trajsubstr, F,R,amin,amax,W,dW)
-#
-#                        #print durationVector,trajsubstr
-#                        #print W,dW
-#                        [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
-#                                        Nc,
-#                                        durationVector,
-#                                        trajsubstr)
-#                        print "TOPP velocity at CP",Nc,":",semin,semax
-#                sys.exit(0)
+
+                #for Nc in range(Nc_in,Nc_in+4):
+                #        W = Win[:,0:Nc]
+                #        dW = dWin[:,0:Nc]
+
+                #        [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                #        F = self.get_forces_at_waypoints(W, env)
+                #        [R,amin,amax] = self.getControlMatrix(W)
+
+                #        [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc)
+
+                #        self.topp = TOPPInterface(self, durationVector, trajsubstr, F,R,amin,amax,W,dW)
+
+                #        #print durationVector,trajsubstr
+                #        #print W,dW
+                #        try:
+                #                [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
+                #                                Nc,
+                #                                durationVector,
+                #                                trajsubstr)
+                #                print "TOPP velocity at CP",Nc,":",semin,semax
+                #                
+                #        except Exception as e:
+                #                break
+                #                
+                #sys.exit(0)
 
                 W = Win[:,0:Nc_in]
                 dW = dWin[:,0:Nc_in]
@@ -789,7 +795,7 @@ class Trajectory():
                         #print q0,q1,qd0,qd1
                         #durationVector[j] = np.linalg.norm(q0-q1)
                         dq = np.linalg.norm(q1-q0)
-                        durationVector[j] = 0.01
+                        durationVector[j] = dq
                         T = durationVector[j]
                         #[a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
                         a = q0
@@ -802,14 +808,7 @@ class Trajectory():
                         if T<1e-5:
                                 print "T=",T
                                 sys.exit(0)
-                        #c = (q1-q0-qd0*T)/(T*T)
 
-                        #print qd0
-                        #qd0 = qd0 + (qd1-qd0) + 2*c*T
-
-                        #qd0 = qd0 + 2*c*T
-                        #c = (qd1-qd0)/(2*T)
-                        #P[j,i,0]=0
                         P[j,:,0] = a
                         P[j,:,1] = b
                         P[j,:,2] = c

@@ -19,8 +19,8 @@ DEBUG = False
 ### car/sailboat
 #amin = np.array((-AM,-AM,-AM,0))
 #amax = np.array((AM,AM,AM,0))
-amin = np.array((-AM,-AM,-0.3*AM))
-amax = np.array((AM,AM,0.3*AM))
+amin = np.array((-AM,-AM,-0.5*AM))
+amax = np.array((AM,AM,0.5*AM))
 
 def ControlPerWaypoint(W, Ndim, Nwaypoints):
         assert(Ndim==4)
@@ -101,7 +101,7 @@ def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol):
         dt2 = dt*dt/2
         Ndim = p.shape[0]
 
-        if dt < 1e-20:
+        if dt < 1e-50:
                 ## cannot make progress in near zero time
                 return [p,dp,ds_next]
 
@@ -109,7 +109,7 @@ def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol):
         A = np.zeros((Acontrol.shape))
         b = np.zeros((bcontrol.shape))
 
-        A = (-2*Acontrol)/(dt*dt)
+        A = (2*Acontrol)/(dt*dt)
         b = bcontrol + np.dot(A,(-p - dt*speed*dp))
 
 ###############################################################################
@@ -238,6 +238,7 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
         tall_predict = np.minimum(np.minimum(tv,tf),tc)
         tstep = tall_predict/10.0
         dt = 0.0
+        print "tv",tv,"tf",tf,"tc",tc,"tmin",tall_predict,"tstep",tstep
         if DEBUG:
                 print "tv",tv,"tf",tf,"tc",tc,"tmin",tall_predict,"tstep",tstep
 
@@ -248,7 +249,7 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
         #dt = 0
         d = 0.0
 
-        boundary_distance = 0.1
+        boundary_distance = 0.2
 
         ### slide along dynamical path until ds-ball is hit with some
         ### tolerance
@@ -258,7 +259,7 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
         dbest = 1e5
         dtbest = 0
 
-        tolerance=ds/10.0
+        tolerance=ds/30.0
         ####################
         qcontrol = None
 

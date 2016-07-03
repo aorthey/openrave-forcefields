@@ -48,10 +48,12 @@ if __name__ == "__main__":
         #traj.draw(env)
         xml = env.GetName()
         traj.save('trajectories/'+xml)
+        #traj.PlotParametrization(env)
+        #traj.execute(env, robot, tsleep=0.005, stepping=False)
 
         #raw_input('Press <ENTER> to deform.')
         #time.sleep(1)
-        #traj.draw_delete()
+        traj.draw_delete()
 
         td = DeformationReachableSet(traj, env)
         deform_success = td.deform(N_iter=100)

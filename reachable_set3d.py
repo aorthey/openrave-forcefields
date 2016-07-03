@@ -106,7 +106,7 @@ class ReachableSet3D():
 
                 pnext = p+ds*dp/np.linalg.norm(dp)
 
-                tstring = 'Reachable Set (<T='+str("%10.2e"%dt)+')'
+                tstring = 'Reachable Set (T<='+str("%10.2e"%dt)+')'
                 self.filename = 'images/reachableset_'+params.FILENAME+'_ori'+str(np.around(p[3],decimals=2))
                 self.filename = re.sub('[.]', '-', self.filename)
                 self.filename += '.png'

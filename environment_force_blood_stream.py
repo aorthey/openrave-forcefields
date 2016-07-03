@@ -17,7 +17,7 @@ class EnvironmentBloodStream(ForceEnvironment):
         def GetForces(self):
                 self.forces = np.array((0.0,0.0,0.0))
                 #self.forces = np.vstack([self.forces,(6.5,0.0,0.0)])
-                self.forces = np.vstack([self.forces,(0.0,0.8,0.0)])
+                self.forces = np.vstack([self.forces,(0.0,1.5,0.0)])
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
 
                 return self.forces

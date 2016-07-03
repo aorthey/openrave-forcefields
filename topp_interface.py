@@ -104,16 +104,17 @@ class TOPPInterface():
                 #[semin,semax] = self.topp_inst.AVP(0.0, 0.0)
                 return_code = x.RunVIP(0.0, 0.0)
                 if return_code != 1:
+                        print "GET SPEED INTERVAL"
                         print "TOPP Error:", return_code
                         print "waypoint: ",N,"/",self.Nwaypoints
-                        print "force:",Fc
+                        #print "W:",Wc[0:2,:]
+                        #print "force:",self.F_
                         self.critical_point = x.GetCriticalPoint()
                         self.critical_point_value = x.GetCriticalPointValue()
                         print "CRITICAL POINT:",self.critical_point,self.critical_point_value
-                        plt.plot(Wc[0,:],Wc[1,:],'-r',linewidth=3)
-                        plt.show()
-
-                        sys.exit(1)
+                        #plt.plot(Wc[0,:],Wc[1,:],'-or',markersize=5,linewidth=3)
+                        #plt.show()
+                        #sys.exit(1)
                         semin = 0.0
                         semax = 0.0
                 else:
