@@ -74,7 +74,7 @@ class ReachableSet3D():
                 self.image = self.fig.gca(projection='3d')
 
                 tsamples= 15
-                [qnext,dtmp,tend] = params.ForwardSimulate(p, dp, s, ds, force)
+                [qnext,dtmp,utmp,tend] = params.ForwardSimulate(p, dp, s, ds, force)
                 print "TEND:",tend,qnext
                 tstart = 0.0#tend/100
 
@@ -128,7 +128,7 @@ class ReachableSet3D():
                 self.image.scatter(qnext[0],qnext[1],qnext[3], 'ok',
                                 s=self.point_size)
 
-                [qcontrol,qtmp,dtmp] = params.ForwardSimulate(p, dp, s, ds, force)
+                [qcontrol,qtmp,utmp,dtmp] = params.ForwardSimulate(p, dp, s, ds, force)
                 print "TEND:",dtmp,qcontrol
 
                 dq = qcontrol - pnext

@@ -288,6 +288,7 @@ class ForceEnvironment():
                 return False
 
         def DrawCollision(self, X):
+                X[2] += 0.4
                 return self.env.plot3(points=X,
                                    pointsize=0.05,
                                    colors=array(((1.0,0.0,0.0,1.0))),

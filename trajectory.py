@@ -11,6 +11,7 @@ from scipy.misc import derivative
 from pylab import plot,title,xlabel,ylabel,figure
 from matplotlib.collections import LineCollection
 import pylab as plt
+import copy
 
 from util_force import *
 from util_mvc import *
@@ -21,7 +22,7 @@ class Trajectory():
         __metaclass__ = abc.ABCMeta
         DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.01
+        DISCRETIZATION_TIME_STEP = 0.05
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
         POLYNOMIAL_DEGREE = 1
         MIN_NUMBER_WAYPOINTS = 5
@@ -314,12 +315,9 @@ class Trajectory():
 
                         ### nice vis
                         p = np.array((0,1e-4,0,0))
-                        force = np.array((0.5,-2.5,0,5.0))
+                        force = np.array((0.5,-2.5,0,1.0))
                         dp = np.array((1,0.1,0,0.2))
                         speed = 0.2
-
-
-
 
                         [R,amin,amax] = self.getControlMatrix(p)
 
@@ -427,7 +425,7 @@ class Trajectory():
                         print W.shape
                         print Fzero
                         print W
-                        print self.trajectorystring
+                        #print self.trajectorystring
                         self.info()
                         sys.exit(1)
                         return None
@@ -689,8 +687,8 @@ class Trajectory():
                                 raw_input('Press Key to Step. Time: '+str(t)+'/'+str(xt.duration))
 
         def SimpleInterpolate(self,q0,q1,qd0,qd1,T):
-                a=((qd1-qd0)*T-2*(q1-q0-qd0*T))/T**3
-                b=(3*(q1-q0-qd0*T)-(qd1-qd0)*T)/T**2
+                a=((qd1-qd0)*T-2*(q1-q0-qd0*T))/(T**3)
+                b=(3*(q1-q0-qd0*T)-(qd1-qd0)*T)/(T**2)
                 c=qd0
                 d=q0
                 return [d,c,b,a]
@@ -746,6 +744,7 @@ class Trajectory():
                 #idx = self.GetIntervalIndex(W)
                 #W = W[:,idx]
                 #dW = dW[:,idx]
+                DEBUG = False
 
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
@@ -782,28 +781,59 @@ class Trajectory():
 
                 qd0 = np.zeros((Ndim))
                 qd0 += dW[:,0]
-                #print W[0,:]
-                #print dW[0,:]
+                Wtvec = []
+                Wtnvec = []
+                dWtvec = []
                 for j in range(0,Ninterval):
 
                         q0 = W[:,j]
-                        qd0 = dW[:,j]
+                        #qd0 = dW[:,j]
                         q1 = W[:,j+1]
                         qd1 = dW[:,j+1]
-                        #qd0 += dW[:,j]
+                        qd0 = dW[:,j]
                         #qd0 += dW[:,j]
                         #print q0,q1,qd0,qd1
                         #durationVector[j] = np.linalg.norm(q0-q1)
+                        qd0 /= np.linalg.norm(qd0)
+
                         dq = np.linalg.norm(q1-q0)
                         durationVector[j] = dq
                         T = durationVector[j]
                         #[a,b,c,d]=self.SimpleInterpolate(q0,q1,qd0,qd1,T)
+                        qdd0 = 2*(q1-q0-T*qd0)/(T*T)
                         a = q0
-                        b = (q1-q0)/dq
+                        b = qd0
+                        c = qdd0
+                        d = 0
+
+                        #WW = a + T*b + 0.5*T*T*c
+                        #if np.linalg.norm(WW-q1) > 1e-15:
+                        #        print "q0",q0
+                        #        print "q1",q1
+                        #        print "qd0",qd0
+                        #        sys.exit(0)
+                        #print qd0,qdd0,T
+
+                        ### DEBUG #####################################
+                        tstep = T/20
+                        t=0
+
+                        if DEBUG:
+                                #print qd0,qdd0,T
+                                Wtnvec.append(a)
+                                while t<T:
+                                        Wt = a + t*b + 0.5*t*t*c + (1/3.0)*T*T*T*d
+                                        dWt = b + t*c + (1/6)*T*T*d
+                                        Wtvec.append(Wt)
+                                        dWtvec.append(dWt)
+                                        t+=tstep
+
+                        ### DEBUG #####################################
+
+                        qd0 += b + T*c
+                        #b = (q1-q0)/dq
                         ##b = dq/T*qnd
                         #c = (qd1-qd0)/(T)
-                        c=0
-                        d=0
 
                         if T<1e-5:
                                 print "T=",T
@@ -818,9 +848,14 @@ class Trajectory():
                         P[j,2,2]=0
                         P[j,2,3]=0
 
-                        #qspline0 = a
-                        #qspline1 = a+T*b+T*T*c+T*T*T*d
-                        #print a,b,c,d,T,qspline1,q1
+
+                if DEBUG:
+                        Wtvec = np.array(Wtvec).T
+                        Wtnvec = np.array(Wtnvec).T
+                        dWtvec = np.array(dWtvec).T
+                        plt.plot(Wtvec[0,:],Wtvec[1,:],'-r')
+                        plt.plot(Wtnvec[0,:],Wtnvec[1,:],'-ok')
+                        plt.show()
 
                 #self.CheckPolynomial(W,P,durationVector)
                 for i in range(0,durationVector.shape[0]):
