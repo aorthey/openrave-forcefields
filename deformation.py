@@ -332,7 +332,9 @@ class Deformation():
                 dend = np.linalg.norm(dU[:,-1])
                 if dstart > epsilon:
                         print "ERROR: start point deformation -> not allowed"
+                        print dU[:,0],dstart
                         sys.exit(1)
                 if dend > epsilon:
                         print "ERROR: end point deformation -> not allowed"
+                        print dU[:,-1],dend
                         sys.exit(1)

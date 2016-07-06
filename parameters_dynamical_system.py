@@ -120,7 +120,8 @@ def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol, retur
 ###############################################################################
         Id = np.eye(Ndim)
         x = Variable(Ndim)
-        objective = Minimize( norm(x - pnext) + (dp)*x)
+        #objective = Minimize( norm(x - pnext) + (dp)*x)
+        objective = Minimize( norm(x - pnext))
         constraints = [ A*x <= -b,
                         quad_form(x-p,Id) <= ds_next*ds_next]
         prob = Problem(objective, constraints)
@@ -242,7 +243,7 @@ def ForwardSimulate(p, dp, speed, ds, F, pnext=None):
                                         tstep *= 0.5
                 else:
                         dt -= tstep
-                        tstep /= 2
+                        tstep *= 0.5
                         
                 if dt > 10:
                         break

@@ -22,7 +22,7 @@ class Trajectory():
         __metaclass__ = abc.ABCMeta
         DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.05
+        DISCRETIZATION_TIME_STEP = 0.01
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
         POLYNOMIAL_DEGREE = 1
         MIN_NUMBER_WAYPOINTS = 5
@@ -318,6 +318,12 @@ class Trajectory():
                         force = np.array((0.5,-2.5,0,1.0))
                         dp = np.array((1,0.1,0,0.2))
                         speed = 0.2
+
+                        ## error
+                        p =np.array( [-6.012902723369949, -0.005123021667037449, 0.1, -3.1373188699666956] )
+                        force =np.array( [0.0, 0.0, 0.0, 0.0] )
+                        dp =np.array( [-344.35813853264824, -0.46681954515138263, 0.0, 0.389387904541571] )
+                        speed= 1.19162642333
 
                         [R,amin,amax] = self.getControlMatrix(p)
 

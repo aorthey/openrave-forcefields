@@ -231,7 +231,7 @@ class TOPPInterface():
                 plot(tvect, qvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\\theta$")
                 #plot(tvect, qdvect, f, linewidth=2)
                 #plot(tvect, qddvect, f, linewidth=2)
-                title('TOPP-Profile '+str(params.system_name), fontsize=self.fs_title, y=1.1)
+                #title('TOPP-Profile '+str(params.system_name), fontsize=self.fs_title, y=1.1)
                 ylabel('Position \n$\\left(m\\right)$,$\\left(rad\\right)$', fontsize=self.fs_labels)
                 ax1.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax1)
@@ -263,8 +263,8 @@ class TOPPInterface():
                 plot(tvect, qddvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$\ddot{y}$")
                 #plot(tvect, qddvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$\ddot{z}$")
                 plot(tvect, qddvect[:,3], color = color_t_coordinate, linewidth = lw, label = "$\ddot{\\theta}$")
-                plot(tvect, F[0,:], color = color_fx_coordinate, linewidth = lw, label = "$F_{x}$")
-                plot(tvect, F[1,:], color = color_fy_coordinate, linewidth = lw, label = "$F_{y}$")
+                #plot(tvect, F[0,:], color = color_fx_coordinate, linewidth = lw, label = "$F_{x}$")
+                #plot(tvect, F[1,:], color = color_fy_coordinate, linewidth = lw, label = "$F_{y}$")
                 ax3.set_xticklabels(())
                 self.PlotPrettifiedAxes(ax3)
 
@@ -413,6 +413,9 @@ class TOPPInterface():
 
                 return [a,b,c]
 
+        def GetNearestPolynomial(self, p):
+                pass
+        
         def computeTrajectoryStringFromWaypoints(self, F, R, amin, amax, W, dW):
                 DEBUG = True
                 Ndim = W.shape[0]
@@ -435,53 +438,84 @@ class TOPPInterface():
                 ds = np.linalg.norm(W[:,0]-W[:,1])
 
                 X_topp = []
+                X_topp_wpts = []
                 print "DS:",ds
                 for j in range(0,Ninterval):
-                        print "DS:",ds
+                        ds = np.linalg.norm(W[:,j+1]-W[:,j])
 
                         #q0 = W[:,j]
-                        q1 = W[:,j+1]
-                        #qd1 = dW[:,j+1]
+                        qd0 = W[:,j+1]-W[:,j]
+                        #qd0 = dW[:,j]#/np.linalg.norm(dW[:,j])
+                        qd0 = qd0/np.linalg.norm(qd0)
 
-                        X=[]
-                        [qnext, dqnext, qdd, dtbest] = params.ForwardSimulate(q0,qd0,speed,ds,F[:,j],pnext=q1)
+                        #jX=[]
+                        #q1 = W[:,j+1]
+                        #[qnext, dqnext, qdd, dtbest] = params.ForwardSimulate(q0,qd0,speed,ds,F[:,j],pnext=q1)
 
-                        Tvec = np.linspace(0,dtbest,10)
+                        #pp = qnext - W[:,j+1]
+                        #qdd0 = 2*pp/(ds*ds)
+                        #speed = ds/dtbest
+                        X_topp_wpts.append(q0)
 
-                        for dt in Tvec:
-                                dt2 = 0.5*dt*dt
-                                qnext = q0 + dt*speed*qd0 + dt2 * qdd
-                                X.append(qnext)
-                                X_topp.append(qnext)
+                        #j#if np.linalg.norm(qnext-q1)>1e-6:
 
-                        X=np.array(X).T
+                        #jfor dt in Tvec:
+                        #j        dt2 = 0.5*dt*dt
+                        #j        qnext = q0 + dt*speed*qd0 + dt2 * qdd
+                        #j        X.append(qnext)
+                        #j        X_topp.append(qnext)
 
-                        #plt.plot([q0[0],qnext[0]],[q0[1],qnext[1]],'-ok')
-                        #plt.plot([q0[0],q0[0]+qd0[0]],[q0[1],q0[1]+qd0[1]],'-ok')
-                        #plt.plot(X[0,:],X[1,:],'-or')
-                        #plt.show()
+                        #jX=np.array(X).T
+                
+                        #j#if j==66:
+                        #jif np.linalg.norm(qnext-q1)>1e-10:
+                        #j        #PrintNumpy('pnext', q1)
+                        #j        PrintNumpy('p', q0)
+                        #j        PrintNumpy('force', F[:,j])
+                        #j        PrintNumpy('dp', qd0)
+                        #j        print "speed=",speed
+                        #j        print np.linalg.norm(q0-W[:,j])
+                        #j        print "distance qnext to wpt:",np.linalg.norm(qnext-q1)
+                        #j        print j,"/",Ninterval
+                        #j        plt.plot(X[0,:],X[1,:],'-or',markersize=10)
+                        #j        #plt.plot([q0[0],qnext[0]],[q0[1],qnext[1]],'-ok')
+                        #j        plt.plot([q0[0],qcontrol[0]],[q0[1],qcontrol[1]],'-om',linewidth=2)
+                        #j        plt.plot([W[0,j],W[0,j+1]],[W[1,j],W[1,j+1]],'-ok',linewidth=2)
+                        #j        plt.show()
+                        #j        #sys.exit(0)
 
-                        q0 = q0 + dt*speed*qd0 + dt2*qdd
-                        qd0 = speed*qd0 + dt*qdd
-                        qd0[2] = 0
-                        speed += np.linalg.norm(dt*qdd)
+                        #jq0 = q0 + dt*speed*qd0 + dt2*qdd
+                        #jqd0 = speed*qd0 + dt*qdd
+                        #jqd0[2] = 0
+                        #speed += np.linalg.norm(ds*qdd/np.linalg.norm(qdd))
+                        #jqd0 = dW[:,j+1]
 
-                        #if j==24:
+                        #jdurationVector[j] = dtbest
+                        #jK=3
+                        #jx1 = np.polyfit(Tvec, X[0,:], K)
+                        #jy1 = np.polyfit(Tvec, X[1,:], K)
+                        #jz1 = np.polyfit(Tvec, X[2,:], K)
+                        #jt1 = np.polyfit(Tvec, X[3,:], K)
 
-                        durationVector[j] = dtbest
-                        K=3
-                        x1 = np.polyfit(Tvec, X[0,:], K)
-                        y1 = np.polyfit(Tvec, X[1,:], K)
-                        z1 = np.polyfit(Tvec, X[2,:], K)
-                        t1 = np.polyfit(Tvec, X[3,:], K)
+                        #if np.linalg.norm(qnext-q1)>1e-10:
+                                #sys.exit(0)
 
-                        Pj = np.vstack((x1,y1,z1,t1))
-                        print j,"/",Ninterval,"speed",speed
-                        a = Pj[:,3]
-                        b = Pj[:,2]
-                        c = Pj[:,1]
-                        d = Pj[:,0]
+                        #jPj = np.vstack((x1,y1,z1,t1))
+                        #j#print j,"/",Ninterval,"time",dtbest,"speed",speed,"dist",np.linalg.norm(q0-W[:,j+1])
+                        #ja = Pj[:,3]
+                        #jb = Pj[:,2]
+                        #jc = Pj[:,1]
+                        #jd = Pj[:,0]
+                        #print j,"/",Ninterval
 
+                        c = 0
+                        d  = 0
+                        #a  = W[:,j]
+                        #b  = dW[:,j]/np.linalg.norm(dW[:,j])
+                        a = q0
+                        b = qd0
+                        #c = qdd0
+                        #d = 0
 
                         P[j,:,0] = a
                         P[j,:,1] = b
@@ -492,13 +526,55 @@ class TOPPInterface():
                         P[j,2,2]=0
                         P[j,2,3]=0
 
+                        durationVector[j] = ds#1.0/Ninterval
 
-                X_topp = np.array(X_topp).T
-                print X_topp.shape
+                        [q0,qd0] = self.EvalPoly(P,j,ds)
+                        #qd0 = dqnext
 
-                plt.plot(X_topp[0,:],X_topp[1,:],'-r',linewidth=2)
-                plt.plot(W[0,:],W[1,:],'-k',linewidth=2)
-                plt.show()
+
+                #X_topp = np.array(X_topp).T
+                X_topp_wpts.append(q0)
+                #print X_topp.shape
+                #dw = np.linalg.norm(qnext-W[:,-1])
+
+                #Wend = W[:,-1]
+                #while dw>1e-10:
+                #        ###move topp towards W
+                #        ds = np.linalg.norm(q0-Wend)
+
+                #        [qnext, dqnext, qdd, dtbest] = params.ForwardSimulate(q0,qd0,speed,ds,F[:,-1],pnext=Wend)
+                #        qdd0 = (dqnext-qd0)/ds
+                #        X_topp_wpts.append(q0)
+                #        a = q0
+                #        b = qd0
+                #        c = qdd0
+                #        d = 0
+
+                #        Pnext = np.zeros((1,Ndim, Kcoeff))
+                #        Pnext[0,:,0] = a
+                #        Pnext[0,:,1] = b
+                #        Pnext[0,:,2] = c
+                #        Pnext[0,:,3] = d
+                #        Pnext[0,2,1]=0
+                #        Pnext[0,2,2]=0
+                #        Pnext[0,2,3]=0
+
+                #        q0 = qnext
+                #        qd0 = dqnext
+
+                #        P = np.vstack((P,Pnext))
+                #        durationVector = np.hstack((durationVector,ds))
+                #        dw = np.linalg.norm(qnext-Wend)
+
+                #        print durationVector.shape
+                #        print "qnext",ds,qnext,Wend
+
+
+                #X_topp_wpts = np.array(X_topp_wpts).T
+                #plt.plot(X_topp_wpts[0,:],X_topp_wpts[1,:],'-or',markersize=8)
+                ##plt.plot(X_topp[0,:],X_topp[1,:],'-r',linewidth=2)
+                #plt.plot(W[0,:],W[1,:],'-ok',linewidth=2)
+                #plt.show()
 
                 #self.CheckPolynomial(W,P,durationVector)
                 for i in range(0,durationVector.shape[0]):
@@ -538,7 +614,7 @@ class TOPPInterface():
                 Dall = 0.0
                 for i in range(0,M):
                         t=0.0
-                        tstep = D[i]/1000
+                        tstep = D[i]/100
 
                         WTplt.append(Dall)
                         Wplt.append(P[i,:,1])

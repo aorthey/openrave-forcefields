@@ -22,6 +22,7 @@ class DeformationModuleEndPointProjection(DeformationModule):
                 dEnd = dU[:,-1]
                 dStart = dU[:,0]
 
+                print "dstart",dStart
                 sf = 20.0
                 AEnd = self.SmoothVector(traj, Nwaypoints-1, Wori, smoothing_factor=sf)
                 AStart = self.SmoothVector(traj, 0, Wori, smoothing_factor=sf)
