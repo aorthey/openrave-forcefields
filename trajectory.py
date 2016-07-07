@@ -436,6 +436,24 @@ class Trajectory():
                         sys.exit(1)
                         return None
 
+        def getTOPPTrajectoryWithoutForceField(self, env, W, dW):
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                #Fzero = np.zeros((Ndim, Nwaypoints))
+                Fzero = 0.0*self.get_forces_at_waypoints(W, env)
+                [R,amin,amax] = self.getControlMatrix(W)
+
+                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, Fzero,R,amin,amax,W,dW)
+                if self.topp.ReparameterizeTrajectory():
+                        return self.topp
+                else:
+                        print "WARNING: without force field, TOPP couldn't find a valid \
+                        velocity profile. Path not continuous or system not STLC"
+                        print W.shape
+                        print Fzero
+                        print W
+                        self.info()
+                        sys.exit(1)
+
 
         def getCriticalPointFromWaypoints(self, env, W, dW, ddW, oldNc = 0):
 
@@ -678,13 +696,18 @@ class Trajectory():
                 robot.SetDOFValues(xt.Eval(t))
                 env.MakeRobotVisible()
 
+                q = xt.Eval(0)
+                dq = xt.Evald(0)
                 while t < xt.duration:
-                        q = xt.Eval(t)
-                        dq = xt.Evald(t)
+                        #q = xt.Eval(t)
+                        #dq = xt.Evald(t)
                         ddq = xt.Evaldd(t)
 
-                        qn = q + tstep*dq + 0.5*tstep*tstep*ddq
-                        robot.SetDOFValues(qn)
+                        #qn = q + tstep*dq + 0.5*tstep*tstep*ddq
+                        #robot.SetDOFValues(qn)
+                        q = q + tstep*dq + 0.5*tstep*tstep*ddq
+                        dq = dq + tstep*ddq
+                        robot.SetDOFValues(q)
 
                         env.env.StepSimulation(tstep)
                         time.sleep(tsleep)
