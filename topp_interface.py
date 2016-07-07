@@ -50,9 +50,9 @@ class TOPPInterface():
                 self.Ndim = W.shape[0]
                 self.Nwaypoints = W.shape[1]
 
-                [self.trajstr, self.durationVector] = self.computeTrajectoryStringFromWaypoints(F,R,amin,amax,W,dW)
-                #self.trajstr = trajectorystring
-                #self.durationVector = durationVector_in
+                #[self.trajstr, self.durationVector] = self.computeTrajectoryStringFromWaypoints(F,R,amin,amax,W,dW)
+                self.trajstr = trajectorystring
+                self.durationVector = durationVector_in
 
                 self.traj0 = Trajectory.PiecewisePolynomialTrajectory.FromString(self.trajstr)
                 self.length = np.sum(self.durationVector)
@@ -84,7 +84,15 @@ class TOPPInterface():
                 self.amax_ = amax
                 self.W_ = W
                 self.dW_ = dW
+                [trajectorystring, durationVector] = self.computeTrajectoryStringFromWaypoints(F,R,amin,amax,W,dW)
                 self.initializeFromSpecifications(durationVector, trajectorystring, F, R, amin, amax, W, dW)
+
+        def ChangeVelocityVector(self, F, R, amin, amax, W, dW):
+                [trajectorystring, durationVector] = self.computeTrajectoryStringFromWaypoints(F,R,amin,amax,W,dW)
+                self.initializeFromSpecifications(durationVector, trajectorystring, F, R, amin, amax, W, dW)
+
+
+
 
         def getSpeedIntervalAtCriticalPoint(self, N, Subtraj_dvec, Subtraj_str):
                 if (N < 0) or (N > self.Nwaypoints):
@@ -441,20 +449,21 @@ class TOPPInterface():
                 X_topp_wpts = []
                 print "DS:",ds
                 for j in range(0,Ninterval):
+                        #qd0 = W[:,j+1]-W[:,j]
+                        qd0 = dW[:,j]
                         ds = np.linalg.norm(W[:,j+1]-W[:,j])
 
-                        #q0 = W[:,j]
-                        qd0 = W[:,j+1]-W[:,j]
-                        #qd0 = dW[:,j]#/np.linalg.norm(dW[:,j])
                         qd0 = qd0/np.linalg.norm(qd0)
+                        qdd0 = W[:,j+1] - q0 + ds*qd0
 
-                        #jX=[]
-                        #q1 = W[:,j+1]
-                        #[qnext, dqnext, qdd, dtbest] = params.ForwardSimulate(q0,qd0,speed,ds,F[:,j],pnext=q1)
+                        dnormal = np.linalg.norm(qdd0)
 
-                        #pp = qnext - W[:,j+1]
-                        #qdd0 = 2*pp/(ds*ds)
-                        #speed = ds/dtbest
+                        qdd0n = qdd0/dnormal
+
+                        qdd0 = 0.5*ds*ds*qdd0n
+
+                        print 0.5*ds*ds - np.linalg.norm(qdd0)
+
                         X_topp_wpts.append(q0)
 
                         #j#if np.linalg.norm(qnext-q1)>1e-6:
@@ -508,14 +517,10 @@ class TOPPInterface():
                         #jd = Pj[:,0]
                         #print j,"/",Ninterval
 
-                        c = 0
-                        d  = 0
-                        #a  = W[:,j]
-                        #b  = dW[:,j]/np.linalg.norm(dW[:,j])
                         a = q0
                         b = qd0
-                        #c = qdd0
-                        #d = 0
+                        c = qdd0
+                        d  = 0
 
                         P[j,:,0] = a
                         P[j,:,1] = b
@@ -532,49 +537,7 @@ class TOPPInterface():
                         #qd0 = dqnext
 
 
-                #X_topp = np.array(X_topp).T
                 X_topp_wpts.append(q0)
-                #print X_topp.shape
-                #dw = np.linalg.norm(qnext-W[:,-1])
-
-                #Wend = W[:,-1]
-                #while dw>1e-10:
-                #        ###move topp towards W
-                #        ds = np.linalg.norm(q0-Wend)
-
-                #        [qnext, dqnext, qdd, dtbest] = params.ForwardSimulate(q0,qd0,speed,ds,F[:,-1],pnext=Wend)
-                #        qdd0 = (dqnext-qd0)/ds
-                #        X_topp_wpts.append(q0)
-                #        a = q0
-                #        b = qd0
-                #        c = qdd0
-                #        d = 0
-
-                #        Pnext = np.zeros((1,Ndim, Kcoeff))
-                #        Pnext[0,:,0] = a
-                #        Pnext[0,:,1] = b
-                #        Pnext[0,:,2] = c
-                #        Pnext[0,:,3] = d
-                #        Pnext[0,2,1]=0
-                #        Pnext[0,2,2]=0
-                #        Pnext[0,2,3]=0
-
-                #        q0 = qnext
-                #        qd0 = dqnext
-
-                #        P = np.vstack((P,Pnext))
-                #        durationVector = np.hstack((durationVector,ds))
-                #        dw = np.linalg.norm(qnext-Wend)
-
-                #        print durationVector.shape
-                #        print "qnext",ds,qnext,Wend
-
-
-                #X_topp_wpts = np.array(X_topp_wpts).T
-                #plt.plot(X_topp_wpts[0,:],X_topp_wpts[1,:],'-or',markersize=8)
-                ##plt.plot(X_topp[0,:],X_topp[1,:],'-r',linewidth=2)
-                #plt.plot(W[0,:],W[1,:],'-ok',linewidth=2)
-                #plt.show()
 
                 #self.CheckPolynomial(W,P,durationVector)
                 for i in range(0,durationVector.shape[0]):

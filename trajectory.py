@@ -22,7 +22,7 @@ class Trajectory():
         __metaclass__ = abc.ABCMeta
         DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.01
+        DISCRETIZATION_TIME_STEP = 0.1
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
         POLYNOMIAL_DEGREE = 1
         MIN_NUMBER_WAYPOINTS = 5
@@ -416,6 +416,19 @@ class Trajectory():
                 else:
                         print "Trajectory has no ReParameterization"
 
+        def PlotParametrization2(self, env, W, dW):
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                F = self.get_forces_at_waypoints(W, env)
+                [R,amin,amax] = self.getControlMatrix(W)
+
+                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, F,R,amin,amax,W,dW)
+                #self.topp.ChangeVelocityVector(F
+                if self.topp.ReparameterizeTrajectory():
+                        self.topp.PlotTrajectory(env)
+                        print self.topp
+                else:
+                        print "Trajectory has no ReParameterization"
+
         def getVelocityIntervalWithoutForceField(self, env, W, dW, ddW):
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
                 #Fzero = np.zeros((Ndim, Nwaypoints))
@@ -543,7 +556,7 @@ class Trajectory():
                 else:
                         print "No critical point found"
 
-        def reparametrize(self, env, ploting=False):
+        def reparametrize(self, env, plotting=False):
                 L = self.get_length()
                 [W,dW,ddW] = self.get_waypoints_second_order()
                 F = self.get_forces_at_waypoints(W, env)
@@ -551,7 +564,7 @@ class Trajectory():
                 ### acceleration limits
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                S = getSpeedProfileRManifold(F,R,amin,amax,W,dW,ddW,ploting)
+                S = getSpeedProfileRManifold(F,R,amin,amax,W,dW,ddW,plotting)
                 #if S is None:
                         #self.speed_profile = S
                         #print "No parametrization solution -- sorry :-((("

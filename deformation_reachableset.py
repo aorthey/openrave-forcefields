@@ -26,10 +26,8 @@ class DeformationReachableSet(Deformation):
         #lambda_3 = 0.1*1e-2
         #lambda_4 = 0.01
 
-        lambda_1 = 0.0
+        lambda_1 = 0.005
         lambda_2 = 1
-        lambda_3 = 0.0
-        lambda_4 = 0.0
 
         smoothing_factor = 20.0
 
@@ -47,27 +45,30 @@ class DeformationReachableSet(Deformation):
                 dU = np.zeros((Ndim,Nwaypoints))
 
                 ###############################################################
-                ## check if path dynamically feasible => return if yes
+                ## check if path dynamically feasible => return on success
                 ###############################################################
-
                 if self.IsDynamicallyFeasible(DeformInfo):
                         return DEFORM_SUCCESS
 
+                ###############################################################
+                ## check if path is projectable => return on success
+                ###############################################################
+                if self.IsProjectable(DeformInfo):
+                        Wnext = self.GetProjectableWaypoints(Wori)
+                        self.traj_deformed.new_from_waypoints(Wnext)
+                        return DEFORM_SUCCESS
+
+                ###############################################################
+                ## deform path 
+                ###############################################################
                 from deformation_module_counterwrench import *
-                from deformation_module_projection_reachable_set2 import *
                 from deformation_module_stretch import *
-                from deformation_module_orientation import *
                 from deformation_module_endpoint_projection import *
 
                 d1 = DeformationModuleCounterWrench( DeformInfo )
-                d2 = DeformationModuleProjectionReachableSet2( DeformInfo )
-                d3 = DeformationModuleOrientation( DeformInfo )
-                #d4 = DeformationModuleStretch( DeformInfo )
-
+                d2 = DeformationModuleStretch( DeformInfo )
                 dU += d1.get_update( self.lambda_1 )
                 dU += d2.get_update( self.lambda_2 )
-                dU += d3.get_update( self.lambda_3 )
-                #dU += d4.get_update( self.lambda_4 )
 
                 DeformInfo['dU'] = dU
                 dend = DeformationModuleEndPointProjection( DeformInfo )

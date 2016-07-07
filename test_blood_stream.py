@@ -47,7 +47,7 @@ if __name__ == "__main__":
         #traj = Trajectory.from_file('deform1')
         #bloodstream_kinodynamic1.npy
         traj.info()
-        #traj.draw(env)
+        traj.draw(env)
         xml = env.GetName()
         traj.save('trajectories/'+xml)
         #traj.PlotParametrization(env)
