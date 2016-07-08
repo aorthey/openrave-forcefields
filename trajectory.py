@@ -11,12 +11,12 @@ from scipy.misc import derivative
 from pylab import plot,title,xlabel,ylabel,figure
 from matplotlib.collections import LineCollection
 import pylab as plt
-import copy
 
 from util_force import *
 from util_mvc import *
 from util_mvc_approx import *
 from topp_interface import TOPPInterface
+import copy
 
 class Trajectory():
         __metaclass__ = abc.ABCMeta
@@ -373,6 +373,34 @@ class Trajectory():
                                 return i
                 return None
 
+        def get_tangent_forces_at_waypoints(self, W, dW, env):
+                F = self.get_forces_at_waypoints(W, env)
+                if F.ndim>1:
+                        Nwaypoints = F.shape[1]
+                else:
+                        Nwaypoints = 1
+
+                FT = copy.copy(F)
+                for i in range(0,Nwaypoints):
+                        T = dW[:,i]/np.linalg.norm(dW[:,i])
+                        FT[:,i] = np.dot(F[:,i],T)*T
+
+                return FT
+
+        def get_normal_forces_at_waypoints(self, W, dW, env):
+                F = self.get_forces_at_waypoints(W, env)
+                if F.ndim>1:
+                        Nwaypoints = F.shape[1]
+                else:
+                        Nwaypoints = 1
+
+                FN = copy.copy(F)
+                for i in range(0,Nwaypoints):
+                        T = dW[:,i]/np.linalg.norm(dW[:,i])
+                        FN[:,i] = F[:,i] - np.dot(F[:,i],T)*T
+
+                return FN
+
         def get_forces_at_waypoints(self, W, env):
                 Ndim = W.shape[0]
                 if W.ndim>1:
@@ -422,17 +450,34 @@ class Trajectory():
                 [R,amin,amax] = self.getControlMatrix(W)
 
                 self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, F,R,amin,amax,W,dW)
-                #self.topp.ChangeVelocityVector(F
                 if self.topp.ReparameterizeTrajectory():
                         self.topp.PlotTrajectory(env)
                         print self.topp
                 else:
                         print "Trajectory has no ReParameterization"
 
+        def getTOPPTrajectoryWithTangentForceField(self, env, W, dW):
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                Fzero = self.get_tangent_forces_at_waypoints(W, dW, env)
+                [R,amin,amax] = self.getControlMatrix(W)
+
+                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, Fzero,R,amin,amax,W,dW)
+                if self.topp.ReparameterizeTrajectory():
+                        return self.topp
+                else:
+                        print "WARNING: with tangent force field, TOPP couldn't find a valid \
+                        velocity profile. Path not executable."
+                        print W.shape
+                        print Fzero
+                        print W
+                        #print self.trajectorystring
+                        self.info()
+                        sys.exit(1)
+                        return None
+
         def getVelocityIntervalWithoutForceField(self, env, W, dW, ddW):
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                #Fzero = np.zeros((Ndim, Nwaypoints))
-                Fzero = 0.0*self.get_forces_at_waypoints(W, env)
+                Fzero = np.zeros((Ndim, Nwaypoints))
                 [R,amin,amax] = self.getControlMatrix(W)
 
                 self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, Fzero,R,amin,amax,W,dW)

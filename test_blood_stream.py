@@ -53,8 +53,7 @@ if __name__ == "__main__":
         #traj.PlotParametrization(env)
         #traj.execute(env, robot, tsleep=0.005, stepping=False)
 
-        #raw_input('Press <ENTER> to deform.')
-        #time.sleep(1)
+        time.sleep(1)
         traj.draw_delete()
 
         td = DeformationReachableSet(traj, env)

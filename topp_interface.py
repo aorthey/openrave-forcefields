@@ -22,7 +22,7 @@ class TOPPInterface():
         #DURATION_DISCRETIZATION = 1
         DURATION_DISCRETIZATION = 0.01
 
-        TRAJECTORY_ACCURACY_REQUIRED = 1e-1
+        TRAJECTORY_ACCURACY_REQUIRED = 1e-10
         traj0 = []
         traj1 = []
         trajstr = []
@@ -65,6 +65,7 @@ class TOPPInterface():
                         print "###############"
                         print "FINAL POINT on piecewise C^2 traj:",self.traj0.Eval(self.length)
                         print "FINAL WAYPOINT                   :",W[:,-1]
+                        print "distance between points:",dendpoint
                         print "###############"
                         sys.exit(1)
 
@@ -440,87 +441,21 @@ class TOPPInterface():
                 dWtvec = []
                 speed = 0
 
-                q0 = W[:,0]
-                #qd0 = dW[:,0]
-                qd0 = W[:,1]-W[:,0]
-                ds = np.linalg.norm(W[:,0]-W[:,1])
-
                 X_topp = []
-                X_topp_wpts = []
-                print "DS:",ds
+                q0 = W[:,0]
                 for j in range(0,Ninterval):
-                        #qd0 = W[:,j+1]-W[:,j]
+                        q0 = W[:,j]
                         qd0 = dW[:,j]
-                        ds = np.linalg.norm(W[:,j+1]-W[:,j])
-
                         qd0 = qd0/np.linalg.norm(qd0)
-                        qdd0 = W[:,j+1] - q0 + ds*qd0
-
-                        dnormal = np.linalg.norm(qdd0)
-
-                        qdd0n = qdd0/dnormal
-
-                        qdd0 = 0.5*ds*ds*qdd0n
-
-                        print 0.5*ds*ds - np.linalg.norm(qdd0)
-
-                        X_topp_wpts.append(q0)
-
-                        #j#if np.linalg.norm(qnext-q1)>1e-6:
-
-                        #jfor dt in Tvec:
-                        #j        dt2 = 0.5*dt*dt
-                        #j        qnext = q0 + dt*speed*qd0 + dt2 * qdd
-                        #j        X.append(qnext)
-                        #j        X_topp.append(qnext)
-
-                        #jX=np.array(X).T
-                
-                        #j#if j==66:
-                        #jif np.linalg.norm(qnext-q1)>1e-10:
-                        #j        #PrintNumpy('pnext', q1)
-                        #j        PrintNumpy('p', q0)
-                        #j        PrintNumpy('force', F[:,j])
-                        #j        PrintNumpy('dp', qd0)
-                        #j        print "speed=",speed
-                        #j        print np.linalg.norm(q0-W[:,j])
-                        #j        print "distance qnext to wpt:",np.linalg.norm(qnext-q1)
-                        #j        print j,"/",Ninterval
-                        #j        plt.plot(X[0,:],X[1,:],'-or',markersize=10)
-                        #j        #plt.plot([q0[0],qnext[0]],[q0[1],qnext[1]],'-ok')
-                        #j        plt.plot([q0[0],qcontrol[0]],[q0[1],qcontrol[1]],'-om',linewidth=2)
-                        #j        plt.plot([W[0,j],W[0,j+1]],[W[1,j],W[1,j+1]],'-ok',linewidth=2)
-                        #j        plt.show()
-                        #j        #sys.exit(0)
-
-                        #jq0 = q0 + dt*speed*qd0 + dt2*qdd
-                        #jqd0 = speed*qd0 + dt*qdd
-                        #jqd0[2] = 0
-                        #speed += np.linalg.norm(ds*qdd/np.linalg.norm(qdd))
-                        #jqd0 = dW[:,j+1]
-
-                        #jdurationVector[j] = dtbest
-                        #jK=3
-                        #jx1 = np.polyfit(Tvec, X[0,:], K)
-                        #jy1 = np.polyfit(Tvec, X[1,:], K)
-                        #jz1 = np.polyfit(Tvec, X[2,:], K)
-                        #jt1 = np.polyfit(Tvec, X[3,:], K)
-
-                        #if np.linalg.norm(qnext-q1)>1e-10:
-                                #sys.exit(0)
-
-                        #jPj = np.vstack((x1,y1,z1,t1))
-                        #j#print j,"/",Ninterval,"time",dtbest,"speed",speed,"dist",np.linalg.norm(q0-W[:,j+1])
-                        #ja = Pj[:,3]
-                        #jb = Pj[:,2]
-                        #jc = Pj[:,1]
-                        #jd = Pj[:,0]
-                        #print j,"/",Ninterval
+                        ##ds = np.linalg.norm(W[:,j+1]-W[:,j])
+                        ds = np.dot(W[:,j+1]-q0,qd0)
+                        qdd0 = W[:,j+1] - (q0 + ds*qd0)
+                        qdd0 = qdd0/(ds*ds)
 
                         a = q0
                         b = qd0
                         c = qdd0
-                        d  = 0
+                        d = 0
 
                         P[j,:,0] = a
                         P[j,:,1] = b
@@ -531,13 +466,19 @@ class TOPPInterface():
                         P[j,2,2]=0
                         P[j,2,3]=0
 
-                        durationVector[j] = ds#1.0/Ninterval
+                        durationVector[j] = ds
 
-                        [q0,qd0] = self.EvalPoly(P,j,ds)
+                        [q1,qd1] = self.EvalPoly(P,j,ds)
+
+                        #q1 = a + ds*qd0 + 0.5*ds*ds*qdd0
+                        if np.linalg.norm(q1-W[:,j+1])>1e-10:
+                                #print "d(q0,q1)",np.linalg.norm(W[:,j]-W[:,j+1])
+                                #print "q0",W[:,j]
+                                #print "q1",W[:,j+1]
+                                print "mistmatch at",j,j+1,"dist",np.linalg.norm(q1-W[:,j+1])
                         #qd0 = dqnext
 
-
-                X_topp_wpts.append(q0)
+                #sys.exit(0)
 
                 #self.CheckPolynomial(W,P,durationVector)
                 for i in range(0,durationVector.shape[0]):
@@ -560,9 +501,10 @@ class TOPPInterface():
                 x = np.zeros((Ndim))
                 dx = np.zeros((Ndim))
                 for k in range(0,Kcoeff):
-                        x += P[i,:,k]*(t**k)
+                        x += P[i,:,k]*np.power(t,k)
                         dx += k*P[i,:,k]*(t**(max(k-1,0)))
                 return [x,dx]
+
         def CheckPolynomial(self, W, P, D):
                 [Ninterval, Ndim, Kcoeff] = P.shape
 
@@ -594,7 +536,7 @@ class TOPPInterface():
                         [q1spl,qd1spl] = self.EvalPoly(P,i,D[i])
                         q1 = W[:,i+1]
 
-                        if np.linalg.norm(q1-q1spl)>1e-5:
+                        if np.linalg.norm(q1-q1spl)>1e-10:
                                 print "qnext mismatch at",i,"/",M
                                 print "q1",q1
                                 print "q1spl",q1spl
@@ -603,7 +545,7 @@ class TOPPInterface():
                         q0 = W[:,i]
                         [q0spl,qd0spl] = self.EvalPoly(P,i,0)
 
-                        if np.linalg.norm(q0-q0spl)>1e-5:
+                        if np.linalg.norm(q0-q0spl)>1e-10:
                                 print "q0 mismatch"
                                 print "q0",q0
                                 print "q0spl",q0spl

@@ -45,17 +45,17 @@ class DeformationReachableSet(Deformation):
                 dU = np.zeros((Ndim,Nwaypoints))
 
                 ###############################################################
-                ## check if path dynamically feasible => return on success
-                ###############################################################
-                if self.IsDynamicallyFeasible(DeformInfo):
-                        return DEFORM_SUCCESS
-
-                ###############################################################
                 ## check if path is projectable => return on success
                 ###############################################################
                 if self.IsProjectable(DeformInfo):
                         Wnext = self.GetProjectableWaypoints(Wori)
                         self.traj_deformed.new_from_waypoints(Wnext)
+                        return DEFORM_SUCCESS
+
+                ###############################################################
+                ## check if path dynamically feasible => return on success
+                ###############################################################
+                if self.IsDynamicallyFeasible(DeformInfo):
                         return DEFORM_SUCCESS
 
                 ###############################################################

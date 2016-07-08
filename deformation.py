@@ -310,65 +310,67 @@ class Deformation():
                 Nwaypoints = DeformInfo['Nwaypoints']
                 critical_pt = DeformInfo['critical_pt']
 
-                topp = traj.getTOPPTrajectoryWithoutForceField(env, Wori, dWori)
-                #print topp.traj0.duration
-                #topp.PlotTrajectory(env)
+                topp = traj.getTOPPTrajectoryWithTangentForceField(env, Wori, dWori)
+                print topp.traj1.duration
+                topp.PlotTrajectory(env)
 
                 ### execute blindly!?
-                xt = self.traj_deformed.topp.traj0
+                xt = self.traj_deformed.topp.traj1
+
+                Q0 = []
+                QD0 = []
+                Qori = []
+                D = 0
 
                 t = 0.0
+                dt = 0.1
 
                 q = xt.Eval(0)
                 dq = xt.Evald(0)
-
-                plt.plot(Wori[0,:],Wori[1,:],'ok',linewidth=3,markersize=5)
-
-                Q = []
-                Q0 = []
-                QD0 = []
-                D = 0
-                tstep = 0.01
-                Wnext=[]
                 while t < xt.duration:
-                        Wnext.append(q)
+                        #dq = xt.Evald(t)
+                        F = self.GetForcesAtWaypoints(q)
+                        ddq = xt.Evaldd(t)
+
+                        Qori.append(xt.Eval(t))
                         Q0.append(q)
                         QD0.append(dq)
 
-                        discr = np.linalg.norm(xt.Eval(t)-xt.Eval(t+tstep))
-                        ddq = xt.Evaldd(t)
-                        F = self.GetForcesAtWaypoints(q)
-                        dt = 0.0
-                        dtstep = tstep / 10000.0
-
                         q0 = copy.copy(q)
+                        dt2 = 0.5*dt*dt
 
-                        d=np.linalg.norm(q-q0)
-                        while d < discr:
+                        q = q + dt*dq + dt2*ddq + dt2*F
+                        dq = dq + dt*ddq + dt*F
 
-                                dt2 = 0.5*dt*dt
-                                q = q + dt*dq + dt2*ddq + dt2*F
-                                dq = dq + dt*ddq
-                                Q.append(q)
-                                d = np.linalg.norm(q-q0)
-                                dt+=dtstep
                         D+=np.linalg.norm(q-q0)
-                        t += tstep
+                        t += dt
 
                 print "overall dist",D
                 ### do not move waypoint derivatives
-                Q = np.array(Q).T
                 Q0 = np.array(Q0).T
                 QD0 = np.array(QD0).T
-                Wnext = np.array(Wnext).T
-                plt.plot(Q[0,:],Q[1,:],'-r',linewidth=3)
-                plt.plot(Wnext[0,:],Wnext[1,:],'or',linewidth=3)
+                Qori = np.array(Qori).T
+
+                N = Nwaypoints
+                Q0 = Q0[:,0:N]
+                QD0 = QD0[:,0:N]
+                Qori = Qori[:,0:N]
+                plt.plot(Qori[0,:],Qori[1,:],'-ok',linewidth=3,markersize=5)
+                plt.plot(Q0[0,:],Q0[1,:],'or',linewidth=3)
+
+                for i in range(0,QD0.shape[1]):
+                        tangent = 0.1*QD0[0:2,i]/np.linalg.norm(QD0[0:2,i])
+                        plt.plot([Q0[0,i],Q0[0,i]+tangent[0]],[Q0[1,i],Q0[1,i]+tangent[1]],'-m')
 
                 ### create new trajectory string for that
                 plt.show()
-                t2 = Trajectory(Wnext)
-                t2.PlotParametrization2(env,Q0,QD0)
-                print "no ReParameterization found"
+                t2 = Trajectory(Q0)
+                #t2.PlotParametrization(env)
+
+                topp = t2.getTOPPTrajectoryWithoutForceField(env, Q0, QD0)
+                topp.PlotTrajectory(env)
+
+                #t2.PlotParametrization2(env,Q0,QD0)
 
                 sys.exit(0)
 
