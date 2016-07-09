@@ -312,71 +312,73 @@ class Deformation():
                 critical_pt = DeformInfo['critical_pt']
 
                 FT = traj.get_tangent_forces_at_waypoints(Wori, dWori, env)
-                topp = traj.getTOPPTrajectoryWithTangentForceField(env, Wori, dWori)
-                #topp = traj.getTOPPTrajectoryWithoutForceField(env, Wori, dWori)
+                #topp = traj.getTOPPTrajectoryWithTangentForceField(env, Wori, dWori)
+                topp = traj.getTOPPTrajectoryWithoutForceField(env, Wori, dWori)
 
                 #topp.PlotTrajectory(env)
                 ### execute blindly!?
                 xt = self.traj_deformed.topp.traj1
 
-                Q0 = []
-                QD0 = []
-                Qori = []
-                Qdori = []
-                D = 0
+                for eta in np.linspace(0.9,1.4,10):
+                        Q0 = []
+                        QD0 = []
+                        Qori = []
+                        Qdori = []
+                        D = 0
 
-                t = 0.0
-                dt = 0.1
+                        t = 0.0
+                        dt = 0.05
 
-                q = xt.Eval(0)
-                dq = xt.Evald(0)
-                while t < xt.duration:
-                        #dq = xt.Evald(t)
-                        #print np.linalg.norm(xt.Evald(t))
-                        #print np.linalg.norm(dq),np.linalg.norm(dq[0]),np.linalg.norm(dq[1])
-                        #print np.linalg.norm(dq[0])
-                        ### get component of force orthogonal to path
+                        q = xt.Eval(0)
+                        dq = xt.Evald(0)
+                        while t < xt.duration:
+                                #dq = xt.Evald(t)
+                                #print np.linalg.norm(xt.Evald(t))
+                                #print np.linalg.norm(dq),np.linalg.norm(dq[0]),np.linalg.norm(dq[1])
+                                #print np.linalg.norm(dq[0])
+                                Qori.append(xt.Eval(t))
+                                Qdori.append(xt.Evald(t))
+                                Q0.append(q)
+                                QD0.append(dq)
+                                q0 = copy.copy(q)
 
-                        F = self.GetForcesAtWaypoints(q)
-                        dqn = xt.Evald(t)/np.linalg.norm(xt.Evald(t))
-                        FN = F - np.dot(F,dqn)*dqn
+                                ### get component of force orthogonal to path
+                                F = eta*self.GetForcesAtWaypoints(q)
+                                #dqn = xt.Evald(t)/np.linalg.norm(xt.Evald(t))
+                                #FN = F - np.dot(F,dqn)*dqn
 
-                        ddq = xt.Evaldd(t)
-                        #GetNearestControlPoint(q, dq, pnext, F, dt, speed, Acontrol, bcontrol, returnControl=False):
-                        [qnew, ddq_adjust] = params.GetBestControlPathInvariant( q, dq, ddq, xt.Eval(t+dt), F, dt)
+                                ddq = xt.Evaldd(t)
+                                [qnew, ddq] = params.GetBestControlPathInvariant( q, dq, ddq, xt.Eval(t+dt), F, dt)
 
-                        Qori.append(xt.Eval(t))
-                        Qdori.append(xt.Evald(t))
-                        Q0.append(q)
-                        QD0.append(dq)
+                                dt2 = 0.5*dt*dt
+                                q = q + dt*dq + dt2*ddq
 
-                        q0 = copy.copy(q)
+                                #q = q + dt*dq + dt2*ddq_adjust
+                                ### compute here the best control to reject normal
+                                ### component of force
+                                dq = dq + dt*ddq
+                                #dq = dq + dt*ddq_adjust
 
-                        dt2 = 0.5*dt*dt
+                                if np.linalg.norm(q-qnew)>1e-10:
+                                        print "q mismatch dist",np.linalg.norm(q-qnew)
+                                        sys.exit(0)
+                                t += dt
+                                D+=np.linalg.norm(q-q0)
+                                print "t",t,"/",xt.duration,"speed",np.linalg.norm(dq)
 
-                        #q = q + dt*dq + dt2*ddq + dt2*FN
-                        q = q + dt*dq + dt2*ddq_adjust
+                        print "overall dist",D
+                        ### do not move waypoint derivatives
+                        Q0 = np.array(Q0).T
+                        QD0 = np.array(QD0).T
+                        Qori = np.array(Qori).T
+                        Qdori = np.array(Qdori).T
 
-                        ### compute here the best control to reject normal
-                        ### component of force
-                        #dq = dq + dt*ddq + dt*FN
-                        dq = dq + dt*ddq_adjust
+                        plt.plot(Qori[0,:],Qori[1,:],'-ok',linewidth=3,markersize=5)
+                        #plt.plot(Wori[0,:],Wori[1,:],'og',markersize=12)
+                        plt.plot(Q0[0,:],Q0[1,:],'-or',linewidth=3)
 
-                        D+=np.linalg.norm(q-q0)
-                        t += dt
-                        print "t",t,"/",xt.duration,"speed",np.linalg.norm(dq)
-
-                print "overall dist",D
-                ### do not move waypoint derivatives
-                Q0 = np.array(Q0).T
-                QD0 = np.array(QD0).T
-                Qori = np.array(Qori).T
-                Qdori = np.array(Qdori).T
-
-                plt.plot(Qori[0,:],Qori[1,:],'-ok',linewidth=3,markersize=5)
-                #plt.plot(Wori[0,:],Wori[1,:],'og',markersize=12)
-                plt.plot(Q0[0,:],Q0[1,:],'or',linewidth=3)
-
+                plt.show()
+                sys.exit(0)
                 #for i in range(0,QD0.shape[1]):
                         #tangent = 0.1*QD0[0:2,i]/np.linalg.norm(QD0[0:2,i])
                         #plt.plot([Q0[0,i],Q0[0,i]+tangent[0]],[Q0[1,i],Q0[1,i]+tangent[1]],'-m')
@@ -389,18 +391,24 @@ class Deformation():
                         #plt.plot([Wori[0,i],Wori[0,i]+tangent[0]],[Wori[1,i],Wori[1,i]+tangent[1]],'-g',linewidth=3)
 
                 ### create new trajectory string for that
-                plt.show()
                 #sys.exit(0)
 
 
                 print "waypoints:",Q0.shape[1]
                 N = Q0.shape[1]
-                Q0 = Q0[:,0:N]
-                QD0 = QD0[:,0:N]
+                print Q0
+                #Q0 = Q0[:,0:N]
+                #QD0 = QD0[:,0:N]
                 #Qori = Qori[:,0:N]
                 t2 = Trajectory(Q0)
-                [smin,smax] = t2.GetSpeedIntervalAtCriticalPoint(env, Q0, QD0, N-10)
-                print "speed interval",smin,smax
+
+                for i in range(3,30):
+                        [smin,smax] = t2.GetSpeedIntervalAtCriticalPoint(env, Q0, QD0, i, dt)
+                        #[smin,smax] = t2.GetSpeedIntervalAtCriticalPoint(env, Q0, QD0, i)
+                        print "i",i,"/",N,"speed interval",smin,smax
+
+                Nc = t2.getCriticalPoint(env)
+                print "CP",Nc
 
                 #t2.PlotParametrization(env)
                 #topp = t2.getTOPPTrajectoryWithoutForceField(env, Q0, QD0)

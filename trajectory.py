@@ -544,33 +544,7 @@ class Trajectory():
                         Nc = oldNc
                 return Nc
 
-        def GetSpeedIntervalAtCriticalPoint(self, env, Win, dWin, Nc_in):
-
-                #for Nc in range(Nc_in,Nc_in+4):
-                #        W = Win[:,0:Nc]
-                #        dW = dWin[:,0:Nc]
-
-                #        [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                #        F = self.get_forces_at_waypoints(W, env)
-                #        [R,amin,amax] = self.getControlMatrix(W)
-
-                #        [trajsubstr, durationVector] = self.computeTrajectorySubstringForTOPP(Win, dWin, Nc)
-
-                #        self.topp = TOPPInterface(self, durationVector, trajsubstr, F,R,amin,amax,W,dW)
-
-                #        #print durationVector,trajsubstr
-                #        #print W,dW
-                #        try:
-                #                [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
-                #                                Nc,
-                #                                durationVector,
-                #                                trajsubstr)
-                #                print "TOPP velocity at CP",Nc,":",semin,semax
-                #                
-                #        except Exception as e:
-                #                break
-                #                
-                #sys.exit(0)
+        def GetSpeedIntervalAtCriticalPoint(self, env, Win, dWin, Nc_in, dt = None):
 
                 W = Win[:,0:Nc_in]
                 dW = dWin[:,0:Nc_in]
@@ -588,7 +562,7 @@ class Trajectory():
                 [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
                                 Nc_in,
                                 durationVector,
-                                trajsubstr)
+                                trajsubstr, dt)
                 print "TOPP velocity at CP",Nc_in,":",semin,semax
                 ### AVP on the subtrajectory between 0 and Nc
                 #if Nc > 0:

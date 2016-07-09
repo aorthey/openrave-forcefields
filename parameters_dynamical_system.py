@@ -106,9 +106,11 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
 
         if dt < 1e-100:
                 ## cannot make progress in near zero time
+                print "time step too small",dt
+                sys.exit(0)
                 return [q,ddq]
 
-        boundary_distance = 0.2
+        boundary_distance = 0.0
         [Acontrol,bcontrol] = GetControlConstraintMatricesAdjust(p,F,epsilon=boundary_distance)
         A = np.zeros((Acontrol.shape))
         b = np.zeros((bcontrol.shape))
@@ -117,6 +119,9 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
 
         # minimize || M*ddq - R*u - F ||
         Rp = GetControlMatrixAtWaypoint(p)
+        A = (2*Acontrol)/(dt*dt)
+        b = bcontrol + np.dot(A,(-p - dt*dq))
+
 
         Adim = amin.shape[0]
         Id = np.eye(Ndim)
@@ -133,22 +138,20 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
                 print "infeasible qp"
                 sys.exit(0)
 
-        ddq = np.dot(Rp,u_adjusted)+F
+        ddq = np.dot(np.linalg.pinv(Id),(np.dot(Rp,u_adjusted)+F))
 
         #qnext = p + dt*dq + dt2*ddq
         #return [qnext, ddq]
 
         #### constraint on tangent acceleration
         Aq = np.vstack((ddq,-ddq))
-        A = np.vstack((A,Aq))
-        bq = np.hstack((np.dot(ddq,ddq),-np.dot(ddq,ddq)))
-        b = np.hstack((b,bq))
+        bq = np.hstack((-np.dot(ddq,ddq),np.dot(ddq,ddq)))
 
-        A = (2*Acontrol)/(dt*dt)
-        b = bcontrol + np.dot(A,(-p - dt*dq))
+        #A = np.vstack((A,Aq))
+        #b = np.hstack((b,bq))
 
         x = Variable(Ndim)
-        objective = Minimize( norm(x - pnext))
+        objective = Minimize( norm(x - pnext) )
         constraints = [ A*x <= -b ]
                         #quad_form(x-p,Id) <= ds_next*ds_next]
         prob = Problem(objective, constraints)
@@ -164,12 +167,15 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
                 if dnew < inf:
                         qcontrol =np.array(x.value).flatten()
                         qdd = 2*(qcontrol-p-dt*dq)/(dt*dt)
+                        qdd[2] = 0
                         qdnext = dq + dt*qdd
                         qnext = p + dt*dq + dt2*qdd
                         #print "ECOS dt",dt,"dp2x",np.linalg.norm(p-qcontrol),"dx2pnext",np.linalg.norm(pnext-qcontrol),"qcontrol",qcontrol,"p",p,"pnext",pnext
                 else:
                         qnext = None
                         qdnext = None
+                        print "no solution found"
+                        sys.exit(0)
         except Exception as e:
                 print e
                 PrintNumpy('pnext', pnext)

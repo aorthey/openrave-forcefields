@@ -45,29 +45,29 @@ class TOPPInterface():
         ddW_ = []
         trajectoryclass_ = []
 
-        def initializeFromSpecifications(self, durationVector_in, trajectorystring, F, R, amin, amax, W, dW):
+        def initializeFromSpecifications(self, durationVector_in, trajectorystring, F, R, amin, amax, W, dW, dt =None):
                 self.filename = 'images/topp_'+str(params.FILENAME)+'.png'
                 self.Ndim = W.shape[0]
                 self.Nwaypoints = W.shape[1]
 
-                #[self.trajstr, self.durationVector] = self.computeTrajectoryStringFromWaypoints(F,R,amin,amax,W,dW)
-                self.trajstr = trajectorystring
-                self.durationVector = durationVector_in
+                [self.trajstr, self.durationVector] = self.computeTrajectoryStringFromWaypoints(F,R,amin,amax,W,dW,dt)
+                #self.trajstr = trajectorystring
+                #self.durationVector = durationVector_in
 
                 self.traj0 = Trajectory.PiecewisePolynomialTrajectory.FromString(self.trajstr)
                 self.length = np.sum(self.durationVector)
                 dendpoint = np.linalg.norm(self.traj0.Eval(self.length)-W[:,-1])
 
-                if dendpoint > self.TRAJECTORY_ACCURACY_REQUIRED:
-                        print "###############"
-                        print "TOPP INTERFACE ERROR"
-                        print "path duration:",self.length
-                        print "###############"
-                        print "FINAL POINT on piecewise C^2 traj:",self.traj0.Eval(self.length)
-                        print "FINAL WAYPOINT                   :",W[:,-1]
-                        print "distance between points:",dendpoint
-                        print "###############"
-                        sys.exit(1)
+                #if dendpoint > self.TRAJECTORY_ACCURACY_REQUIRED:
+                #        print "###############"
+                #        print "TOPP INTERFACE ERROR"
+                #        print "path duration:",self.length
+                #        print "###############"
+                #        print "FINAL POINT on piecewise C^2 traj:",self.traj0.Eval(self.length)
+                #        print "FINAL WAYPOINT                   :",W[:,-1]
+                #        print "distance between points:",dendpoint
+                #        print "###############"
+                #        #sys.exit(1)
 
                 [a,b,c] = self.GetABC(F, R, amin, amax)
 
@@ -85,17 +85,11 @@ class TOPPInterface():
                 self.amax_ = amax
                 self.W_ = W
                 self.dW_ = dW
-                [trajectorystring, durationVector] = self.computeTrajectoryStringFromWaypoints(F,R,amin,amax,W,dW)
-                self.initializeFromSpecifications(durationVector, trajectorystring, F, R, amin, amax, W, dW)
-
-        def ChangeVelocityVector(self, F, R, amin, amax, W, dW):
-                [trajectorystring, durationVector] = self.computeTrajectoryStringFromWaypoints(F,R,amin,amax,W,dW)
+                #[trajectorystring, durationVector] = self.computeTrajectoryStringFromWaypoints(F,R,amin,amax,W,dW)
                 self.initializeFromSpecifications(durationVector, trajectorystring, F, R, amin, amax, W, dW)
 
 
-
-
-        def getSpeedIntervalAtCriticalPoint(self, N, Subtraj_dvec, Subtraj_str):
+        def getSpeedIntervalAtCriticalPoint(self, N, Subtraj_dvec, Subtraj_str, dt=None):
                 if (N < 0) or (N > self.Nwaypoints):
                         print "Critical Point",N,"is out of bounds of trajectory"
                         sys.exit(1)
@@ -108,20 +102,18 @@ class TOPPInterface():
                 dWc = self.dW_[:,0:N]
                 amin = self.amin_
                 amax = self.amax_
-                self.initializeFromSpecifications(Subtraj_dvec, Subtraj_str, Fc, Rc, amin, amax, Wc, dWc)
+                self.initializeFromSpecifications(Subtraj_dvec, Subtraj_str, Fc, Rc, amin, amax, Wc, dWc,dt)
                 x = self.topp_inst.solver
                 ### AVP(sbmin, sbmax)
                 #[semin,semax] = self.topp_inst.AVP(0.0, 0.0)
                 return_code = x.RunVIP(0.0, 0.0)
                 if return_code != 1:
-                        print "GET SPEED INTERVAL"
-                        print "TOPP Error:", return_code
-                        print "waypoint: ",N,"/",self.Nwaypoints
-                        #print "W:",Wc[0:2,:]
-                        #print "force:",self.F_
+                        #print "GET SPEED INTERVAL"
+                        #print "TOPP Error:", return_code
+                        #print "waypoint: ",N,"/",self.Nwaypoints
                         self.critical_point = x.GetCriticalPoint()
                         self.critical_point_value = x.GetCriticalPointValue()
-                        print "CRITICAL POINT:",self.critical_point,self.critical_point_value
+                        #print "CRITICAL POINT:",self.critical_point,self.critical_point_value
                         #plt.plot(Wc[0,:],Wc[1,:],'-or',markersize=5,linewidth=3)
                         #plt.show()
                         #sys.exit(1)
@@ -425,7 +417,7 @@ class TOPPInterface():
         def GetNearestPolynomial(self, p):
                 pass
         
-        def computeTrajectoryStringFromWaypoints(self, F, R, amin, amax, W, dW):
+        def computeTrajectoryStringFromWaypoints(self, F, R, amin, amax, W, dW, dt=None):
                 DEBUG = True
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
@@ -434,27 +426,26 @@ class TOPPInterface():
                 P = np.zeros((Ninterval, Ndim, Kcoeff))
                 durationVector = np.zeros((Ninterval))
 
-                qd0 = np.zeros((Ndim))
-                qd0 += dW[:,0]
-                Wtvec = []
-                Wtnvec = []
-                dWtvec = []
-                speed = 0
-
-                X_topp = []
                 q0 = W[:,0]
                 qd0 = dW[:,0]
                 for j in range(0,Ninterval):
                         #q0 = W[:,j]
-                        #qd0 = dW[:,j]
-                        qd0 = qd0/np.linalg.norm(qd0)
+                        qd0 = dW[:,j]
 
-                        ds = np.dot(W[:,j+1]-q0,qd0)
-                        qdd0 = W[:,j+1] - (q0 + ds*qd0)
+                        qd0n = qd0/np.linalg.norm(qd0)
+                        #qd0n = qd0
+
+                        ### time info
+                        if dt is None:
+                                ds = np.dot(W[:,j+1]-q0,qd0n)
+                        else:
+                                ds = dt*np.linalg.norm(qd0)
+
+                        qdd0 = W[:,j+1] - (q0 + ds*qd0n)
                         qdd0 = qdd0/(ds*ds)
 
                         a = q0
-                        b = qd0
+                        b = qd0n
                         c = qdd0
                         d = 0
 
@@ -477,6 +468,7 @@ class TOPPInterface():
                                 #print "q0",W[:,j]
                                 #print "q1",W[:,j+1]
                                 print "mistmatch at",j,j+1,"dist",np.linalg.norm(q0-W[:,j+1])
+                                sys.exit(0)
                         #qd0 = dqnext
 
                 #sys.exit(0)
