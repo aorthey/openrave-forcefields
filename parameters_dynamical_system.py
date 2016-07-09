@@ -38,6 +38,8 @@ def ControlPerWaypoint(W, Ndim, Nwaypoints):
                 R[3,:,i] = np.array((0.0,0.0,1.0))
 
         return R
+def GetControlMatrixAtWaypoint(p):
+        return ControlPerWaypoint(p, p.shape[0], 1)[:,:,0]
 
 ### input: p -- waypoint on manifold
 ###     F -- force on manifold at p
@@ -54,6 +56,7 @@ def GetControlConstraintMatricesAdjust(p, F, epsilon=0.1):
         Ndim = p.shape[0]
         R = ControlPerWaypoint(p, Ndim, 1)[:,:,0]
         return GetControlConstraintMatricesFromControlAdjust(R,F,epsilon=epsilon)
+
 
 def GetControlConstraintMatricesFromControl(R, F):
         return GetControlConstraintMatricesFromControlAdjust(R, F, epsilon=0)
@@ -94,6 +97,92 @@ def GetControlConstraintMatricesFromControlAdjust(R, F, epsilon=0):
         RxI = np.dot(Rinv,np.identity(Ndim))
         A = np.vstack((RxI,-RxI))
         return [A,b]
+
+#def GetBestControls( p, dp, pnext, ddq, FN, dt, speed):
+def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
+        #q = q + dt*dq + dt2*ddq + dt2*F
+        Ndim = p.shape[0]
+        dt2 = dt*dt/2
+
+        if dt < 1e-100:
+                ## cannot make progress in near zero time
+                return [q,ddq]
+
+        boundary_distance = 0.2
+        [Acontrol,bcontrol] = GetControlConstraintMatricesAdjust(p,F,epsilon=boundary_distance)
+        A = np.zeros((Acontrol.shape))
+        b = np.zeros((bcontrol.shape))
+
+        #### adjust ddq to new conditions
+
+        # minimize || M*ddq - R*u - F ||
+        Rp = GetControlMatrixAtWaypoint(p)
+
+        Adim = amin.shape[0]
+        Id = np.eye(Ndim)
+        u = Variable(Adim)
+        objective = Minimize( norm(np.dot(Id,ddq) - (Rp*u + F)) )
+        constraints = [ amin <= u, u <= amax]
+
+        prob = Problem(objective, constraints)
+        dnew = np.abs(prob.solve(solver=ECOS, max_iters=500, feastol=1e-10,abstol=1e-10,reltol=1e-10))
+        if dnew < inf:
+                print dnew
+                u_adjusted =np.array(u.value).flatten()
+        else:
+                print "infeasible qp"
+                sys.exit(0)
+
+        ddq = np.dot(Rp,u_adjusted)+F
+
+        #qnext = p + dt*dq + dt2*ddq
+        #return [qnext, ddq]
+
+        #### constraint on tangent acceleration
+        Aq = np.vstack((ddq,-ddq))
+        A = np.vstack((A,Aq))
+        bq = np.hstack((np.dot(ddq,ddq),-np.dot(ddq,ddq)))
+        b = np.hstack((b,bq))
+
+        A = (2*Acontrol)/(dt*dt)
+        b = bcontrol + np.dot(A,(-p - dt*dq))
+
+        x = Variable(Ndim)
+        objective = Minimize( norm(x - pnext))
+        constraints = [ A*x <= -b ]
+                        #quad_form(x-p,Id) <= ds_next*ds_next]
+        prob = Problem(objective, constraints)
+        qcontrol = None
+        try:
+                #dnew = np.abs(prob.solve(solver=ECOS, verbose=False, max_iters=500, feastol_inacc=1e-20))
+                ### default ECOS: max_iters=100, feastol=1e-7, abstol=1e-7, reltol = 1e-6
+                dnew = np.abs(prob.solve(solver=ECOS, max_iters=500,
+                        feastol=1e-10,abstol=1e-10,reltol=1e-10))
+                #dnew = np.abs(prob.solve(solver=SCS, max_iters=5000, eps=1e-200))
+                #dnew = np.abs(prob.solve(solver=CVXOPT))
+                #dnew = np.abs(prob.solve(solver=ECOS_BB, mi_rel_eps=1e-100))
+                if dnew < inf:
+                        qcontrol =np.array(x.value).flatten()
+                        qdd = 2*(qcontrol-p-dt*dq)/(dt*dt)
+                        qdnext = dq + dt*qdd
+                        qnext = p + dt*dq + dt2*qdd
+                        #print "ECOS dt",dt,"dp2x",np.linalg.norm(p-qcontrol),"dx2pnext",np.linalg.norm(pnext-qcontrol),"qcontrol",qcontrol,"p",p,"pnext",pnext
+                else:
+                        qnext = None
+                        qdnext = None
+        except Exception as e:
+                print e
+                PrintNumpy('pnext', pnext)
+                PrintNumpy('p', p)
+                PrintNumpy('dp', dq/np.linalg.norm(dq))
+                PrintNumpy('force', F)
+                print "speed:",np.linalg.norm(dq)
+                print "dt:",dt
+                sys.exit(0)
+
+        return [qnext, qdd]
+
+
 
 def GetNearestControlPoint(p, dp, pnext, F, dt, speed, Acontrol, bcontrol, returnControl=False):
         ds_next = np.linalg.norm(p-pnext)

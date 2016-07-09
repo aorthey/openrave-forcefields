@@ -494,6 +494,23 @@ class Trajectory():
                         sys.exit(1)
                         return None
 
+        def getTOPPTrajectory(self, env, W, dW, F):
+                [Ndim, Nwaypoints] = self.getWaypointDim(W)
+                Fzero = np.zeros((Ndim, Nwaypoints))
+                [R,amin,amax] = self.getControlMatrix(W)
+
+                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, Fzero,R,amin,amax,W,dW)
+                if self.topp.ReparameterizeTrajectory():
+                        return self.topp
+                else:
+                        print W.shape
+                        print Fzero
+                        print W
+                        #print self.trajectorystring
+                        self.info()
+                        sys.exit(1)
+                        return None
+
         def getTOPPTrajectoryWithoutForceField(self, env, W, dW):
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
                 #Fzero = np.zeros((Ndim, Nwaypoints))
@@ -921,10 +938,6 @@ class Trajectory():
                         #b = (q1-q0)/dq
                         ##b = dq/T*qnd
                         #c = (qd1-qd0)/(T)
-
-                        if T<1e-5:
-                                print "T=",T
-                                sys.exit(0)
 
                         P[j,:,0] = a
                         P[j,:,1] = b

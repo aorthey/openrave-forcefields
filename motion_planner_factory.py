@@ -79,7 +79,7 @@ class MotionPlanner():
                         print "Could not find geometrical path"
                         print "Planner:",planner_name
                         print "Status :",result
-                        sys.exit(0)
+                        return None
                 print "Planner",planner_name," success | time:",t2-t1
                 return rave_traj
 

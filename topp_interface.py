@@ -22,7 +22,7 @@ class TOPPInterface():
         #DURATION_DISCRETIZATION = 1
         DURATION_DISCRETIZATION = 0.01
 
-        TRAJECTORY_ACCURACY_REQUIRED = 1e-10
+        TRAJECTORY_ACCURACY_REQUIRED = 1e-1
         traj0 = []
         traj1 = []
         trajstr = []
@@ -443,11 +443,12 @@ class TOPPInterface():
 
                 X_topp = []
                 q0 = W[:,0]
+                qd0 = dW[:,0]
                 for j in range(0,Ninterval):
-                        q0 = W[:,j]
-                        qd0 = dW[:,j]
+                        #q0 = W[:,j]
+                        #qd0 = dW[:,j]
                         qd0 = qd0/np.linalg.norm(qd0)
-                        ##ds = np.linalg.norm(W[:,j+1]-W[:,j])
+
                         ds = np.dot(W[:,j+1]-q0,qd0)
                         qdd0 = W[:,j+1] - (q0 + ds*qd0)
                         qdd0 = qdd0/(ds*ds)
@@ -468,14 +469,14 @@ class TOPPInterface():
 
                         durationVector[j] = ds
 
-                        [q1,qd1] = self.EvalPoly(P,j,ds)
+                        [q0,qd0] = self.EvalPoly(P,j,ds)
 
                         #q1 = a + ds*qd0 + 0.5*ds*ds*qdd0
-                        if np.linalg.norm(q1-W[:,j+1])>1e-10:
+                        if np.linalg.norm(q0-W[:,j+1])>1e-10:
                                 #print "d(q0,q1)",np.linalg.norm(W[:,j]-W[:,j+1])
                                 #print "q0",W[:,j]
                                 #print "q1",W[:,j+1]
-                                print "mistmatch at",j,j+1,"dist",np.linalg.norm(q1-W[:,j+1])
+                                print "mistmatch at",j,j+1,"dist",np.linalg.norm(q0-W[:,j+1])
                         #qd0 = dqnext
 
                 #sys.exit(0)

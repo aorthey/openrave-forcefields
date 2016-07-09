@@ -44,13 +44,16 @@ if __name__ == "__main__":
                 t1 = time.time()
                 try:
                         planner = MotionPlannerKinodynamic(robot, env)
+                        print "Starting next planning instance"
                         rave_path = planner.GetPath()
-                        traj = Trajectory.from_ravetraj(rave_path)
-                        traj.save('trajectories/bloodstream_kinodynamic_2'+str(i))
+                        if rave_path is not None:
+                                traj = Trajectory.from_ravetraj(rave_path)
+                                traj.save('trajectories/bloodstream_kinodynamic_2'+str(i))
                 except Exception as e:
                         pass
                 t2 = time.time()
                 tall = t2-t1
                 fh.write('%d %f\n'%(i,tall))
                 print "time:",tall
+                time.sleep(5)
         fh.close()

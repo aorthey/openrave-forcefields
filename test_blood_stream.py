@@ -64,4 +64,3 @@ if __name__ == "__main__":
                 td.traj_deformed.PlotParametrization(env)
                 td.traj_deformed.execute(env, robot, tsleep=0.005,
                                 stepping=False)
-                #td.execute(robot, tsleep=0.003, stepping=True)
