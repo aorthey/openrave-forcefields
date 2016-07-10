@@ -38,7 +38,7 @@ if __name__ == "__main__":
         time.sleep(0.5)
 
         #planner = MotionPlannerGeometrical(robot, env)
-        fh = open('trajectories/time_stream_krrt_2.txt','w')
+        fh = open('trajectories/time_stream_krrt_3.txt','w')
 
         for i in range(0,10):
                 t1 = time.time()
@@ -48,7 +48,7 @@ if __name__ == "__main__":
                         rave_path = planner.GetPath()
                         if rave_path is not None:
                                 traj = Trajectory.from_ravetraj(rave_path)
-                                traj.save('trajectories/bloodstream_kinodynamic_2'+str(i))
+                                traj.save('trajectories/bloodstream_kinodynamic_3'+str(i))
                 except Exception as e:
                         pass
                 t2 = time.time()

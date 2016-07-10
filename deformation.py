@@ -5,6 +5,7 @@ import numpy as np
 from trajectory import *
 import copy
 import parameters_dynamical_system as params
+from projector_simple import *
 
 DEFORM_SUCCESS = 0
 DEFORM_OK = 1
@@ -114,22 +115,23 @@ class Deformation():
                         print "deformation not successful"
                         raw_input('Enter any key to quit. ')
 
-        def GetForcesAtWaypoints(self, W):
-                Ndim = W.shape[0]
-                if W.ndim > 1:
-                        Nwaypoints = W.shape[1]
-                else:
-                        Nwaypoints = 1
-                        pt = np.array(((W[0],W[1],-0.1,0.001)))
-                        F = np.zeros((Ndim))
-                        F[0:3] = self.env.GetForceAtX(pt)
-                        return F
+        #def GetForcesAtWaypoints(self, W):
+        #        Ndim = W.shape[0]
+        #        if W.ndim > 1:
+        #                Nwaypoints = W.shape[1]
+        #        else:
+        #                Nwaypoints = 1
+        #                pt = np.array(((W[0],W[1],-0.1,0.001)))
+        #                F = np.zeros((Ndim))
+        #                F[0:3] = self.env.GetForceAtX(pt)
+        #                print "DF",W,F
+        #                return F
 
-                F = np.zeros((Ndim,Nwaypoints))
-                for i in range(0,Nwaypoints):
-                        pt = np.array(((W[0,i],W[1,i],-0.1,0.001)))
-                        F[0:3,i] = self.env.GetForceAtX(pt)
-                return F
+        #        F = np.zeros((Ndim,Nwaypoints))
+        #        for i in range(0,Nwaypoints):
+        #                pt = np.array(((W[0,i],W[1,i],-0.1,0.001)))
+        #                F[0:3,i] = self.env.GetForceAtX(pt)
+        #        return F
 
         def draw_forces_at_waypoints(self, W, F):
                 for i in range(0,W.shape[1]):
@@ -301,6 +303,7 @@ class Deformation():
                 return DeformInfo
 
         def IsProjectable(self, DeformInfo):
+                print "deform"
 
                 env = DeformInfo['env']
                 traj = DeformInfo['traj']
@@ -311,7 +314,7 @@ class Deformation():
                 Nwaypoints = DeformInfo['Nwaypoints']
                 critical_pt = DeformInfo['critical_pt']
 
-                FT = traj.get_tangent_forces_at_waypoints(Wori, dWori, env)
+                #FT = traj.get_tangent_forces_at_waypoints(Wori, dWori, env)
                 #topp = traj.getTOPPTrajectoryWithTangentForceField(env, Wori, dWori)
                 topp = traj.getTOPPTrajectoryWithoutForceField(env, Wori, dWori)
 
@@ -319,37 +322,105 @@ class Deformation():
                 ### execute blindly!?
                 xt = self.traj_deformed.topp.traj1
 
-                for eta in np.linspace(0.9,1.4,10):
+                #sys.exit(0)
+
+                def EvalPoly(P,t):
+                        Ndim = P.shape[0]
+                        Kcoeff = P.shape[1]
+                        x = np.zeros((Ndim))
+                        dx = np.zeros((Ndim))
+                        for k in range(0,Kcoeff):
+                                x += P[:,k]*np.power(t,k)
+                                dx += k*P[:,k]*(t**(max(k-1,0)))
+                        return [x,dx]
+
+                for eta in np.linspace(0.7,0.9,1):
                         Q0 = []
                         QD0 = []
                         Qori = []
                         Qdori = []
                         D = 0
-
                         t = 0.0
-                        dt = 0.05
+                        dt = 0.1
 
                         q = xt.Eval(0)
                         dq = xt.Evald(0)
+                        N = int(xt.duration/dt)
+                        ictr=0
+                        F = 0
                         while t < xt.duration:
-                                #dq = xt.Evald(t)
-                                #print np.linalg.norm(xt.Evald(t))
-                                #print np.linalg.norm(dq),np.linalg.norm(dq[0]),np.linalg.norm(dq[1])
-                                #print np.linalg.norm(dq[0])
                                 Qori.append(xt.Eval(t))
                                 Qdori.append(xt.Evald(t))
                                 Q0.append(q)
                                 QD0.append(dq)
-                                q0 = copy.copy(q)
+                                ictr+=1
 
+                                if ictr>2:
+                                        W0 = np.array(Q0).T
+                                        dW0 = np.array(QD0).T
+                                        traj0 = Trajectory(W0)
+                                        [smin,smax] = \
+                                        traj0.GetSpeedIntervalAtCriticalPoint(env, W0, dW0, ictr, dt)
+                                        if smax < 0.001:
+                                                dt2 = 0.5*dt*dt
+                                                M = 1000
+                                                plot([q0[0],q[0]],[q0[1],q[1]],'-ok',markersize=10)
+                                                plot([xt.Eval(t)[0],q0[0]],[xt.Eval(t)[1],q0[1]],'-ok',markersize=10)
+
+                                                dnearest = 100
+                                                k=0
+                                                QT = []
+                                                while k<M:
+                                                        u = params.GetRandomControl()
+                                                        G = params.GetControlMatrixAtWaypoint(q0)
+                                                        ddq = np.dot(G,u) + F
+                                                        qn = q0 + dt*dq0 + dt2*ddq
+                                                        QT.append(qn)
+                                                        dd = np.linalg.norm(qn-q)
+                                                        if dd < dnearest:
+                                                                dnearest=dd
+                                                        k+=1
+                                                P =np.array( [[-2.6479999424817375, -0.9996635848610663, 0.0, 0.0], [-0.0006290807563600611, 0.02590624508881563, 1.7122297269190248e-17, 0.0], [0.1, 0.0, 0.0, 0.0], [-3.141042628523347, 0.001258399030477833, -1.0701435793243905e-18, 0.0]] )
+                                                [x,dx] = EvalPoly(P,dt)
+
+                                                plot([q0[0],x[0]],[q0[1],x[1]],'-om',markersize=10)
+
+                                                QT = np.array(QT).T
+                                                plt.plot(QT[0,:],QT[1,:],'or')
+                                                plt.show()
+                                                sys.exit(0)
+
+
+
+                                                #DEBUG###################################################
+                                                M = 1e4
+                                                tvec = np.linspace(0,t,M)
+                                                qq = np.array([xt.Evald(t) for t in tvec]).T
+                                                #plt.plot(tvec,qq[0,:],"-r")
+                                                #plt.plot(tvec,qq[1,:],"-m")
+                                                plt.plot(qq[0,:],qq[1,:],"-m")
+                                                plt.show()
+                                                qq = np.array([xt.Evaldd(t) for t in tvec]).T
+                                                #plt.plot(tvec,qq[0,:],"-r")
+                                                #plt.plot(tvec,qq[1,:],"-m")
+                                                plt.plot(qq[0,:],qq[1,:],"-m")
+                                                plt.show()
+                                                sys.exit(0)
+                                                ###################################################
+
+                                q0 = copy.copy(q)
+                                dq0 = copy.copy(dq)
+
+                                F = traj.get_forces_at_waypoints(q0, env)
                                 ### get component of force orthogonal to path
-                                F = eta*self.GetForcesAtWaypoints(q)
+                                #F = self.GetForcesAtWaypoints(q0)
                                 #dqn = xt.Evald(t)/np.linalg.norm(xt.Evald(t))
                                 #FN = F - np.dot(F,dqn)*dqn
 
                                 ddq = xt.Evaldd(t)
                                 [qnew, ddq] = params.GetBestControlPathInvariant( q, dq, ddq, xt.Eval(t+dt), F, dt)
 
+                                #ds = np.dot(W[:,j+1]-q0,qd0n)
                                 dt2 = 0.5*dt*dt
                                 q = q + dt*dq + dt2*ddq
 
@@ -358,13 +429,13 @@ class Deformation():
                                 ### component of force
                                 dq = dq + dt*ddq
                                 #dq = dq + dt*ddq_adjust
+                                #print "DEFORM",q0,F,q
 
                                 if np.linalg.norm(q-qnew)>1e-10:
                                         print "q mismatch dist",np.linalg.norm(q-qnew)
                                         sys.exit(0)
                                 t += dt
                                 D+=np.linalg.norm(q-q0)
-                                print "t",t,"/",xt.duration,"speed",np.linalg.norm(dq)
 
                         print "overall dist",D
                         ### do not move waypoint derivatives
@@ -377,8 +448,6 @@ class Deformation():
                         #plt.plot(Wori[0,:],Wori[1,:],'og',markersize=12)
                         plt.plot(Q0[0,:],Q0[1,:],'-or',linewidth=3)
 
-                plt.show()
-                sys.exit(0)
                 #for i in range(0,QD0.shape[1]):
                         #tangent = 0.1*QD0[0:2,i]/np.linalg.norm(QD0[0:2,i])
                         #plt.plot([Q0[0,i],Q0[0,i]+tangent[0]],[Q0[1,i],Q0[1,i]+tangent[1]],'-m')
@@ -390,25 +459,17 @@ class Deformation():
                         #tangent = 0.05*dWori[0:2,i]/np.linalg.norm(dWori[0:2,i])
                         #plt.plot([Wori[0,i],Wori[0,i]+tangent[0]],[Wori[1,i],Wori[1,i]+tangent[1]],'-g',linewidth=3)
 
+
                 ### create new trajectory string for that
                 #sys.exit(0)
 
 
                 print "waypoints:",Q0.shape[1]
                 N = Q0.shape[1]
-                print Q0
-                #Q0 = Q0[:,0:N]
-                #QD0 = QD0[:,0:N]
-                #Qori = Qori[:,0:N]
                 t2 = Trajectory(Q0)
-
-                for i in range(3,30):
-                        [smin,smax] = t2.GetSpeedIntervalAtCriticalPoint(env, Q0, QD0, i, dt)
-                        #[smin,smax] = t2.GetSpeedIntervalAtCriticalPoint(env, Q0, QD0, i)
-                        print "i",i,"/",N,"speed interval",smin,smax
-
                 Nc = t2.getCriticalPoint(env)
                 print "CP",Nc
+                #plt.show()
 
                 #t2.PlotParametrization(env)
                 #topp = t2.getTOPPTrajectoryWithoutForceField(env, Q0, QD0)
@@ -416,7 +477,7 @@ class Deformation():
 
                 #t2.PlotParametrization2(env,Q0,QD0)
 
-                sys.exit(0)
+                #sys.exit(0)
 
         def IsDynamicallyFeasible(self, DeformInfo):
 

@@ -47,14 +47,14 @@ if __name__ == "__main__":
         #traj = Trajectory.from_file('deform1')
         #bloodstream_kinodynamic1.npy
         traj.info()
-        traj.draw(env)
+        #traj.draw(env)
         xml = env.GetName()
         traj.save('trajectories/'+xml)
         #traj.PlotParametrization(env)
         #traj.execute(env, robot, tsleep=0.005, stepping=False)
 
-        time.sleep(1)
-        traj.draw_delete()
+        #time.sleep(1)
+        #traj.draw_delete()
 
         td = DeformationReachableSet(traj, env)
         deform_success = td.deform(N_iter=100)

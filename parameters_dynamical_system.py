@@ -46,13 +46,17 @@ def GetControlMatrixAtWaypoint(p):
 ###
 ### output: [A,b] such that A*qdd + b <= 0 
 
+def GetRandomControl():
+        u = np.random.uniform(amin,amax)
+        return u
+
 def GetControlConstraintMatrices(p, F):
         #Ndim = p.shape[0]
         #R = ControlPerWaypoint(p, Ndim, 1)[:,:,0]
         #return GetControlConstraintMatricesFromControl(R,F)
         return GetControlConstraintMatricesAdjust(p, F, epsilon=0)
 
-def GetControlConstraintMatricesAdjust(p, F, epsilon=0.1):
+def GetControlConstraintMatricesAdjust(p, F, epsilon=0.0):
         Ndim = p.shape[0]
         R = ControlPerWaypoint(p, Ndim, 1)[:,:,0]
         return GetControlConstraintMatricesFromControlAdjust(R,F,epsilon=epsilon)
@@ -102,7 +106,7 @@ def GetControlConstraintMatricesFromControlAdjust(R, F, epsilon=0):
 def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
         #q = q + dt*dq + dt2*ddq + dt2*F
         Ndim = p.shape[0]
-        dt2 = dt*dt/2
+        dt2 = 0.5*dt*dt
 
         if dt < 1e-100:
                 ## cannot make progress in near zero time
@@ -110,7 +114,7 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
                 sys.exit(0)
                 return [q,ddq]
 
-        boundary_distance = 0.0
+        boundary_distance = 0.1
         [Acontrol,bcontrol] = GetControlConstraintMatricesAdjust(p,F,epsilon=boundary_distance)
         A = np.zeros((Acontrol.shape))
         b = np.zeros((bcontrol.shape))
@@ -122,7 +126,6 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
         A = (2*Acontrol)/(dt*dt)
         b = bcontrol + np.dot(A,(-p - dt*dq))
 
-
         Adim = amin.shape[0]
         Id = np.eye(Ndim)
         u = Variable(Adim)
@@ -132,7 +135,7 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
         prob = Problem(objective, constraints)
         dnew = np.abs(prob.solve(solver=ECOS, max_iters=500, feastol=1e-10,abstol=1e-10,reltol=1e-10))
         if dnew < inf:
-                print dnew
+                #print dnew
                 u_adjusted =np.array(u.value).flatten()
         else:
                 print "infeasible qp"
