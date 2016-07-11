@@ -113,7 +113,7 @@ class Trajectory():
                         Nwaypoints = W.shape[1]
                 return W
         def removeDuplicateWaypoints(self, W):
-                ACCURACY_DUPLICATE = self.DISCRETIZATION_TIME_STEP/1e3
+                ACCURACY_DUPLICATE = self.DISCRETIZATION_TIME_STEP/1e10
                 Nwaypoints = W.shape[1]
                 if Nwaypoints == 1:
                         print "cannot create trajectory with only one waypoint"

@@ -56,6 +56,7 @@ class TOPPInterface():
 
                 self.traj0 = Trajectory.PiecewisePolynomialTrajectory.FromString(self.trajstr)
                 self.length = np.sum(self.durationVector)
+
                 dendpoint = np.linalg.norm(self.traj0.Eval(self.length)-W[:,-1])
 
                 if dendpoint > self.TRAJECTORY_ACCURACY_REQUIRED:
@@ -72,13 +73,13 @@ class TOPPInterface():
                 durationQ = self.traj0.duration/(self.Nwaypoints-1)
 
                 #stepsize = 0.01
-                K = 20
+                #K = 2*(self.Nwaypoints-1)
                 #durationQ = 0.01
-                durationQ = self.traj0.duration/(K-1)
+                #durationQ = self.traj0.duration/K
                 self.durationQ = durationQ
                 #self.traj0.duration/(K-1)
 
-                [a,b,c] = self.GetABC(durationQ, K, F, R, amin, amax)
+                [a,b,c] = self.GetABC(durationQ, F, R, amin, amax)
                 vmax = 1000*np.ones(self.Ndim)
                 self.topp_inst = TOPP.QuadraticConstraints(self.traj0, durationQ, vmax, list(a), list(b), list(c))
 
@@ -397,8 +398,9 @@ class TOPPInterface():
                         sys.exit(0)
                         #return -1
 
-        def GetABC(self, durationQ, K, F, R, amin, amax):
+        def GetABC(self, durationQ, F, R, amin, amax):
                 ### compute a,b,c
+                K = self.Nwaypoints
                 Adim = amin.shape[0]
                 q = np.zeros((self.Ndim,K))
                 qs = np.zeros((self.Ndim,K))
@@ -414,20 +416,39 @@ class TOPPInterface():
                 c = np.zeros((K, 2*Adim))
 
                 path = self.trajectoryclass_
+
+                Nwaypoints = self.durationVector.shape[0]
+                #print "Nwpts:",Nwaypoints
+
                 for i in range(0,K):
                         duration = i*durationQ#np.sum(self.durationVector[0:i])
                         ### G*qdd + h <= 0
 
+                        #j=0
+                        #if duration <= 0:
+                        #        j=0
+                        #elif duration > np.sum(self.durationVector[0:-1]):
+                        #        j=Nwaypoints-1
+                        #else:
+                        #        while duration > np.sum(self.durationVector[0:j]):
+                        #                j+=1
+                        #        j=j-1
+
+                        Fj = F[:,i]
+                        Rj = R[:,:,i]
+                        #print "i",i,"/",Nwaypoints,"dur",duration,"/",self.length,q[:,i],Fj
+
+                        ###
                         #W = self.traj0.Eval(np.sum(self.durationVector[0:j]))
-                        W = q[:,i]
-                        F = path.get_forces_at_waypoints(W, self.env_ptr)
-                        R = params.GetControlMatrixAtWaypoint(W)
+                        #W = q[:,i]
+                        #F = path.get_forces_at_waypoints(W, self.env_ptr)
+                        #R = params.GetControlMatrixAtWaypoint(W)
 
                         #print "TOPP(dt",durationQ,")",q[:,i],F
                         if self.zeroForce_:
-                                F = 0.0*F
+                                Fj = 0.0*Fj
 
-                        [G,h] = params.GetControlConstraintMatricesFromControl(R, F)
+                        [G,h] = params.GetControlConstraintMatricesFromControl(Rj, Fj)
                         #[G,h] = params.GetControlConstraintMatricesFromControl(R[:,:,i], F[:,i]/2)
                         a[i,:] = np.dot(G,qs[:,i]).flatten()
                         b[i,:] = np.dot(G,qss[:,i]).flatten()
@@ -463,6 +484,7 @@ class TOPPInterface():
 
                 q0 = W[:,0]
                 qd0 = dW[:,0]
+                dt = 0.01
                 for j in range(0,Ninterval):
                         #q0 = W[:,j]
                         #qd0 = dW[:,j]
@@ -484,7 +506,19 @@ class TOPPInterface():
 
                         qd0n = qd0/np.linalg.norm(qd0)
                         ds = np.dot(W[:,j+1]-q0,qd0n)
-                        qdd0 = (W[:,j+1]-q0-ds*qd0n)/(ds*ds)
+                        dt = ds
+
+                        #qd0n = x*qd0n
+                        #x = ds/dt
+
+                        #print np.linalg.norm(dt*x*qd0n - ds*qd0n),x
+
+                        qdd0 = (W[:,j+1]-q0-dt*qd0n)/(dt*dt)
+
+                        #print q0,q0 + dt*qd0n + dt*dt*qdd0
+                        #qd0n = qd0/np.linalg.norm(qd0)
+                        #ds = np.dot(W[:,j+1]-q0,qd0n)
+                        #qdd0 = (W[:,j+1]-q0-ds*qd0n)/(ds*ds)
 
                         a = q0
                         b = qd0n
@@ -518,20 +552,22 @@ class TOPPInterface():
                         P[j,2,2]=0
                         P[j,2,3]=0
 
-                        durationVector[j] = ds
+                        durationVector[j] = dt
 
-                        [q0,qd0] = self.EvalPoly(P,j,ds)
+                        [q0,qd0] = self.EvalPoly(P,j,dt)
 
                         #q1 = a + ds*qd0 + ds*ds*qdd0
                         if np.linalg.norm(q0-W[:,j+1])>1e-10:
                                 print "mistmatch at",j,j+1,"dist",np.linalg.norm(q0-W[:,j+1])
                                 print "expected",W[:,j+1],"got",q0
                                 sys.exit(0)
+                        #sys.exit(0)
                         #if np.linalg.norm(qdnext-qd1)>1e-10:
                         #        print "mistmatch at",j,j+1,"dist",np.linalg.norm(q0-W[:,j+1])
                         #        sys.exit(0)
                         #qd0 = dqnext
 
+                #print durationVector
                 #print "-----"
                 #sys.exit(0)
                 self.poly = P

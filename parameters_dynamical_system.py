@@ -14,13 +14,13 @@ FILENAME = 'ddrive'
 DYNAMICAL_SYTEM_NAME = 'non-holonomic differential drive (deform)'
 system_name = DYNAMICAL_SYTEM_NAME
 
-AM = 1
+AM = 1.2
 DEBUG = False
 ### car/sailboat
 #amin = np.array((-AM,-AM,-AM,0))
 #amax = np.array((AM,AM,AM,0))
-amin = np.array((-AM,-AM,-0.5*AM))
-amax = np.array((AM,AM,0.5*AM))
+amin = np.array((-AM,-AM,-AM))
+amax = np.array((AM,AM,AM))
 
 def ControlPerWaypoint(W, Ndim, Nwaypoints):
         assert(Ndim==4)
@@ -114,7 +114,7 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
                 sys.exit(0)
                 return [q,ddq]
 
-        boundary_distance = 0.1
+        boundary_distance = 0.2
         [Acontrol,bcontrol] = GetControlConstraintMatricesAdjust(p,F,epsilon=boundary_distance)
         A = np.zeros((Acontrol.shape))
         b = np.zeros((bcontrol.shape))
