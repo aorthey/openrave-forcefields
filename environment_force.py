@@ -19,7 +19,7 @@ class ForceEnvironment():
         CollisionCheckerName = 'ode'
         FORCE_FIELD_MIN_SPACING = 0.3
         FORCE_FIELD_MAX_SPACING = 0.8
-        FORCE_FIELD_MAX_FORCE = 2.0
+        FORCE_FIELD_MAX_FORCE = 3.0
         FORCE_FIELD_PT_SIZE = 4
         FORCE_FIELD_ARROW_SIZE = 0.02
         #FORCE_FIELD_COLOR = np.array((0.0,0.0,0.0))

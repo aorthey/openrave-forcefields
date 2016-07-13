@@ -36,7 +36,6 @@ if __name__ == "__main__":
         robot = env.GetRobot()
         env.MakeRobotInvisible()
         env.DisplayForces()
-        time.sleep(0.5)
 
         planner = MotionPlannerGeometrical(robot, env)
         ##planner = MotionPlannerKinodynamic(robot, env)
@@ -45,22 +44,29 @@ if __name__ == "__main__":
         traj = Trajectory.from_ravetraj(rave_path)
         #traj = Trajectory.from_file('trajectories/bloodstream_kinodynamic1')
         #traj = Trajectory.from_file('deform1')
-        #bloodstream_kinodynamic1.npy
+
         traj.info()
-        #traj.draw(env)
+        traj.draw(env)
         xml = env.GetName()
+        time.sleep(5.0)
+        traj.draw_delete()
+
         traj.save('trajectories/'+xml)
+
         #traj.PlotParametrization(env)
         #traj.execute(env, robot, tsleep=0.005, stepping=False)
-
         #time.sleep(1)
-        #traj.draw_delete()
 
         td = DeformationReachableSet(traj, env)
         deform_success = td.deform(N_iter=100)
 
         #td.traj_deformed.save('trajectories/'+xml+'_deformed')
         if deform_success:
-                td.traj_deformed.PlotParametrization(env)
-                td.traj_deformed.execute(env, robot, tsleep=0.005,
-                                stepping=False)
+                #td.traj_deformed.PlotParametrization(env)
+                print td.traj_deformed.waypoints.shape
+                td.draw_delete()
+                td.traj_deformed.draw(env,critical_pt=td.traj_deformed.waypoints.shape[1])
+                #td.traj_deformed.execute(env, robot, tsleep=0.005, stepping=False)
+
+
+

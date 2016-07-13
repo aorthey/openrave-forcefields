@@ -36,7 +36,6 @@ class Deformation():
 
         def __init__(self, trajectory, environment):
                 self.env = environment
-
                 ## traj_ori : original trajectory before any calls
                 ## traj_current : the current deformation
                 ## traj_deformed : the working copy of current for the next iteration
@@ -230,6 +229,8 @@ class Deformation():
 
                 self.traj_display = copy.copy(self.traj_current)
 
+        def draw_delete(self):
+                self.handle = []
 
         def draw_trajectory_original(self):
                 self.traj_ori.draw(self.env)

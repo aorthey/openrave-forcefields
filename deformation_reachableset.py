@@ -26,8 +26,11 @@ class DeformationReachableSet(Deformation):
         #lambda_3 = 0.1*1e-2
         #lambda_4 = 0.01
 
-        lambda_1 = 0.005
-        lambda_2 = 1
+        ### counter-wrench
+        lambda_1 = 0.0005
+
+        ### stretching
+        lambda_2 = 0.01
 
         smoothing_factor = 20.0
 
@@ -45,21 +48,25 @@ class DeformationReachableSet(Deformation):
                 dU = np.zeros((Ndim,Nwaypoints))
 
                 ###############################################################
-                ## check if path is projectable => return on success
+                ## check if path dynamically feasible => return on success
                 ###############################################################
-                sp = ProjectorSimple()
-                if sp.IsProjectable(DeformInfo):
-                        #Wnext = self.GetProjectableWaypoints(Wori)
-                        #self.traj_deformed.new_from_waypoints(Wnext)
-                        print "Path is Simple Projectable"
-                        sys.exit(0)
+
+                if self.IsDynamicallyFeasible(DeformInfo):
+                        print "Path is Dynamically Feasible"
                         return DEFORM_SUCCESS
 
                 ###############################################################
-                ## check if path dynamically feasible => return on success
+                ## check if path is projectable => return on success
                 ###############################################################
-                if self.IsDynamicallyFeasible(DeformInfo):
-                        return DEFORM_SUCCESS
+
+                sp = ProjectorSimple()
+
+                if sp.IsProjectable(DeformInfo):
+                        Wnext = sp.GetProjectableWaypoints()
+                        if not self.traj_deformed.IsInCollision(self.env, Wnext):
+                                self.traj_deformed.new_from_waypoints(Wnext)
+                                print "Path is Simple Projectable"
+                                return DEFORM_SUCCESS
 
                 ###############################################################
                 ## deform path 

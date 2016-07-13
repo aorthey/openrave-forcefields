@@ -22,7 +22,7 @@ class Trajectory():
         __metaclass__ = abc.ABCMeta
         DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.1
+        DISCRETIZATION_TIME_STEP = 0.01
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
         POLYNOMIAL_DEGREE = 1
         MIN_NUMBER_WAYPOINTS = 5
@@ -37,7 +37,7 @@ class Trajectory():
         ptsize = 0.03
         critical_pt_size = 0.08
 
-        show_tangent_vector = True
+        show_tangent_vector = False
         show_orientation_vector = True
 
         lw_path = 10

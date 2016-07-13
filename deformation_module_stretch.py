@@ -53,7 +53,7 @@ class DeformationModuleStretch(DeformationModule):
                         idxW1_end = idxW1[-1]
 
                         for idx in idxW1:
-                                Wdir[:,idx] = -tangent-0.05*normal
+                                Wdir[:,idx] = -tangent-0.2*normal
 
                         dUtmp1 = np.zeros((Ndim,Nwaypoints))
                         for i in range(0,Nwaypoints):
@@ -71,22 +71,23 @@ class DeformationModuleStretch(DeformationModule):
                         ########################### idx2
                         Wdir = np.zeros((Ndim,Nwaypoints))
                         for idx in idxW2:
-                                Wdir[:,idx] = -tangent + 0.5*normal
+                                Wdir[:,idx] = tangent + normal
 
                         dUtmp2 = np.zeros((Ndim,Nwaypoints))
                         for i in range(0,Nwaypoints):
                                 A = self.SmoothVectorStretch(traj,critical_pt,i,Wori,smoothing_factor=sf)
                                 dUtmp2[:,i] += np.dot(A,( lambda_coeff * Wdir.T))
-                        dUtmp += dUtmp2
-                        #Wnext = Wori + dUtmp2
-                        #if traj.IsInCollision(env, Wnext):
-                        #        print "idx2 collision"
-                        #else:
-                        #        dUtmp += dUtmp2
+                        #dUtmp += dUtmp2
+
+                        Wnext = Wori + dUtmp2
+                        if traj.IsInCollision(env, Wnext):
+                                print "idx2 collision"
+                        else:
+                                dUtmp += dUtmp2
                         ########################### idx3
                         Wdir = np.zeros((Ndim,Nwaypoints))
                         for idx in idxW3:
-                                Wdir[:,idx] = tangent - normal
+                                Wdir[:,idx] = 0.8*tangent - 0.1*normal
                         dUtmp3 = np.zeros((Ndim,Nwaypoints))
 
                         for i in range(0,Nwaypoints):

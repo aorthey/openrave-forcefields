@@ -10,17 +10,17 @@ from cvxpy import *
 from cvxopt import matrix, solvers
 from util import PrintNumpy,inf
 
-FILENAME = 'ddrive'
+FILENAME = 'ddrive2'
 DYNAMICAL_SYTEM_NAME = 'non-holonomic differential drive (deform)'
 system_name = DYNAMICAL_SYTEM_NAME
 
-AM = 1.2
+AM = 1.0
 DEBUG = False
 ### car/sailboat
 #amin = np.array((-AM,-AM,-AM,0))
 #amax = np.array((AM,AM,AM,0))
-amin = np.array((-AM,-AM,-AM))
-amax = np.array((AM,AM,AM))
+amin = np.array((-AM,-AM,-0.3*AM))
+amax = np.array((AM,AM,0.3*AM))
 
 def ControlPerWaypoint(W, Ndim, Nwaypoints):
         assert(Ndim==4)
@@ -103,7 +103,7 @@ def GetControlConstraintMatricesFromControlAdjust(R, F, epsilon=0):
         return [A,b]
 
 #def GetBestControls( p, dp, pnext, ddq, FN, dt, speed):
-def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
+def GetBestControlPathInvariant( p, dq, ddq, pnext, dpnext, F, dt):
         #q = q + dt*dq + dt2*ddq + dt2*F
         Ndim = p.shape[0]
         dt2 = 0.5*dt*dt
@@ -114,23 +114,20 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
                 sys.exit(0)
                 return [q,ddq]
 
-        boundary_distance = 0.2
+        boundary_distance = 0.0
         [Acontrol,bcontrol] = GetControlConstraintMatricesAdjust(p,F,epsilon=boundary_distance)
-        A = np.zeros((Acontrol.shape))
-        b = np.zeros((bcontrol.shape))
+        boundary_distance = 0.01
 
         #### adjust ddq to new conditions
-
         # minimize || M*ddq - R*u - F ||
         Rp = GetControlMatrixAtWaypoint(p)
-        A = (2*Acontrol)/(dt*dt)
-        b = bcontrol + np.dot(A,(-p - dt*dq))
-
         Adim = amin.shape[0]
         Id = np.eye(Ndim)
         u = Variable(Adim)
+
+        #### choose the closest control to follow ddq
         objective = Minimize( norm(np.dot(Id,ddq) - (Rp*u + F)) )
-        constraints = [ amin <= u, u <= amax]
+        constraints = [ amin+boundary_distance <= u, u <= amax-boundary_distance]
 
         prob = Problem(objective, constraints)
         dnew = np.abs(prob.solve(solver=ECOS, max_iters=500, feastol=1e-10,abstol=1e-10,reltol=1e-10))
@@ -141,19 +138,36 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
                 print "infeasible qp"
                 sys.exit(0)
 
-        ddq = np.dot(np.linalg.pinv(Id),(np.dot(Rp,u_adjusted)+F))
-
-        #qnext = p + dt*dq + dt2*ddq
-        #return [qnext, ddq]
+        ### compute new adjusted acceleration
+        ddq_adj = np.dot(np.linalg.pinv(Id),(np.dot(Rp,u_adjusted)+F))
+        #qnext = p + dt*dq + dt2*ddq_adj
+        #print "control error",np.linalg.norm(ddq_adj-ddq)
+        ## check that control is indeed feasible
+        #print np.dot(Acontrol,ddq_adj)+bcontrol
+        #sys.exit(0)
+        #return [qnext, ddq_adj]
 
         #### constraint on tangent acceleration
-        Aq = np.vstack((ddq,-ddq))
-        bq = np.hstack((-np.dot(ddq,ddq),np.dot(ddq,ddq)))
+        Aq = np.vstack((ddq_adj,-ddq_adj))
+        bq = np.hstack((-np.dot(ddq_adj,ddq_adj),np.dot(ddq_adj,ddq_adj)))
 
-        #A = np.vstack((A,Aq))
-        #b = np.hstack((b,bq))
+        Acontrol = np.vstack((Acontrol,Aq))
+        bcontrol = np.hstack((bcontrol,bq))
+
+        #A = np.zeros((Acontrol.shape))
+        #b = np.zeros((bcontrol.shape))
+        A = (2*Acontrol)/(dt*dt)
+        b = bcontrol + np.dot(A,(-p - dt*dq))
 
         x = Variable(Ndim)
+
+        dpn = dpnext/np.linalg.norm(dpnext)
+        dqerror = dq - np.dot(dq,dpn)*dpn
+        #u = Variable(Adim)
+        #objective = Minimize( norm(np.dot(Id,ddq) - (Rp*u + F)) )
+        #constraints = [ amin <= u, u <= amax]
+
+
         objective = Minimize( norm(x - pnext) )
         constraints = [ A*x <= -b ]
                         #quad_form(x-p,Id) <= ds_next*ds_next]
@@ -164,12 +178,43 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, F, dt):
                 ### default ECOS: max_iters=100, feastol=1e-7, abstol=1e-7, reltol = 1e-6
                 dnew = np.abs(prob.solve(solver=ECOS, max_iters=500,
                         feastol=1e-10,abstol=1e-10,reltol=1e-10))
+
                 #dnew = np.abs(prob.solve(solver=SCS, max_iters=5000, eps=1e-200))
                 #dnew = np.abs(prob.solve(solver=CVXOPT))
                 #dnew = np.abs(prob.solve(solver=ECOS_BB, mi_rel_eps=1e-100))
+
                 if dnew < inf:
                         qcontrol =np.array(x.value).flatten()
                         qdd = 2*(qcontrol-p-dt*dq)/(dt*dt)
+
+                        #qdd_ext = qdd - ddq_adj
+                        ##qdd = ddq_adj + 0.06*qdd_ext
+
+                        #ds = np.linalg.norm(p-pnext)
+                        #vdes = 1
+                        ##C = 0.1
+                        #qdd = Variable(Ndim)
+                        #u = Variable(Adim)
+
+                        #vdes = np.linalg.norm(dq)
+                        ##objective = Minimize( norm(dq + dt*qdd - vdes*(pnext-p)) )
+                        #objective = Minimize( norm(dq + dt*dq + dt2*qdd - (pnext-p) ) )
+                        #constraints = [ amin <= u, 
+                        #                u <= amax,
+                        #                qdd==Rp*u + F, 
+                        #                Aq*qdd <= -bq
+                        #                ]
+
+
+                        #prob = Problem(objective, constraints)
+                        #dnew = np.abs(prob.solve(solver=ECOS, max_iters=500,
+                        #        feastol=1e-10,abstol=1e-10,reltol=1e-10))
+                        #qdd =np.array(qdd.value).flatten()
+
+                        #print dnew
+                        #print np.array(u.value)
+                        #print qdd.shape
+
                         qdd[2] = 0
                         qdnext = dq + dt*qdd
                         qnext = p + dt*dq + dt2*qdd
