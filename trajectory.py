@@ -307,15 +307,15 @@ class Trajectory():
 
                         ### nice vis
                         p = np.array((0,1e-4,0,0))
-                        force = np.array((0.5,-2.5,0,1.0))
+                        force = np.array((0.5,-3.5,0,1.0))
                         dp = np.array((1,0.1,0,0.2))
                         speed = 0.2
 
-                        ## error
-                        p =np.array( [-6.012902723369949, -0.005123021667037449, 0.1, -3.1373188699666956] )
-                        force =np.array( [0.0, 0.0, 0.0, 0.0] )
-                        dp =np.array( [-344.35813853264824, -0.46681954515138263, 0.0, 0.389387904541571] )
-                        speed= 1.19162642333
+                        ##### error
+                        ###p =np.array( [-6.012902723369949, -0.005123021667037449, 0.1, -3.1373188699666956] )
+                        ###force =np.array( [0.0, 0.0, 0.0, 0.0] )
+                        ###dp =np.array( [-344.35813853264824, -0.46681954515138263, 0.0, 0.389387904541571] )
+                        ###speed= 1.19162642333
 
                         [R,amin,amax] = self.getControlMatrix(p)
 
@@ -324,10 +324,23 @@ class Trajectory():
                         #self.reach.Plot()
 
                         from reachable_set3d import ReachableSet3D
-                        self.reach = ReachableSet3D( self.DISCRETIZATION_TIME_STEP, p, speed, dp, force, R[:,:,0], amin, amax)
-                        self.reach.Plot()
-                        self.reach.PlotShow()
-                        self.reach.PlotSave("images/reachable_set_projection2.png")
+                        self.reach = ReachableSet3D()
+                        dnp = dp/np.linalg.norm(dp)
+                        dpnormal = -0.001*(force - np.dot(force,dnp)*dnp)
+
+                        #self.reach.PlotSingleSet(self.DISCRETIZATION_TIME_STEP, 
+                        #                p, dp, speed, force, 
+                        #                R[:,:,0], amin, amax)
+                        #self.reach.PlotTotalSet(self.DISCRETIZATION_TIME_STEP, 
+                        #                p, dp, speed, force, 
+                        #                R[:,:,0], amin, amax)
+
+                        #self.reach.PlotMoveAgainstWrenchField(self.DISCRETIZATION_TIME_STEP, 
+                        #                p, dpnormal, dp, speed, force, 
+                        #                R[:,:,0], amin, amax)
+                        #self.reach.PlotStretch(self.DISCRETIZATION_TIME_STEP, 
+                        #                p, dp, speed, force, 
+                        #                R[:,:,0], amin, amax)
 
 
         def get_dimension(self):

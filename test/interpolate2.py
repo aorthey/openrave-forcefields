@@ -32,7 +32,7 @@ def RepairTrajectory(W,max_dist):
 
 Win = np.loadtxt('../W')
 
-W = RepairTrajectory(Win, 1e-3)
+W = RepairTrajectory(Win, 1e-4)
 
 kp = 3
 tvec = np.linspace(0,1,W.shape[1])

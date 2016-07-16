@@ -229,6 +229,11 @@ class TOPPInterface():
                                 Rinv = np.linalg.pinv(Ri)
                                 I = np.identity(self.Ndim)
                                 a[:,i] = np.dot(Rinv,np.dot(I,qdd)-Fi)
+                                for k in range(0,Adim):
+                                        if a[k,i] > amax[k]:
+                                                a[k,i] = amax[k]
+                                        if a[k,i] < amin[k]:
+                                                a[k,i] = amin[k]
                                 #if (a[:,i]>amax).any():
                                 #        print "i",i,"/",Npts
                                 #        print "a[:,",i,",]=",a[:,i],">",amax
@@ -248,10 +253,11 @@ class TOPPInterface():
                 fig=figure(facecolor='white')
 
                 ax1 = subplot(4,1,1)
-                plot(twvect, self.W_[0,:], '--', color = color_x_coordinate, linewidth = lw)
-                plot(twvect, self.W_[1,:], '--', color = color_y_coordinate, linewidth = lw)
-                #plot(twvect, self.W_[2,:], '--', color = color_z_coordinate, linewidth = lw)
-                plot(twvect, self.W_[3,:], '--', color = color_t_coordinate, linewidth = lw)
+
+                #plot(twvect, self.W_[0,:], '--', color = color_x_coordinate, linewidth = lw)
+                #plot(twvect, self.W_[1,:], '--', color = color_y_coordinate, linewidth = lw)
+                #plot(twvect, self.W_[3,:], '--', color = color_t_coordinate, linewidth = lw)
+
                 plot(tvect, qvect[:,0], color = color_x_coordinate, linewidth = lw, label = "$x$")
                 plot(tvect, qvect[:,1], color = color_y_coordinate, linewidth = lw, label = "$y$")
                 #plot(tvect, qvect[:,2], color = color_z_coordinate, linewidth = lw, label = "$z$")
@@ -265,7 +271,7 @@ class TOPPInterface():
 
                 ax2 = subplot(4,1,2)
                 ylabel('Velocity\n$\\left(\\frac{m}{s}\\right)$, $\\left(\\frac{rad}{s}\\right)$', fontsize=self.fs_labels)
-                plot(twvect, 0*self.dW_[0,:], '-', color=black)
+                #plot(twvect, 0*self.dW_[0,:], '-', color=black)
                 #plot(twvect, self.dW_[0,:], '--', color = color_x_coordinate, linewidth = lw)
                 #plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
                 #plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
@@ -279,10 +285,11 @@ class TOPPInterface():
 
                 ax3 = subplot(4,1,3)
                 ylabel('Acceleration\n$\\left(\\frac{m}{s^2}\\right)$,$\\left(\\frac{rad}{s^2}\\right)$', fontsize=self.fs_labels)
-                plot(twvect, 0*self.dW_[0,:], '-', color=black)
-                plot(tvect_ori, qori_ddvect[:,0], '--', color = color_x_coordinate, linewidth = lw)
-                plot(tvect_ori, qori_ddvect[:,1], '--', color = color_y_coordinate, linewidth = lw)
-                plot(tvect_ori, qori_ddvect[:,3], '--', color = color_t_coordinate, linewidth = lw)
+                #plot(twvect, 0*self.dW_[0,:], '-', color=black)
+                #plot(tvect_ori, qori_ddvect[:,0], '--', color = color_x_coordinate, linewidth = lw)
+                #plot(tvect_ori, qori_ddvect[:,1], '--', color = color_y_coordinate, linewidth = lw)
+                #plot(tvect_ori, qori_ddvect[:,3], '--', color = color_t_coordinate, linewidth = lw)
+
                 #plot(twvect, self.dW_[1,:], '--', color = color_y_coordinate, linewidth = lw)
                 #plot(twvect, self.dW_[3,:], '--', color = color_t_coordinate, linewidth = lw)
 
@@ -298,7 +305,7 @@ class TOPPInterface():
                 if env is not None:
                         ax4 = subplot(4,1,4)
                         ylabel('Control\n$\\left(\\frac{m}{s^2}\\right)$,$\\left(\\frac{rad}{s^2}\\right)$', fontsize=self.fs_labels)
-                        plot(twvect, 0*self.dW_[0,:], '-', color=black)
+                        #plot(twvect, 0*self.dW_[0,:], '-', color=black)
                         plot(tvect, a[0,:], color = color_a1_coordinate, linewidth = lw, label = "${a_1}(Thruster)$")
                         plot(tvect, a[1,:], color = color_a2_coordinate, linewidth = lw, label = "${a_2}(Lie Bracket)$")
                         plot(tvect, a[2,:], color = color_a3_coordinate, linewidth = lw, label = "${a_3}(Steer)$")

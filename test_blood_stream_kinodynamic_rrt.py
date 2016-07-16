@@ -10,6 +10,7 @@ from environment_force_the_stream import *
 from environment_force_the_counterstream import *
 from environment_force_the_ray import *
 from environment_force_blood_stream import *
+from environment_force_blood_stream2 import *
 from environment_periodic_force_the_hideout import *
 from environment_periodic_force_triple_stream import *
 from environment_periodic_force_crossroad_stream import *
@@ -27,7 +28,7 @@ from motion_planner_kinodynamic import MotionPlannerKinodynamic
 if __name__ == "__main__":
 
         #######################################################################
-        env = EnvironmentBloodStream()
+        env = EnvironmentBloodStream2()
         #env = EnvironmentTheCounterStream()
         #env = EnvironmentTheStream()
         #######################################################################
@@ -38,7 +39,7 @@ if __name__ == "__main__":
         time.sleep(0.5)
 
         #planner = MotionPlannerGeometrical(robot, env)
-        fh = open('trajectories/time_stream_krrt_3.txt','w')
+        fh = open('trajectories/time_stream_krrt_4.txt','w')
 
         for i in range(0,10):
                 t1 = time.time()
@@ -48,7 +49,7 @@ if __name__ == "__main__":
                         rave_path = planner.GetPath()
                         if rave_path is not None:
                                 traj = Trajectory.from_ravetraj(rave_path)
-                                traj.save('trajectories/bloodstream_kinodynamic_3'+str(i))
+                                traj.save('trajectories/bloodstream_kinodynamic_4'+str(i))
                 except Exception as e:
                         pass
                 t2 = time.time()

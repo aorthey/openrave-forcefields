@@ -59,14 +59,14 @@ class DeformationReachableSet(Deformation):
                 ## check if path is projectable => return on success
                 ###############################################################
 
-                sp = ProjectorSimple()
+                #sp = ProjectorSimple()
 
-                if sp.IsProjectable(DeformInfo):
-                        Wnext = sp.GetProjectableWaypoints()
-                        if not self.traj_deformed.IsInCollision(self.env, Wnext):
-                                self.traj_deformed.new_from_waypoints(Wnext)
-                                print "Path is Simple Projectable"
-                                return DEFORM_SUCCESS
+                #if sp.IsProjectable(DeformInfo):
+                #        Wnext = sp.GetProjectableWaypoints()
+                #        if not self.traj_deformed.IsInCollision(self.env, Wnext):
+                #                self.traj_deformed.new_from_waypoints(Wnext)
+                #                print "Path is Simple Projectable"
+                #                return DEFORM_SUCCESS
 
                 ###############################################################
                 ## deform path 
