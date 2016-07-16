@@ -10,7 +10,7 @@ from cvxpy import *
 from cvxopt import matrix, solvers
 from util import PrintNumpy,inf
 
-FILENAME = 'ddrive3'
+FILENAME = 'ddrive4'
 DYNAMICAL_SYTEM_NAME = 'non-holonomic differential drive (deform)'
 system_name = DYNAMICAL_SYTEM_NAME
 

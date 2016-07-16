@@ -555,6 +555,7 @@ class ForceEnvironment():
                         #self.AddForceHandles(h)
                         h = self.DrawForceArrowsInCell(self.cells[i], self.forces[i])
                         self.AddForceHandles(h)
+
         def GetName(self):
                 import os
                 from os.path import basename

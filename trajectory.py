@@ -359,7 +359,7 @@ class Trajectory():
                 torque = np.cross(rcom,F[0:2])
 
                 ### TORQUE application
-                #F[3] = np.sign(torque[2])*np.linalg.norm(torque)
+                F[3] = np.sign(torque[2])*np.linalg.norm(torque)
                 return F
         
         def IsInCollision(self, env, W):
