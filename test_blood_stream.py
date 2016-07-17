@@ -50,7 +50,6 @@ if __name__ == "__main__":
         xml = env.GetName()
         time.sleep(5.0)
         traj.draw_delete()
-
         traj.save('trajectories/'+xml)
 
         #traj.PlotParametrization(env)

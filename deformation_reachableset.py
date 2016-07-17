@@ -9,9 +9,7 @@ class DeformationReachableSet(Deformation):
 
         ###############################################################
         ### LAMBDA1: move against force
-        ### LAMBDA2: project onto reachable set
-        ### LAMBDA3: orientation
-        ### LAMBDA4: stretching
+        ### LAMBDA2: stretching
         ###############################################################
 
         #lambda_1 = 0.001
@@ -27,8 +25,9 @@ class DeformationReachableSet(Deformation):
         #lambda_4 = 0.01
 
         ### experimental values for wafr: 0.0005, 0.01
+
         ### counter-wrench
-        lambda_1 = 0.001
+        lambda_1 = 0.0005
 
         ### stretching
         lambda_2 = 0.01
@@ -60,14 +59,13 @@ class DeformationReachableSet(Deformation):
                 ## check if path is projectable => return on success
                 ###############################################################
 
-                #sp = ProjectorSimple()
-
-                #if sp.IsProjectable(DeformInfo):
-                #        Wnext = sp.GetProjectableWaypoints()
-                #        if not self.traj_deformed.IsInCollision(self.env, Wnext):
-                #                self.traj_deformed.new_from_waypoints(Wnext)
-                #                print "Path is Simple Projectable"
-                #                return DEFORM_SUCCESS
+                sp = ProjectorSimple()
+                if sp.IsProjectable(DeformInfo):
+                        Wnext = sp.GetProjectableWaypoints()
+                        if not self.traj_deformed.IsInCollision(self.env, Wnext):
+                                self.traj_deformed.new_from_waypoints(Wnext)
+                                print "Path is Simple Projectable"
+                                return DEFORM_SUCCESS
 
                 ###############################################################
                 ## deform path 

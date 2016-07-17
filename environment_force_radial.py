@@ -18,7 +18,6 @@ class EnvironmentRadial(ForceEnvironment):
                 self.forces = np.array((2.5,2.5,0.0))
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
                 self.forces = np.vstack([self.forces,(0.0,0.0,0.0)])
-
                 return self.forces
 
         def RobotGetInitialPosition(self):
@@ -98,7 +97,7 @@ class EnvironmentRadial(ForceEnvironment):
                                                 F = self.GetForceAtXInVectorField(X, 0)
 
                                                 X[0] = x#+mean_x
-                                                X[1] = y+0.05#+mean_y
+                                                X[1] = y-0.06#+mean_y
                                                 X[2] = z/2#+mean_z
 
                                                 #nF = 2*np.linalg.norm(F)

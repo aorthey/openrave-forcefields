@@ -22,7 +22,7 @@ class Trajectory():
         __metaclass__ = abc.ABCMeta
         DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.01
+        DISCRETIZATION_TIME_STEP = 0.005
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
         POLYNOMIAL_DEGREE = 1
         MIN_NUMBER_WAYPOINTS = 5
@@ -718,7 +718,8 @@ class Trajectory():
 
                 return tmp_handle
 
-        def draw(self, env, keep_handle=True, critical_pt = None):
+        def draw(self, env, keep_handle=True, critical_pt = None, DrawRobot=False):
+
                 [W,dW,ddW] = self.get_waypoints_second_order()
                 t1 = time.time()
                 if critical_pt == None:
@@ -733,6 +734,7 @@ class Trajectory():
                 tmp_handle.append(self.get_handle_draw_waypoints(env, W[:,0:N], dW[:,0:N], ddW[:,0:N]))
                 self.trajectory_color = self.trajectory_color_infeasible
                 tmp_handle.append(self.get_handle_draw_waypoints(env, W[:,N:], dW[:,N:], ddW[:,N:]))
+
                 t3 = time.time()
                 if self.DEBUG:
                         print "draw loop: ",t3-t1," topp:",t2-t1," draw:",t3-t2
@@ -744,6 +746,26 @@ class Trajectory():
 
         def draw_delete(self):
                 self.handle = []
+
+        def visualize_robot_along_path(self, env, robot, N=10):
+                xt = self.topp.traj0
+                with env.env:
+                        robot.GetLinks()[0].SetStatic(True)
+                        env.env.StopSimulation() 
+
+                env.MakeRobotVisible()
+
+                robotarmy = []
+                with env.env:
+                        for t in np.linspace(0,xt.duration,N):
+                                print "t",t,"/",xt.duration
+                                robot_t = RaveCreateRobot(env.env,robot.GetXMLId())
+                                robot_t.Clone(robot,0)
+                                env.env.AddRobot(robot_t,True)
+                                #env.ChangeTransparencyRobot(robot_t, 1.0)
+                                robot_t.SetDOFValues(xt.Eval(t))
+                                robotarmy.append(robot_t)
+                        #robot_t.SetDOFValues(xt.Eval(t))
 
         def execute(self, env, robot, tsleep=0.01, stepping=False):
                 tstep = 0.01

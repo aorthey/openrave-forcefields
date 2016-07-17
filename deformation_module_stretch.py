@@ -8,7 +8,7 @@ from util import *
 
 class DeformationModuleStretch(DeformationModule):
 
-        DEBUG = False
+        DEBUG = True
         handler = []
         def get_gradient(self, lambda_coeff):
 
@@ -33,7 +33,6 @@ class DeformationModuleStretch(DeformationModule):
                 ictr = 0
                 epsilon = 1e-2
                 dc = 0.0
-
 
                 dUtmp = np.zeros((Ndim,Nwaypoints))
                 #[cp_semin, cp_semax] = traj.GetSpeedIntervalAtCriticalPoint(env, Wori, dWori, critical_pt)
@@ -236,8 +235,6 @@ class DeformationModuleStretch(DeformationModule):
                 Mclip = 0.4
 
                 ### for debug drawing only
-                offset_old_line = 0.03
-                offset_new_line = -0.03
                 ### clip the first Mclip percent
                 N = first_pt - last_pt
                 Nclip = int(Mclip*N)
@@ -307,8 +304,13 @@ class DeformationModuleStretch(DeformationModule):
                 dUtmp = Wupdate
 
                 if self.DEBUG:
+                        offset_old_line = 0.00
+                        offset_new_line = -0.01
+                        fs = 32
+                        fs_label = 50
 
-                        first_pt = first_pt - int(Nclip*0.4)
+                        first_pt = first_pt - int(Nclip*0.7)
+                        last_pt = last_pt + int(Nclip*0.7)
                         Wnext = W + dUtmp
                         #Wnext = self.InsertMissingWaypoints(Wnext, traj.DISCRETIZATION_TIME_STEP)
 
@@ -322,9 +324,6 @@ class DeformationModuleStretch(DeformationModule):
                                 d = np.linalg.norm(W[0,first_pt]-Wnext2[0,first_pt2])
                                 first_pt2+=1
 
-                        #last_pt = last_pt + int(Nclip*0.5)
-                        print first_pt,first_pt2
-                        fs = 22
                         ## original line
                         fig=figure(facecolor='white')
                         plt.plot(W[0,last_pt:first_pt],W[1,last_pt:first_pt]+offset_old_line,'-og',linewidth=9,markersize=5)
@@ -335,9 +334,9 @@ class DeformationModuleStretch(DeformationModule):
                         plt.plot(Wnext[0,last_pt:first_pt],Wnext[1,last_pt:first_pt]+offset_new_line,'ok',markersize=5)
                         plt.plot(Wmid[0],Wmid[1]+offset_new_line,'ok',markersize=12)
 
-                        plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+2*offset_new_line,'-og',linewidth=4,markersize=5)
-                        plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+2*offset_new_line,'ok',markersize=7)
-                        plt.plot(Wmid[0],Wmid[1]+2*offset_new_line,'ok',markersize=12)
+                        #plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+2*offset_new_line,'-og',linewidth=4,markersize=5)
+                        #plt.plot(Wnext2[0,last_pt:first_pt2],Wnext2[1,last_pt:first_pt2]+2*offset_new_line,'ok',markersize=7)
+                        #plt.plot(Wmid[0],Wmid[1]+2*offset_new_line,'ok',markersize=12)
 
                         for i in range(last_pt,first_pt):
                                 W0 = Wnext[0,i]
@@ -352,16 +351,19 @@ class DeformationModuleStretch(DeformationModule):
                         plt.gca().add_artist(circle)
                         #circle = plt.Circle((Wmid[0],Wmid[1]+offset_old_line),ds_ball,color='r',fill=False)
                         #plt.gca().add_artist(circle)
-                        plt.xlabel('X',fontsize=fs)
-                        plt.ylabel('Y',fontsize=fs)
+                        plt.xlabel('X',fontsize=fs_label)
+                        plt.ylabel('Y',fontsize=fs_label,rotation=0)
                         #plt.axis('equal')
                         ax = fig.gca()
                         for tick in ax.xaxis.get_major_ticks():
                                 tick.label.set_fontsize(fs) 
                         for tick in ax.yaxis.get_major_ticks():
                                 tick.label.set_fontsize(fs) 
-                        ax.xaxis.labelpad = 20
-                        ax.yaxis.labelpad = 20
+                        ax.xaxis.labelpad = 40
+                        ax.yaxis.labelpad = 40
+                        plt.ylim(-0.045,0.025)
+                        #plt.gca().tight_layout()
+                        plt.gcf().subplots_adjust(bottom=0.15)
                         plt.show()
 
                 return dUtmp
