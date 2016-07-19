@@ -21,12 +21,6 @@ DEBUG = False
 #amax = np.array((AM,AM,AM,0))
 amin = np.array((-AM,-AM,-0.3*AM))
 amax = np.array((AM,AM,0.3*AM))
-
-#class DynamicalSystem():
-
-        #def __init__(self):
-
-
 #def CoriolisAtWaypoint(robot, p):
 #        Nl = 1
 #        active_dofs = robot.GetActiveConfigurationSpecification()
@@ -243,29 +237,35 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, dpnext, F, dt):
                         qcontrol =np.array(x.value).flatten()
                         qdd = 2*(qcontrol-p-dt*dq)/(dt*dt)
 
-                        #qdd_ext = qdd - ddq_adj
-                        ##qdd = ddq_adj + 0.06*qdd_ext
+                        ######################################################
+                        ### TEST
+                        ######################################################
+                        qdd_ext = qdd - ddq_adj
+                        #qdd = ddq_adj + 0.06*qdd_ext
 
-                        #ds = np.linalg.norm(p-pnext)
-                        #vdes = 1
-                        ##C = 0.1
-                        #qdd = Variable(Ndim)
-                        #u = Variable(Adim)
+                        ds = np.linalg.norm(p-pnext)
+                        vdes = 1
+                        #C = 0.1
+                        qdd = Variable(Ndim)
+                        u = Variable(Adim)
 
-                        #vdes = np.linalg.norm(dq)
-                        ##objective = Minimize( norm(dq + dt*qdd - vdes*(pnext-p)) )
-                        #objective = Minimize( norm(dq + dt*dq + dt2*qdd - (pnext-p) ) )
-                        #constraints = [ amin <= u, 
-                        #                u <= amax,
-                        #                qdd==Rp*u + F, 
-                        #                Aq*qdd <= -bq
-                        #                ]
+                        vdes = np.linalg.norm(dq)
+                        #objective = Minimize( norm(dq + dt*qdd - vdes*(pnext-p)) )
+                        objective = Minimize( norm(dq + dt*dq + dt2*qdd - (pnext-p) ) )
+                        constraints = [ amin <= u, 
+                                        u <= amax,
+                                        qdd==Rp*u + F, 
+                                        Aq*qdd <= -bq
+                                        ]
 
 
-                        #prob = Problem(objective, constraints)
-                        #dnew = np.abs(prob.solve(solver=ECOS, max_iters=500,
-                        #        feastol=1e-10,abstol=1e-10,reltol=1e-10))
-                        #qdd =np.array(qdd.value).flatten()
+                        prob = Problem(objective, constraints)
+                        dnew = np.abs(prob.solve(solver=ECOS, max_iters=500,
+                                feastol=1e-10,abstol=1e-10,reltol=1e-10))
+                        qdd =np.array(qdd.value).flatten()
+                        ######################################################
+                        ### TEST
+                        ######################################################
 
                         #print dnew
                         #print np.array(u.value)

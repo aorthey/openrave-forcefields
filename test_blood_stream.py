@@ -59,12 +59,13 @@ if __name__ == "__main__":
         td = DeformationReachableSet(traj, env)
         deform_success = td.deform(N_iter=100)
 
-        #td.traj_deformed.save('trajectories/'+xml+'_deformed')
+        td.traj_deformed.save('trajectories/'+xml+'_deformed')
         if deform_success:
                 #td.traj_deformed.PlotParametrization(env)
                 print td.traj_deformed.waypoints.shape
                 td.draw_delete()
                 td.traj_deformed.draw(env,critical_pt=td.traj_deformed.waypoints.shape[1])
+                td.traj_deformed.draw_robot_along_path(env, robot, N=6)
                 #td.traj_deformed.execute(env, robot, tsleep=0.005, stepping=False)
 
 

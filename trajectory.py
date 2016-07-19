@@ -22,7 +22,7 @@ class Trajectory():
         __metaclass__ = abc.ABCMeta
         DEBUG = 0
 
-        DISCRETIZATION_TIME_STEP = 0.005
+        DISCRETIZATION_TIME_STEP = 0.01
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
         POLYNOMIAL_DEGREE = 1
         MIN_NUMBER_WAYPOINTS = 5
@@ -38,7 +38,7 @@ class Trajectory():
         critical_pt_size = 0.08
 
         show_tangent_vector = False
-        show_orientation_vector = True
+        show_orientation_vector = False
 
         lw_path = 10
         lw_tangent = 3
@@ -317,24 +317,22 @@ class Trajectory():
                         ###dp =np.array( [-344.35813853264824, -0.46681954515138263, 0.0, 0.389387904541571] )
                         ###speed= 1.19162642333
 
-                        [R,amin,amax] = self.getControlMatrix(p)
-
                         #from reachable_set import ReachableSet
                         #self.reach = ReachableSet( p, s, dp, force, R[:,:,0], amin, amax)
                         #self.reach.Plot()
+                        [R,amin,amax] = self.getControlMatrix(p)
 
                         from reachable_set3d import ReachableSet3D
-                        self.reach = ReachableSet3D()
+                        self.reach = ReachableSet3D(env)
                         dnp = dp/np.linalg.norm(dp)
                         dpnormal = -0.001*(force - np.dot(force,dnp)*dnp)
 
-                        #self.reach.PlotSingleSet(self.DISCRETIZATION_TIME_STEP, 
-                        #                p, dp, speed, force, 
-                        #                R[:,:,0], amin, amax)
+                        self.reach.PlotSingleSet(self.DISCRETIZATION_TIME_STEP, 
+                                        p, dp, speed, force, 
+                                        R[:,:,0], amin, amax)
                         #self.reach.PlotTotalSet(self.DISCRETIZATION_TIME_STEP, 
                         #                p, dp, speed, force, 
                         #                R[:,:,0], amin, amax)
-
                         #self.reach.PlotMoveAgainstWrenchField(self.DISCRETIZATION_TIME_STEP, 
                         #                p, dpnormal, dp, speed, force, 
                         #                R[:,:,0], amin, amax)
@@ -605,21 +603,6 @@ class Trajectory():
                 else:
                         print "No critical point found"
 
-        def reparametrize(self, env, plotting=False):
-                L = self.get_length()
-                [W,dW,ddW] = self.get_waypoints_second_order()
-                F = self.get_forces_at_waypoints(W, env)
-
-                ### acceleration limits
-                [R,amin,amax] = self.getControlMatrix(W)
-
-                S = getSpeedProfileRManifold(F,R,amin,amax,W,dW,ddW,plotting)
-                #if S is None:
-                        #self.speed_profile = S
-                        #print "No parametrization solution -- sorry :-((("
-                        #return False
-                return S
-
         @classmethod
         def from_ravetraj(cls, ravetraj):
                 N = ravetraj.GetNumWaypoints()
@@ -747,7 +730,7 @@ class Trajectory():
         def draw_delete(self):
                 self.handle = []
 
-        def visualize_robot_along_path(self, env, robot, N=10):
+        def draw_robot_along_path(self, env, robot, N=10):
                 xt = self.topp.traj0
                 with env.env:
                         robot.GetLinks()[0].SetStatic(True)
@@ -755,17 +738,28 @@ class Trajectory():
 
                 env.MakeRobotVisible()
 
-                robotarmy = []
+                ictr=0
+                print "before:",env.env.GetRobots()
+                R = env.env.GetRobot("clone"+str(ictr))
+                while R is not None:
+                        env.env.Remove(R)
+                        ictr+=1
+                        R = env.env.GetRobot("clone"+str(ictr))
+                print "after deleting:",env.env.GetRobots()
+
                 with env.env:
+                        ictr=0
                         for t in np.linspace(0,xt.duration,N):
                                 print "t",t,"/",xt.duration
                                 robot_t = RaveCreateRobot(env.env,robot.GetXMLId())
                                 robot_t.Clone(robot,0)
+                                robot_t.SetName("clone"+str(ictr))
                                 env.env.AddRobot(robot_t,True)
                                 #env.ChangeTransparencyRobot(robot_t, 1.0)
                                 robot_t.SetDOFValues(xt.Eval(t))
-                                robotarmy.append(robot_t)
+                                ictr+=1
                         #robot_t.SetDOFValues(xt.Eval(t))
+                print "after adding:",env.env.GetRobots()
 
         def execute(self, env, robot, tsleep=0.01, stepping=False):
                 tstep = 0.01

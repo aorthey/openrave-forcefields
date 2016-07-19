@@ -11,6 +11,7 @@ import numpy as np
 class ForceEnvironment():
         __metaclass__ = abc.ABCMeta
         #######################################################################
+        DRAW_COLLISIONS = False
         ZPOS_ARROW = 0.1
         ViewerName = 'qtcoin'
         ##'bullet', 'ode'
@@ -282,8 +283,9 @@ class ForceEnvironment():
                         robotIsInCollision = self.env.CheckCollision(self.robot, outercells[i])
                         if robotIsInCollision:
                                 print "COLLISION:",X[0:3],outercells[i]
-                                A = self.DrawCollision(X[0:3])
-                                self.collision_handler.append(A)
+                                if self.DRAW_COLLISIONS:
+                                        A = self.DrawCollision(X[0:3])
+                                        self.collision_handler.append(A)
                                 return True
                 return False
 

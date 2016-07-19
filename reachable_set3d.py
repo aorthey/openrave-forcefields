@@ -17,6 +17,8 @@ from matplotlib.tri import Triangulation, TriAnalyzer
 import matplotlib.ticker as mtick
 import matplotlib
 
+from dynamical_system import *
+
 from scipy.spatial import ConvexHull
 from shapely.geometry import Polygon
 from scipy.spatial import Delaunay
@@ -44,6 +46,8 @@ class ReachableSet3D():
         PLOT_PROJECTION_ONTO_REACHABLE_SET = False
         PLOT_SHOW_POINT_LABELS = False
 
+        postfixstr = str(2)
+
         pts = None
         poly = []
         rs_boundary_thickness = 4
@@ -67,8 +71,11 @@ class ReachableSet3D():
 
         image = None
         fig = None
+        env_ptr = None
 
-        def __init__(self):
+        def __init__(self, env):
+                self.env_ptr = env
+                self.ds = DynamicalSystem(env)
 
                 self.fig = plt.figure(facecolor='white')
                 self.image = self.fig.gca(projection='3d')
@@ -94,7 +101,7 @@ class ReachableSet3D():
                 self.PlotSet(1.72*ds, p, dp, 2*speed, force, R, amin, amax,
                                 color=np.array((0,1,1,0.1)))
                 self.PlotShow()
-                self.PlotSave("images/reachable_set_stretch.png")
+                self.PlotSave("images/reachable_set_stretch"+self.postfixstr+".png")
 
         def PlotMoveAgainstWrenchField(self, ds, p, dpnormal, dp, speed, force, R, amin, amax):
                 self.PLOT_TOTAL_REACHABLE_SET = True
@@ -106,7 +113,7 @@ class ReachableSet3D():
                 self.PlotSet(1.5*ds, p+dpnormal, dp, speed, force, R, amin, amax,
                                 color=np.array((0,1,1,0.1)))
                 self.PlotShow()
-                self.PlotSave("images/reachable_set_going_against_wrench.png")
+                self.PlotSave("images/reachable_set_going_against_wrench"+self.postfixstr+".png")
         def PlotSingleSet(self, ds, p, dp, speed, force, R, amin, amax):
                 self.PLOT_TOTAL_REACHABLE_SET = False
                 self.PLOT_SPHERE_SEGMENT = False
@@ -115,7 +122,7 @@ class ReachableSet3D():
                 self.PlotSet(ds, p, dp, speed, force, R, amin, amax,
                                 color=np.array((0,0,1,0.2)))
                 self.PlotShow()
-                self.PlotSave("images/reachable_set_single.png")
+                self.PlotSave("images/reachable_set_single"+self.postfixstr+".png")
 
         def PlotTotalSet(self, ds, p, dp, speed, force, R, amin, amax):
                 self.PLOT_TOTAL_REACHABLE_SET = True
@@ -125,7 +132,7 @@ class ReachableSet3D():
                 self.PlotSet(ds, p, dp, speed, force, R, amin, amax,
                                 color=np.array((0,0,1,0.2)))
                 self.PlotShow()
-                self.PlotSave("images/reachable_set_total.png")
+                self.PlotSave("images/reachable_set_total"+self.postfixstr+".png")
 
         def PlotSet(self, ds, p, dp, speed, force, R, amin, amax,
                         color=None):

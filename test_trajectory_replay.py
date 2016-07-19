@@ -29,8 +29,8 @@ from motion_planner_kinodynamic import MotionPlannerKinodynamic
 if __name__ == "__main__":
 
         #######################################################################
-        #env = EnvironmentBloodStream2()
-        #traj = Trajectory.from_file('trajectories/bloodstream_geometric70')
+        env = EnvironmentBloodStream2()
+        traj = Trajectory.from_file('trajectories/bloodstream_geometric70')
         #######################################################################
 
         #######################################################################
@@ -39,8 +39,10 @@ if __name__ == "__main__":
         #######################################################################
 
         #######################################################################
-        env = EnvironmentBloodStream()
-        traj = Trajectory.from_file('trajectories/bloodstream_geometric30')
+        #env = EnvironmentBloodStream()
+        #traj = Trajectory.from_file('trajectories/bloodstream_geometric30')
+        #traj = Trajectory.from_file('trajectories/the_blood_stream_deformed')
+        #traj = Trajectory.from_file('trajectories/epsilon_loop_projectable')
         #######################################################################
 
         robot = env.GetRobot()
@@ -51,6 +53,6 @@ if __name__ == "__main__":
         #traj = Trajectory.from_file('trajectories/bloodstream_kinodynamic')
         #traj = Trajectory.from_file('trajectories/bloodstream_kinodynamic_deformed')
         traj.draw(env)
-        traj.visualize_robot_along_path(env, robot, N=15)
+        traj.draw_robot_along_path(env, robot, N=15)
         #traj.PlotParametrization(env)
         #traj.execute(env, robot, tsleep=0.003, stepping=False)
