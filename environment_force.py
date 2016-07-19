@@ -53,7 +53,7 @@ class ForceEnvironment():
         def __init__(self):
                 self.env=Environment()
 
-                self.env.SetViewer(self.ViewerName)
+                #self.env.SetViewer(self.ViewerName)
                 self.env.Reset()
                 with self.env:
                         self.env.StopSimulation() 
