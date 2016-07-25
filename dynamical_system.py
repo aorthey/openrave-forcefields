@@ -14,6 +14,14 @@ FILENAME = 'ddrive4'
 DYNAMICAL_SYTEM_NAME = 'non-holonomic differential drive (deform)'
 system_name = DYNAMICAL_SYTEM_NAME
 
+AM = 1.0
+DEBUG = False
+### car/sailboat
+#amin = np.array((-AM,-AM,-AM,0))
+#amax = np.array((AM,AM,AM,0))
+amin = np.array((-AM,-AM,-0.3*AM))
+amax = np.array((AM,AM,0.3*AM))
+
 class DynamicalSystem():
         env_ptr = None
 
@@ -52,6 +60,9 @@ class DynamicalSystem():
                 R[3,:] = np.array((0.0,0.0,1.0))
 
                 return R
+
+        def GetControlDimension(self):
+                return amin.shape[0]
 
         #def GetMassMatrix(p):
                 #body.SetDOFValues(dofvalues,range(body.GetDOF()),checklimits=True)

@@ -19,8 +19,8 @@ DEBUG = False
 ### car/sailboat
 #amin = np.array((-AM,-AM,-AM,0))
 #amax = np.array((AM,AM,AM,0))
-amin = np.array((-AM,-AM,-0.3*AM))
-amax = np.array((AM,AM,0.3*AM))
+amin = np.array((-AM,-AM,-AM))
+amax = np.array((AM,AM,AM))
 #def CoriolisAtWaypoint(robot, p):
 #        Nl = 1
 #        active_dofs = robot.GetActiveConfigurationSpecification()

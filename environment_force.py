@@ -50,7 +50,7 @@ class ForceEnvironment():
                         for h in H:
                                 self.force_handles.append(h)
 
-        def __init__(self):
+        def __init__(self, SetViewer=True):
                 self.env=Environment()
 
                 #self.env.SetViewer(self.ViewerName)
