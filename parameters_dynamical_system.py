@@ -36,6 +36,19 @@ def waypoint_to_force(env, W):
         ### TORQUE application
         F[3] = np.sign(torque[2])*np.linalg.norm(torque)
         return F
+
+def waypoints_to_force(env, W):
+        Ndim = W.shape[0]
+        if W.ndim>1:
+                Nwaypoints = W.shape[1]
+        else:
+                F = waypoint_to_force(env,W)
+                return F
+
+        F = np.zeros((Ndim,Nwaypoints))
+        for i in range(0,Nwaypoints):
+                F[:,i] = waypoint_to_force(env, W[:,i])
+        return F
 #def CoriolisAtWaypoint(robot, p):
 #        Nl = 1
 #        active_dofs = robot.GetActiveConfigurationSpecification()
