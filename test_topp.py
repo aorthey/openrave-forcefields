@@ -19,6 +19,7 @@ from TOPP import Trajectory as TOPPTrajectory
 from TOPP import Utilities
 import TOPP
 from pylab import *
+from util import *
 from scipy import interpolate
 import parameters_dynamical_system as params
 
@@ -74,11 +75,15 @@ def InterpolateViapointsLinearFixedDerivative(path):
     return TOPPTrajectory.PiecewisePolynomialTrajectory(chunkslist)
 
 def VisualizeTrajectory(traj0, W, Fx, Fy, offset, PostMakeup=True):
+
         Ndim = W.shape[0]
+        #Ndim = 2
         Adim = 3
         #######################################################################
         #######################################################################
-        discrtimestep = 1.0/(W.shape[1]-1)#0.05
+        #discrtimestep = 1.0/(W.shape[1]-1)#0.05
+        discrtimestep = 0.5*1e-3
+        #discrtimestep = 1e-2
         ndiscrsteps = int((traj0.duration + 1e-10) / discrtimestep) + 1
         q = np.zeros((Ndim,ndiscrsteps))
         qs = np.zeros((Ndim,ndiscrsteps))
@@ -106,6 +111,13 @@ def VisualizeTrajectory(traj0, W, Fx, Fy, offset, PostMakeup=True):
                 b[i,:] = np.dot(G,qss[:,i]).flatten()
                 c[i,:] = h
 
+        #print "discrtimestep=",discrtimestep
+        #PrintNumpy("a",a[:,[0,1,3,4]])
+        #PrintNumpy("b",b[:,[0,1,3,4]])
+        #PrintNumpy("c",c[:,[0,1,3,4]])
+        #print a.shape
+        #print b.shape
+        #print c.shape
         ######################################################
         t0 = time.time()
         trajectorystring = str(traj0)
@@ -121,17 +133,18 @@ def VisualizeTrajectory(traj0, W, Fx, Fy, offset, PostMakeup=True):
         if ret==1:
                 x.ReparameterizeTrajectory()
                 t2 = time.time()
-                x.ReparameterizeTrajectory()
                 x.WriteResultTrajectory()
                 msstyle = 'g'
                 try:
-                        traj1 = TOPPTrajectory.PiecewisePolynomialTrajectory.FromString(x.restrajectorystring)
+                        #print x.restrajectorystring
+                        #traj1 = TOPPTrajectory.PiecewisePolynomialTrajectory.FromString(x.restrajectorystring)
                         semin = x.sdendmin
                         semax = x.sdendmax
                         print "speed profile [",semin,",",semax,"]"
-                        qddvect = np.array([traj1.Evaldd(t) for t in tvect])
                         #plot(qddvect[:,0], qddvect[:,1]-offset, 'r')
                         #if PostMakeup:
+                                #tvect = arange(0, traj1.duration + discrtimestep, discrtimestep)
+                                #qddvect = np.array([traj1.Evaldd(t) for t in tvect])
                                 #for i in range(ndiscrsteps):
                                         #plot([q[0,i],q[0,i]+qddvect[i,0]],[q[1,i]-offset,q[1,i]+qddvect[i,1]-offset], '-om', linewidth=2)
 
@@ -139,14 +152,16 @@ def VisualizeTrajectory(traj0, W, Fx, Fy, offset, PostMakeup=True):
                                 msstyle = 'm'
 
                 except Exception as e:
+                        print "Exception:",e
                         msstyle = 'k'
+                        sys.exit(0)
                         pass
         else:
                 msstyle = 'r'
 
         if PostMakeup:
-                #for i in range(ndiscrsteps):
-                        #plot([q[0,i],q[0,i]+F[i,0]],[q[1,i]-offset,q[1,i]+F[i,1]-offset], '-ob', linewidth=2)
+                for i in range(ndiscrsteps):
+                        plot([q[0,i],q[0,i]+F[i,0]],[q[1,i]-offset,q[1,i]+F[i,1]-offset], '-ob', linewidth=2)
 
                 plot(q[0,:], q[1,:]-offset, '|'+msstyle, markersize=40,markeredgewidth=3)
         Npts = 1000
@@ -159,15 +174,17 @@ def VisualizeTrajectory(traj0, W, Fx, Fy, offset, PostMakeup=True):
 def PlotTrajXY(x,y, PostMakeup = False):
         Fx = 0.0
         #Fy = 2.144
-        Fy = 1.01
+        Fy = 1.1
         #W = np.array(((0,0,0,0),(1,0,0,0),(2,0,0,0),(x,y,0,0))).T
         W = np.array(((0,0,0,0),(0.2,0,0,0),(0.4,0,0,0),(0.6,0,0,0),(0.8,0,0,0),(1,0,0,0),(1.2,0,0,0),(1.4,0,0,0),(1.6,0,0,0),(1.8,0,0,0),(2,0,0,0),(x,y,0,0))).T
-        #traj0 = Utilities.InterpolateViapoints(W)
-        traj0 = InterpolateViapointsLinear(W)
+        #W = np.array(((1.6,0,0,0),(1.8,0,0,0),(2,0,0,0),(x,y,0,0))).T
+        traj0 = Utilities.InterpolateViapoints(W)
+        #traj0 = InterpolateViapointsLinear(W)
         #print "#######################"
         #print "trajectorystring=",traj0
         #print "#######################"
         VisualizeTrajectory(traj0, W, Fx, Fy, PostMakeup = PostMakeup, offset=1.0)
+        return traj0
 
 if __name__ == "__main__":
 
@@ -185,21 +202,19 @@ if __name__ == "__main__":
         ### sys.exit(0)
 
         #### visualize all 
-        r=0.2
-        xc = 2.0
-        yc = 0.0
-        epsilon = pi/32
-        for theta in np.linspace(-pi/2+epsilon,pi/2-epsilon,40):
-                x = r*cos(theta)+xc
-                y = r*sin(theta)+yc
-                PlotTrajXY(x,y,PostMakeup=True)
+        #r=0.2
+        #xc = 2.0
+        #yc = 0.0
+        #epsilon = pi/32
+        #for r in np.linspace(0.2,1.0,10):
+        #        for theta in -np.linspace(-pi/2+epsilon,pi/2-epsilon,40):
+        #                x = r*cos(theta)+xc
+        #                y = r*sin(theta)+yc
+        #                PlotTrajXY(x,y,PostMakeup=False)
 
-        #for x in np.linspace(2.0,4.0,10):
-        #        for y in np.linspace(-10.0,10.0,10):
-        #                PlotTrajXY(x,y)
-        #x = 2.13160997913
-        #y = -0.150594865098
-        #PlotTrajXY(x,y, PostMakeup=True)
+        x = 2.13160997913
+        y = -0.150594865098
+        traj0 = PlotTrajXY(x,y, PostMakeup=False)
         #PlotTrajXY(2.0,0.0, PostMakeup=True)
         #PlotTrajXY(4.0,-4.0)
         ###PlotTrajXY(3.5,-2.8)

@@ -2,6 +2,7 @@ import sys
 import time
 import numpy as np
 from trajectory import *
+from trajectory import Trajectory
 import copy
 import parameters_dynamical_system as params
 
@@ -21,7 +22,6 @@ class ProjectorSimple():
                         print "not projectable, cannot return waypoints"
                         sys.exit(0)
                 return self.projectedWaypoints
-
 
         def GetTimeAtCriticalPoint( self, xt, Wori, CP):
                 Wc = Wori[:,CP]
@@ -51,21 +51,11 @@ class ProjectorSimple():
                 Ndim = DeformInfo['Ndim']
                 Nwaypoints = DeformInfo['Nwaypoints']
                 critical_pt = DeformInfo['critical_pt']
-                #FT = traj.get_tangent_forces_at_waypoints(Wori, dWori, env)
-                #topp = traj.getTOPPTrajectoryWithTangentForceField(env, Wori, dWori)
-                topp = traj.getTOPPTrajectoryWithoutForceField(env, Wori, dWori)
+                topp = traj.getTOPPTrajectoryWithoutForceField(env, Wori)
 
-                #topp.PlotTrajectory(env)
-                ### execute blindly!?
+                ### strategy: execute blindly but reject forces
                 xt = topp.traj1
-
                 tc = self.GetTimeAtCriticalPoint( xt, Wori, critical_pt)
-
-                #print topp.durationVector
-                #print topp.durationVector
-                #print topp.durationVector.shape
-                #print np.sum(topp.durationVector)
-                #print topp.durationVector[0]
 
                 dt = 0.01
                 Q0 = []
@@ -117,6 +107,8 @@ class ProjectorSimple():
                         q = q + dt*dq + dt2*ddq
                         dq = dq + dt*ddq
 
+                        ### check that forward simulation is really reaching the
+                        ### next point
                         if np.linalg.norm(q-qnew)>1e-10:
                                 print "q mismatch dist",np.linalg.norm(q-qnew)
                                 sys.exit(0)
@@ -137,19 +129,22 @@ class ProjectorSimple():
                 #plt.plot(Q0[0,:],Q0[1,:],'-or',linewidth=3)
                 #plt.show()
 
-                if np.linalg.norm(q-xt.Eval(xt.duration))<0.1:
-                        print "success"
+                #if np.linalg.norm(q-xt.Eval(xt.duration))<0.1:
+                #        print "success"
+                #        return True
+                #else:
+                #        return False
+
+                ### check if topp finds solution
+                print "waypoints:",Q0.shape[1]
+
+                t2 = Trajectory(Q0)
+                t2.info()
+                Nc = t2.getCriticalPoint(env)
+                if Nc >= Q0.shape[1]-1:
                         return True
                 else:
                         return False
-                #jprint "waypoints:",Q0.shape[1]
-                #jN = Q0.shape[1]
-                #jt2 = Trajectory(Q0)
-                #jNc = t2.getCriticalPoint(env)
-                #jif Nc >= Nwaypoints-1:
-                #j        return True
-                #jelse:
-                #j        return False
 
         def IsProjectableReachableSetDraw(self, DeformInfo):
                 env = DeformInfo['env']

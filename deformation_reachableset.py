@@ -100,7 +100,6 @@ class DeformationReachableSet(Deformation):
 
                 Wnext = traj.RepairTrajectory(Wnext,1e-2)
                 self.traj_deformed.new_from_waypoints(Wnext)
-                #[Wori,dWori,ddWori] = self.traj_deformed.get_waypoints_second_order()
                 #print "X1=np.array(",Wori[0:2,0:100].tolist(),")"
                 return DEFORM_OK
 

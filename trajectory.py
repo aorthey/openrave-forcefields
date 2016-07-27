@@ -15,7 +15,8 @@ import pylab as plt
 from util_force import *
 from util_mvc import *
 from util_mvc_approx import *
-from topp_interface2 import TOPPInterface
+#from topp_interface2 import TOPPInterface
+from topp_interface import TOPPInterface
 import copy
 
 class Trajectory():
@@ -24,7 +25,7 @@ class Trajectory():
 
         DISCRETIZATION_TIME_STEP = 0.01
         SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
-        POLYNOMIAL_DEGREE = 1
+        POLYNOMIAL_DEGREE = 3
         MIN_NUMBER_WAYPOINTS = 5
 
         rave_traj = []
@@ -58,7 +59,6 @@ class Trajectory():
         critical_pt_color = np.array((0.9,0.2,0.2,0.9))
 
         bspline = []
-        trajectorystring = []
         Ndim = 0
 
         ### waypoints: real matrix of dimensionality Ndim x Nwaypoints
@@ -68,11 +68,9 @@ class Trajectory():
         def new_from_waypoints(self, waypoints_in):
                 self.waypoints = self.prettify(waypoints_in)
                 self.Ndim = self.waypoints.shape[0]
+                self.Nwaypoints = self.waypoints.shape[1]
                 self.bspline = self.computeSplineFromWaypoints(self.waypoints)
                 [self.waypoints,dW,ddW] = self.get_waypoints_second_order()
-                #print self.waypoints.shape
-                self.trajectorystring = None
-                self.durationVector = None
 
         def save(self, filename):
                 np.save(filename, self.waypoints)
@@ -349,7 +347,8 @@ class Trajectory():
                 [Ndim, Nwaypoints] = self.getWaypointDim(W)
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
-                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, F,R,amin,amax,W,dW,env)
+                #self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, F,R,amin,amax,W,dW,env)
+                self.topp = TOPPInterface(W, env)
                 if self.topp.ReparameterizeTrajectory():
                         self.topp.PlotTrajectory(env)
                         print self.topp
@@ -361,7 +360,8 @@ class Trajectory():
                 Fzero = self.get_tangent_forces_at_waypoints(W, dW, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, Fzero,R,amin,amax,W,dW,env)
+                #self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, Fzero,R,amin,amax,W,dW,env)
+                self.topp = TOPPInterface(W, env)
                 if self.topp.ReparameterizeTrajectory():
                         return self.topp
                 else:
@@ -370,7 +370,6 @@ class Trajectory():
                         print W.shape
                         print Fzero
                         print W
-                        #print self.trajectorystring
                         self.info()
                         sys.exit(1)
                         return None
@@ -380,9 +379,10 @@ class Trajectory():
                 Fzero = np.zeros((Ndim, Nwaypoints))
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                self.topp = TOPPInterface(self, self.durationVector,
-                                self.trajectorystring,
-                                Fzero,R,amin,amax,W,dW,env,zeroForce=True)
+                #self.topp = TOPPInterface(self.durationVector,
+                #                self.trajectorystring,
+                #                Fzero,R,amin,amax,W,dW,env,zeroForce=True)
+                self.topp = TOPPInterface(W, env, zeroForce=True)
                 if self.topp.ReparameterizeTrajectory():
                         return self.topp.traj0
                 else:
@@ -391,29 +391,20 @@ class Trajectory():
                         print W.shape
                         print Fzero
                         print W
-                        #print self.trajectorystring
                         self.info()
                         sys.exit(1)
                         return None
 
-        def getTOPPTrajectoryWithoutForceField(self, env, W, dW):
-                [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                #Fzero = np.zeros((Ndim, Nwaypoints))
-                Fzero = 0.0*self.get_forces_at_waypoints(W, env)
-                [R,amin,amax] = self.getControlMatrix(W)
-
-                self.topp = TOPPInterface(self, self.durationVector,
-                                self.trajectorystring,
-                                Fzero,R,amin,amax,W,dW,env,zeroForce=True)
+        def getTOPPTrajectoryWithoutForceField(self, env, W):
+                self.topp = TOPPInterface(W, env, zeroForce=True)
                 if self.topp.ReparameterizeTrajectory():
                         return self.topp
                 else:
+                        self.info()
                         print "WARNING2: without force field, TOPP couldn't find a valid \
                         velocity profile. Path not continuous or system not STLC"
                         print W.shape
-                        print Fzero
                         print W
-                        self.info()
                         sys.exit(1)
 
         def getTOPPTrajectory(self, env, W, dW, F):
@@ -421,16 +412,16 @@ class Trajectory():
                 Fzero = np.zeros((Ndim, Nwaypoints))
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                self.topp = TOPPInterface(self, self.durationVector,
-                                self.trajectorystring,
-                                Fzero,R,amin,amax,W,dW,env)
+                #self.topp = TOPPInterface(self, self.durationVector,
+                #                self.trajectorystring,
+                #                Fzero,R,amin,amax,W,dW,env)
+                self.topp = TOPPInterface(W, env)
                 if self.topp.ReparameterizeTrajectory():
                         return self.topp
                 else:
                         print W.shape
                         print Fzero
                         print W
-                        #print self.trajectorystring
                         self.info()
                         sys.exit(1)
                         return None
@@ -439,12 +430,9 @@ class Trajectory():
 
         def getCriticalPointFromWaypoints(self, env, W, dW, ddW, oldNc = 0):
 
-                [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                F = self.get_forces_at_waypoints(W, env)
-                [R,amin,amax] = self.getControlMatrix(W)
-
-                self.topp = TOPPInterface(self, self.durationVector,
-                                self.trajectorystring, F,R,amin,amax,W,dW,env)
+                #self.topp = TOPPInterface(self, self.durationVector,
+                                #self.trajectorystring, F,R,amin,amax,W,dW,env)
+                self.topp = TOPPInterface(W, env)
                 Nc = self.topp.getCriticalPoint()-1
 
                 if Nc < 0:
@@ -461,10 +449,10 @@ class Trajectory():
                 F = self.get_forces_at_waypoints(W, env)
                 [R,amin,amax] = self.getControlMatrix(W)
 
-                self.topp = TOPPInterface(self, durationVector, trajsubstr,
-                                F,R,amin,amax,W,dW, env)
+                #self.topp = TOPPInterface(self, durationVector, trajsubstr,
+                                #F,R,amin,amax,W,dW, env)
+                self.topp = TOPPInterface(W, env)
 
-                #print durationVector,trajsubstr
                 #print W,dW
                 [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
                                 Nc_in,
@@ -483,7 +471,6 @@ class Trajectory():
 
         def getCriticalPoint(self, env):
                 L = self.get_length()
-                ds = 0.01
                 [W,dW,ddW] = self.get_waypoints_second_order()
 
                 N = self.getCriticalPointFromWaypoints(env, W, dW, ddW)
@@ -521,6 +508,8 @@ class Trajectory():
                 ###############################################################
                 if N is None:
                         N = self.get_number_waypoints()
+                        #[Ndim,Nwaypoints] = self.getWaypointDim(self.waypoints)
+                        #N = Nwaypoints
                 ###############################################################
                 K = self.get_dimension()
                 pts = np.zeros((K,N))
@@ -542,7 +531,7 @@ class Trajectory():
 
         def get_length(self):
                 dd = 0.0
-                T = np.linspace(0.0, 1.0, num=100)
+                T = np.linspace(0.0, 1.0, num=self.waypoints.shape[1])
                 for i in range(0,len(T)-1):
                         t = T[i]
                         tdt = T[i+1]
@@ -683,32 +672,13 @@ class Trajectory():
                         if stepping:
                                 raw_input('Press Key to Step. Time: '+str(t)+'/'+str(xt.duration))
 
-        def SimpleInterpolate(self,q0,q1,qd0,qd1,T):
-                a=((qd1-qd0)*T-2*(q1-q0-qd0*T))/(T**3)
-                b=(3*(q1-q0-qd0*T)-(qd1-qd0)*T)/(T**2)
-                c=qd0
-                d=q0
-                return [d,c,b,a]
-
         def computeSplineFromWaypoints(self,W):
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
                 bspline=[]
                 for i in range(0,Ndim):
-
                         tvec = np.linspace(0,1,Nwaypoints)
                         WP = W[i,:]
-
-                        #dws = (W[i,1]-W[i,0])
-                        #tws = tvec[1]
-                        #dwe = (W[i,-1]-W[i,-2])
-                        #twe = 1.0-tvec[-2]
-
-                        #M = 10
-                        #for k in range(1,M):
-                        #        tvec = np.hstack((-k*tws,tvec,k*twe+1.0))
-                        #        WP = np.hstack((W[i,0]-k*dws,WP,W[i,-1]+k*dwe))
-
                         trajectory = splrep(tvec,WP,k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
                         bspline.append(trajectory)
                 return bspline

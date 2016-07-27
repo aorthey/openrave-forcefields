@@ -67,9 +67,10 @@ class TOPPInterface():
                 vmax = 1000*np.ones(self.Ndim)
                 self.topp_inst = TOPP.QuadraticConstraints(traj0, discrtimestep, vmax, list(a), list(b), list(c))
 
-        def __init__(self, env, W):
+        def __init__(self, W, env, zeroForce=False):
 
                 self.env_ptr =env
+                self.zeroForce_ = zeroForce
                 self.Ndim = W.shape[0]
                 self.initializeFromSpecifications(env, W)
 
@@ -377,35 +378,6 @@ class TOPPInterface():
                         sys.exit(0)
                         #return -1
 
-        discrtimestep = 0.05
-        ndiscrsteps = int((traj0.duration + 1e-10) / discrtimestep) + 1
-        q = np.zeros((Ndim,ndiscrsteps))
-        qs = np.zeros((Ndim,ndiscrsteps))
-        qss = np.zeros((Ndim,ndiscrsteps))
-        a = np.zeros((ndiscrsteps, 2*Adim))
-        b = np.zeros((ndiscrsteps, 2*Adim))
-        c = np.zeros((ndiscrsteps, 2*Adim))
-        F = np.zeros((ndiscrsteps, Ndim))
-
-        tvect = arange(0, traj0.duration + discrtimestep, discrtimestep)
-        for i in range(ndiscrsteps):
-                t = i*discrtimestep
-
-                q[:,i] = traj0.Eval(t)
-                qs[:,i] = traj0.Evald(t)
-                qss[:,i] = traj0.Evaldd(t)
-
-                if q[0,i] > 2:
-                        F[i,:] = np.array((Fx,Fy,0,0))
-
-                Ri = params.GetControlMatrixAtWaypoint(q[:,i])
-
-                [G,h] = params.GetControlConstraintMatricesFromControl(Ri, F[i,:])
-                a[i,:] = np.dot(G,qs[:,i]).flatten()
-                b[i,:] = np.dot(G,qss[:,i]).flatten()
-                c[i,:] = h
-
-
         def GetABC(self, traj0, discrtimestep):
                 discrtimestep = 0.05
                 K = int((traj0.duration + 1e-10) / discrtimestep) + 1
@@ -445,6 +417,5 @@ class TOPPInterface():
                 self.b = b
                 self.c = c
                 
-
                 return [a,b,c]
         

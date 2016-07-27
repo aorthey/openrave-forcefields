@@ -8,7 +8,7 @@ import cvxopt
 import matplotlib.pyplot as plt
 from cvxpy import *
 from cvxopt import matrix, solvers
-from util import PrintNumpy,inf
+from util import *
 
 FILENAME = 'ddrive4'
 DYNAMICAL_SYTEM_NAME = 'non-holonomic differential drive (deform)'
@@ -21,6 +21,21 @@ DEBUG = False
 #amax = np.array((AM,AM,AM,0))
 amin = np.array((-AM,-AM,-AM))
 amax = np.array((AM,AM,AM))
+
+def waypoint_to_force(env, W):
+        Ndims = W.shape[0]
+        pt = np.array(((W[0],W[1],-0.1,W[3])))
+        F = np.zeros((Ndims))
+        F[0:3] = env.GetForceAtX(pt)
+        r = 0.3
+
+        theta = W[3]
+        rcom = r * np.dot(Rz(theta),ex)
+        torque = np.cross(rcom,F[0:2])
+
+        ### TORQUE application
+        F[3] = np.sign(torque[2])*np.linalg.norm(torque)
+        return F
 #def CoriolisAtWaypoint(robot, p):
 #        Nl = 1
 #        active_dofs = robot.GetActiveConfigurationSpecification()
