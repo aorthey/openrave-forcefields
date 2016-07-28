@@ -2,7 +2,6 @@ from TOPP import Utilities
 import TOPP
 import numpy as np
 
-
 def TOPPInterface(trajectorystring, discrtimestep, a, b, c):
         Ndim = 2
         vmax = 1e5*np.ones(Ndim) ## no velocity constraints

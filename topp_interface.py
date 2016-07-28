@@ -40,6 +40,8 @@ class TOPPInterface():
         def initializeFromSpecifications(self, W):
                 self.filename = 'images/topp_'+str(params.FILENAME)+'.png'
 
+                self.Ndim = W.shape[0]
+                self.Nwaypoints = W.shape[1]
                 self.traj0 = Utilities.InterpolateViapoints(W)
                 self.length = self.traj0.duration
 
@@ -64,8 +66,7 @@ class TOPPInterface():
         def __init__(self, W, env, zeroForce=False):
 
                 self.zeroForce_ = zeroForce
-                self.env_ptr =env
-                self.Ndim = W.shape[0]
+                self.env_ptr = env
                 self.initializeFromSpecifications(W)
 
         def GetABC(self, traj0, discrtimestep):
@@ -88,12 +89,13 @@ class TOPPInterface():
                         qss[:,i] = self.traj0.Evaldd(duration)
 
                         ### G*qdd + h <= 0
-                        Fi = params.waypoint_to_force(self.env_ptr, q[:,i])
-                        Ri = params.GetControlMatrixAtWaypoint(q[:,i])
 
                         if self.zeroForce_:
-                                Fi = 0.0*Fi
+                                Fi = np.zeros((q[:,i].shape))
+                        else:
+                                Fi = params.waypoint_to_force(self.env_ptr, q[:,i])
 
+                        Ri = params.GetControlMatrixAtWaypoint(q[:,i])
                         [G,h] = params.GetControlConstraintMatricesFromControl(Ri, Fi)
                         a[i,:] = np.dot(G,qs[:,i]).flatten()
                         b[i,:] = np.dot(G,qss[:,i]).flatten()
@@ -109,52 +111,58 @@ class TOPPInterface():
 
                 return [a,b,c]
 
-        def getSpeedIntervalAtCriticalPoint(self, N, Subtraj_dvec, Subtraj_str, dt=None):
+        def getSpeedIntervalAtPoint(self, N):
                 if (N < 0) or (N > self.Nwaypoints):
                         print "Critical Point",N,"is out of bounds of trajectory"
                         sys.exit(1)
                 if N == 0:
                         return [0,0]
 
-                Fc = self.F_[:,0:N]
-                Rc = self.R_[:,:,0:N]
-                Wc = self.W_[:,0:N]
-                dWc = self.dW_[:,0:N]
-                amin = self.amin_
-                amax = self.amax_
-                self.initializeFromSpecifications(Subtraj_dvec, Subtraj_str, Fc, Rc, amin, amax, Wc, dWc,dt)
+                Wn = self.waypoints[:,0:N]
+                trajN = Utilities.InterpolateViapoints(Wn)
+
+                [a,b,c] = self.GetABC(trajN, self.discrtimestep)
+                vmax = 1e5*np.ones(self.Ndim)
+                self.topp_inst = TOPP.QuadraticConstraints(trajN, self.discrtimestep, vmax, list(a), list(b), list(c))
                 x = self.topp_inst.solver
-                #x.integrationtimestep = 0.05
-                #x.reparamtimestep = 0.05
-                return_code = x.RunVIP(0.0, 0.0)
-                if return_code != 1:
+                ret = x.RunVIP(0.0, 0.0)
+                if ret != 1:
                         semin = 0.0
                         semax = 0.0
                 else:
                         semin = x.sdendmin
                         semax = x.sdendmax
-                #print Subtraj_dvec
-                #print Wc
-                #print dWc
                 return [semin, semax]
 
         def ReparameterizeTrajectory(self):
                 x = self.topp_inst.solver
-                #x.integrationtimestep = 0.001
-                #x.integrationtimestep = 0.001
-                #x.reparamtimestep = 0.01
+                x.integrationtimestep = self.discrtimestep
+                x.reparamtimestep = 0.0001
                 ret = x.RunComputeProfiles(0.0,0.0)
                 if ret == 1:
                         x.ReparameterizeTrajectory()
                         x.WriteResultTrajectory()
-                        self.traj1 = Trajectory.PiecewisePolynomialTrajectory.FromString(x.restrajectorystring)
+                        try:
+                                self.traj1 = Trajectory.PiecewisePolynomialTrajectory.FromString(x.restrajectorystring)
+                        except Exception as e:
+                                print "Exception in ReparameterizeTrajectory:",e
+                                print "trajectorystring is :",x.restrajectorystring
+                                print "discrtimestep=",self.discrtimestep
+                                print "trajectorystring=\"\"\"",self.traj0,"\"\"\""
+                                PrintNumpy("a=",self.a)
+                                PrintNumpy("b=",self.b)
+                                PrintNumpy("c=",self.c)
+                                sys.exit(1)
                         return True
                 else:
                         return False
-        def CriticalPointToWaypoint(self, CP):
-                t = CP*self.discrtimestep
 
+        def CriticalTimeToWaypoint(self, t):
                 kctr = 0
+
+                if t>self.traj0.duration:
+                        return self.Nwaypoints
+
                 dt = self.traj0.chunkcumulateddurationslist[kctr]
                 while dt < t:
                         kctr+=1
@@ -163,7 +171,7 @@ class TOPPInterface():
                 
         def getCriticalPoint(self):
                 x = self.topp_inst.solver
-                #x.integrationtimestep = 0.001
+                x.integrationtimestep = self.discrtimestep
                 #x.reparamtimestep = 0.01
                 #x.extrareps = 10
 
@@ -171,31 +179,33 @@ class TOPPInterface():
                 try:
                         ret = x.RunComputeProfiles(0.0,0.0)
                         if ret == 4:
-                                ### MVC Hit Zero
-                                self.critical_point = x.GetCriticalPoint()
-                                self.critical_point_value = x.GetCriticalPointValue()
-                                print "TOPP critical pt:",self.critical_point,self.critical_point_value
-                                return self.CriticalPointToWaypoint(self.critical_point)
-                        if ret == 1: ##TOPP_OK
+                                CP_dt = x.GetCriticalPoint()
+                                t_CP = CP_dt * x.integrationtimestep
+                                self.critical_point = self.CriticalTimeToWaypoint(t_CP)
+                                print "TOPP: MVC hit zero | CP:",
+                                print self.critical_point,"/",self.Nwaypoints,
+                                print "(t=",t_CP,"/",self.traj0.duration,")"
+                                return self.critical_point
+                        if ret == 1: 
                                 print "TOPP: success"
                                 return self.Nwaypoints
-                        if ret== 0:
-                                self.critical_point = x.GetCriticalPoint()
-                                self.critical_point_value = x.GetCriticalPointValue()
-                                print "TOPP: unspecified error"
-                                print "TOPP critical pt:",self.critical_point,self.critical_point_value
-                                return self.CriticalPointToWaypoint(self.critical_point)
-                                #sys.exit(0)
+                        if ret == 0:
+                                CP_dt = x.GetCriticalPoint()
+                                t_CP = CP_dt * x.integrationtimestep
+                                print CP_dt,t_CP
+                                self.critical_point = self.CriticalTimeToWaypoint(t_CP)
+                                print "TOPP: unspecified error | CP:",
+                                print self.critical_point,"/",self.Nwaypoints,
+                                print "(t=",t_CP,"/",self.traj0.duration,")"
+                                return self.critical_point
                         else:
-                                print "TOPP: ",ret
+                                print "TOPP: error code ",ret,"(not handled yet)"
                                 sys.exit(0)
 
                 except Exception as e:
                         print "TOPP EXCEPTION: ",e
-                        #print self.durationVector
                         print self.traj0.duration
                         sys.exit(0)
-                        #return -1
 
 
         def PlotPrettifiedAxes(self, ax):

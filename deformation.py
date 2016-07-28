@@ -251,14 +251,16 @@ class Deformation():
                 ### get forces in normal direction to trajectory
                 FN = self.getForceNormalComponent(F, dWori)
 
-                self.critical_pt = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, 0)
+                self.critical_pt = traj.getCriticalPointFromWaypoints(self.env, Wori, 0)
+
+                self.traj_velprofile = traj.getVelocityIntervalWithoutForceField(self.env, Wori)
+
+                #sys.exit(0)
 
                 #### compute min/max velocity profile from path without forces
                 #### (if available). otherwise use [0,0]
                 dpmin = np.zeros((1,Nwaypoints))
                 dpmax = np.zeros((1,Nwaypoints))
-
-                self.traj_velprofile = traj.getVelocityIntervalWithoutForceField(self.env, Wori, dWori, ddWori)
 
                 if self.traj_velprofile is not None:
                         Tend = self.traj_velprofile.duration
@@ -489,14 +491,14 @@ class Deformation():
                 Ndim = DeformInfo['Ndim']
                 Nwaypoints = DeformInfo['Nwaypoints']
                 critical_pt = DeformInfo['critical_pt']
-                self.critical_pt = traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, critical_pt)
+                self.critical_pt = traj.getCriticalPointFromWaypoints(self.env, Wori, critical_pt)
 
                 print "###########################################"
                 print "CRITICAL WAYPOINT: ",self.critical_pt,"/",Nwaypoints
 
                 if self.critical_pt >= Nwaypoints-1:
                         print "No deformation necessary => Trajectory dynamically feasible"
-                        print traj.getCriticalPointFromWaypoints(self.env, Wori, dWori, ddWori, self.critical_pt)
+                        print traj.getCriticalPointFromWaypoints(self.env, Wori, self.critical_pt)
                         print "###########################################"
                         return True
                 else:

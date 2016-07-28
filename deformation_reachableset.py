@@ -66,6 +66,8 @@ class DeformationReachableSet(Deformation):
                                 self.traj_deformed.new_from_waypoints(Wnext)
                                 print "Path is Simple Projectable"
                                 return DEFORM_SUCCESS
+                        else:
+                                print "Path Simple Projectable but Collision"
 
                 ###############################################################
                 ## deform path 
