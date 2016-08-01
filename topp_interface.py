@@ -69,8 +69,8 @@ class TOPPInterface():
                 self.env_ptr = env
                 self.initializeFromSpecifications(W)
 
-        def GetABC(self, traj0, discrtimestep):
-                ndiscrsteps = int((traj0.duration + 1e-10) / discrtimestep) + 1
+        def GetABC(self, traj_in, discrtimestep):
+                ndiscrsteps = int((traj_in.duration + 1e-10) / discrtimestep) + 1
                 Adim = params.amin.shape[0]
 
                 q = np.zeros((self.Ndim,ndiscrsteps))
@@ -84,9 +84,9 @@ class TOPPInterface():
                 for i in range(0,ndiscrsteps):
                         duration = i*discrtimestep
 
-                        q[:,i] = self.traj0.Eval(duration)
-                        qs[:,i] = self.traj0.Evald(duration)
-                        qss[:,i] = self.traj0.Evaldd(duration)
+                        q[:,i] = traj_in.Eval(duration)
+                        qs[:,i] = traj_in.Evald(duration)
+                        qss[:,i] = traj_in.Evaldd(duration)
 
                         ### G*qdd + h <= 0
 
@@ -105,39 +105,18 @@ class TOPPInterface():
                 self.a = a
                 self.b = b
                 self.c = c
+
                 self.q = q
                 self.qs = qs
                 self.qss = qss
 
                 return [a,b,c]
 
-        def getSpeedIntervalAtPoint(self, N):
-                if (N < 0) or (N > self.Nwaypoints):
-                        print "Critical Point",N,"is out of bounds of trajectory"
-                        sys.exit(1)
-                if N == 0:
-                        return [0,0]
-
-                Wn = self.waypoints[:,0:N]
-                trajN = Utilities.InterpolateViapoints(Wn)
-
-                [a,b,c] = self.GetABC(trajN, self.discrtimestep)
-                vmax = 1e5*np.ones(self.Ndim)
-                self.topp_inst = TOPP.QuadraticConstraints(trajN, self.discrtimestep, vmax, list(a), list(b), list(c))
-                x = self.topp_inst.solver
-                ret = x.RunVIP(0.0, 0.0)
-                if ret != 1:
-                        semin = 0.0
-                        semax = 0.0
-                else:
-                        semin = x.sdendmin
-                        semax = x.sdendmax
-                return [semin, semax]
 
         def ReparameterizeTrajectory(self):
                 x = self.topp_inst.solver
-                x.integrationtimestep = self.discrtimestep
-                x.reparamtimestep = 0.0001
+                #x.integrationtimestep = self.discrtimestep
+                #x.reparamtimestep = 0.0001
                 ret = x.RunComputeProfiles(0.0,0.0)
                 if ret == 1:
                         x.ReparameterizeTrajectory()
@@ -148,13 +127,14 @@ class TOPPInterface():
                                 print "Exception in ReparameterizeTrajectory:",e
                                 print "trajectorystring is :",x.restrajectorystring
                                 print "discrtimestep=",self.discrtimestep
-                                print "trajectorystring=\"\"\"",self.traj0,"\"\"\""
-                                PrintNumpy("a=",self.a)
-                                PrintNumpy("b=",self.b)
-                                PrintNumpy("c=",self.c)
+                                #print "trajectorystring=\"\"\"",self.traj0,"\"\"\""
+                                #PrintNumpy("a=",self.a)
+                                #PrintNumpy("b=",self.b)
+                                #PrintNumpy("c=",self.c)
                                 sys.exit(1)
                         return True
                 else:
+                        print "REPARAM:",ret
                         return False
 
         def CriticalTimeToWaypoint(self, t):
@@ -185,6 +165,9 @@ class TOPPInterface():
                                 print "TOPP: MVC hit zero | CP:",
                                 print self.critical_point,"/",self.Nwaypoints,
                                 print "(t=",t_CP,"/",self.traj0.duration,")"
+                                #print self.getSpeedIntervalAtPoint(4)
+                                #self.ReparameterizeTrajectory()
+                                #sys.exit(0)
                                 return self.critical_point
                         if ret == 1: 
                                 print "TOPP: success"
@@ -206,6 +189,50 @@ class TOPPInterface():
                         print "TOPP EXCEPTION: ",e
                         print self.traj0.duration
                         sys.exit(0)
+
+        def getSpeedIntervalAtPoint(self, N):
+                if (N < 0) or (N > self.Nwaypoints):
+                        print "Critical Point",N,"is out of bounds of trajectory"
+                        sys.exit(1)
+                if N == 0:
+                        return [0,0]
+
+                Wn = self.waypoints[:,0:N]
+                trajN = Utilities.InterpolateViapoints(Wn)
+                [a,b,c] = self.GetABC(trajN, self.discrtimestep)
+                vmax = 1e5*np.ones(self.Ndim)
+
+                topp_inst = TOPP.QuadraticConstraints(trajN, self.discrtimestep, vmax, list(a), list(b), list(c))
+                x = topp_inst.solver
+                ret = x.RunVIP(0.0, 0.0)
+
+                if ret != 1:
+                        semin = 0.0
+                        semax = 0.0
+                else:
+                        semin = x.sdendmin
+                        semax = x.sdendmax
+                        if x.sdendmin<=1e-5:
+                                ret2 = x.RunComputeProfiles(0.0, semin)
+                                if ret2 != 1:
+                                        print N,ret,ret2,semin,semax
+                                        np.savetxt('topp/a',a)
+                                        np.savetxt('topp/b',b)
+                                        np.savetxt('topp/c',c)
+
+                                        tstr = "trajectorystring=\"\"\" %s \"\"\""%(str(trajN))
+                                        print tstr
+                                        with open("topp/traj0", "w") as fh:
+                                                fh.write("%s" % str(trajN))
+
+                                        sys.exit(0)
+
+                                        #print "trajectorystring=\"\"\"",self.topp.traj0,"\"\"\""
+                                        #PrintNumpy("a",self.topp.a)
+                                        #PrintNumpy("b",self.topp.b)
+                                        #PrintNumpy("c",self.topp.c)
+
+                return [semin, semax]
 
 
         def PlotPrettifiedAxes(self, ax):

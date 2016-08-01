@@ -255,8 +255,6 @@ class Deformation():
 
                 self.traj_velprofile = traj.getVelocityIntervalWithoutForceField(self.env, Wori)
 
-                #sys.exit(0)
-
                 #### compute min/max velocity profile from path without forces
                 #### (if available). otherwise use [0,0]
                 dpmin = np.zeros((1,Nwaypoints))

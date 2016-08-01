@@ -51,7 +51,8 @@ if __name__ == "__main__":
 
         #traj = Trajectory.from_ravetraj(rave_path)
         #traj = Trajectory.from_file('trajectories/clc_error')
-        traj = Trajectory.from_file('trajectories/topp_outofrange')
+        #traj = Trajectory.from_file('trajectories/topp_outofrange')
+        traj = Trajectory.from_file('trajectories/topp_clc')
 
         traj.info()
         traj.draw(env)

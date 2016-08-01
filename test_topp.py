@@ -202,19 +202,19 @@ if __name__ == "__main__":
         ### sys.exit(0)
 
         #### visualize all 
-        #r=0.2
-        #xc = 2.0
-        #yc = 0.0
-        #epsilon = pi/32
-        #for r in np.linspace(0.2,1.0,10):
-        #        for theta in -np.linspace(-pi/2+epsilon,pi/2-epsilon,40):
-        #                x = r*cos(theta)+xc
-        #                y = r*sin(theta)+yc
-        #                PlotTrajXY(x,y,PostMakeup=False)
+        r=0.2
+        xc = 2.0
+        yc = 0.0
+        epsilon = pi/32
+        for r in np.linspace(0.2,2.0,10):
+                for theta in -np.linspace(-pi/2+epsilon,pi/2-epsilon,10):
+                        x = r*cos(theta)+xc
+                        y = r*sin(theta)+yc
+                        PlotTrajXY(x,y,PostMakeup=False)
 
-        x = 2.13160997913
-        y = -0.150594865098
-        traj0 = PlotTrajXY(x,y, PostMakeup=False)
+        #x = 2.13160997913
+        #y = -0.150594865098
+        #traj0 = PlotTrajXY(x,y, PostMakeup=False)
         #PlotTrajXY(2.0,0.0, PostMakeup=True)
         #PlotTrajXY(4.0,-4.0)
         ###PlotTrajXY(3.5,-2.8)

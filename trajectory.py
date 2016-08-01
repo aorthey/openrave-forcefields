@@ -24,7 +24,7 @@ class Trajectory():
         DEBUG = 0
 
         DISCRETIZATION_TIME_STEP = 0.01
-        SMOOTH_CONSTANT = 0.0 ##TODO: do not change to >0 => problems with PPoly
+        SMOOTH_CONSTANT = 0 ##TODO: do not change to >0 => problems with PPoly
         POLYNOMIAL_DEGREE = 1
         MIN_NUMBER_WAYPOINTS = 5
 
@@ -396,15 +396,20 @@ class Trajectory():
                         #print W.shape
                         #self.info()
                         print "discrtimestep=",self.topp.discrtimestep
-                        print "trajectorystring=\"\"\"",self.topp.traj0,"\"\"\""
-                        PrintNumpy("a",self.topp.a)
-                        PrintNumpy("b",self.topp.b)
-                        PrintNumpy("c",self.topp.c)
+                        #print "trajectorystring=\"\"\"",self.topp.traj0,"\"\"\""
+                        #PrintNumpy("a",self.topp.a)
+                        #PrintNumpy("b",self.topp.b)
+                        #PrintNumpy("c",self.topp.c)
+                        print self.topp.Nwaypoints,W.shape
+
+                        self.topp.zeroForce_ = True
+                        for i in range(0,W.shape[1],100):
+                                print "SPEED INTERVAL",W.shape[1]-i,self.topp.getSpeedIntervalAtPoint(W.shape[1]-i)
+
+                        print self.topp.getCriticalPoint()
+                        sys.exit(0)
 
                         traj = self.topp.traj0
-                        CP = self.topp.getCriticalPoint()
-
-                        print "SPEED INTERVAL",self.topp.getSpeedIntervalAtPoint(W.shape[1]-1)
                         q = np.array([traj.Eval(t) for t in np.linspace(0,traj.duration,1e5)]).T
                         plot(q[0,:],q[1,:],'-r',linewidth=2)
                         plot(W[0,:],W[1,:],'ok',markersize=2)
