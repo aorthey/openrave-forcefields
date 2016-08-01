@@ -134,7 +134,6 @@ class TOPPInterface():
                                 sys.exit(1)
                         return True
                 else:
-                        print "REPARAM:",ret
                         return False
 
         def CriticalTimeToWaypoint(self, t):
@@ -212,25 +211,25 @@ class TOPPInterface():
                 else:
                         semin = x.sdendmin
                         semax = x.sdendmax
-                        if x.sdendmin<=1e-5:
-                                ret2 = x.RunComputeProfiles(0.0, semin)
-                                if ret2 != 1:
-                                        print N,ret,ret2,semin,semax
-                                        np.savetxt('topp/a',a)
-                                        np.savetxt('topp/b',b)
-                                        np.savetxt('topp/c',c)
+                        #if x.sdendmin<=1e-5:
+                        #        ret2 = x.RunComputeProfiles(0.0, semin)
+                        #        if ret2 != 1:
+                        #                print N,ret,ret2,semin,semax
+                        #                np.savetxt('topp/a',a)
+                        #                np.savetxt('topp/b',b)
+                        #                np.savetxt('topp/c',c)
 
-                                        tstr = "trajectorystring=\"\"\" %s \"\"\""%(str(trajN))
-                                        print tstr
-                                        with open("topp/traj0", "w") as fh:
-                                                fh.write("%s" % str(trajN))
+                        #                tstr = "trajectorystring=\"\"\" %s \"\"\""%(str(trajN))
+                        #                print tstr
+                        #                with open("topp/traj0", "w") as fh:
+                        #                        fh.write("%s" % str(trajN))
 
-                                        sys.exit(0)
+                        #                sys.exit(0)
 
-                                        #print "trajectorystring=\"\"\"",self.topp.traj0,"\"\"\""
-                                        #PrintNumpy("a",self.topp.a)
-                                        #PrintNumpy("b",self.topp.b)
-                                        #PrintNumpy("c",self.topp.c)
+                        #                #print "trajectorystring=\"\"\"",self.topp.traj0,"\"\"\""
+                        #                #PrintNumpy("a",self.topp.a)
+                        #                #PrintNumpy("b",self.topp.b)
+                        #                #PrintNumpy("c",self.topp.c)
 
                 return [semin, semax]
 
