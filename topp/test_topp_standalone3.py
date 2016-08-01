@@ -16,7 +16,7 @@ def TOPPInterface(Ndim, trajectorystring, discrtimestep, a, b, c):
                 semax = x.sdendmax
                 print "sd_end: [",semin,",",semax,"]"
 
-                ##### compute speed profile for minimum
+                ##### compute speed profile for some speeds inside sd_end
                 for speed in np.linspace(semin,semax,5):
                         ret = x.RunComputeProfiles(0,speed)
                         print "discrtimestep",discrtimestep,"TOPP RunComputeProfiles (0,",speed,") code:",ret,
@@ -29,10 +29,10 @@ def TOPPInterface(Ndim, trajectorystring, discrtimestep, a, b, c):
 
 Ndim = 4
 discrtimestep= 1e-3
-a = np.loadtxt('a')
-b = np.loadtxt('b')
-c = np.loadtxt('c')
-with open("traj0", "r") as fh:
+a = np.loadtxt('topp/a')
+b = np.loadtxt('topp/b')
+c = np.loadtxt('topp/c')
+with open("topp/traj0", "r") as fh:
         trajectorystring = "%s" % fh.read()
 #print trajectorystring
 TOPPInterface(Ndim, trajectorystring, discrtimestep, a, b, c)
