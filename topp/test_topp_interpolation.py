@@ -80,14 +80,14 @@ def InterpolateViapointsCustom(path):
 def PlotTraj(W):
         traj0 = Utilities.InterpolateViapoints(W)
 
-        print "Interpolate Viapoints",
+        print "Interpolate Viapoints Default",
         M = 5000
         q = np.array([traj0.Eval(t) for t in np.linspace(0,traj0.duration,M)]).T
         plt.plot(q[0,:],q[1,:],'-r',linewidth=2)
         plt.plot(W[0,:],W[1,:],'ok')
         TOPPInterface(traj0,W)
 
-        print "Interpolate Viapoints Custom",
+        print "Interpolate Viapoints Adjust",
         traj0 = InterpolateViapointsCustom(W)
         q = np.array([traj0.Eval(t) for t in np.linspace(0,traj0.duration,M)]).T
         plt.plot(q[0,:],q[1,:],'-g',linewidth=2)
@@ -96,13 +96,8 @@ def PlotTraj(W):
 
         print "quiver it"
         X, Y = np.mgrid[-0.1:0.5:15j, -0.005:0.005:15j]
-
-        #print X
-        #U = np.ones(X+Y)
-        #V = np.ones(X+Y)
-        #speed = np.sqrt(U**2 + V**2)
-        U = -1 - np.cos(X**2 + Y)
-        V = 1 + X - Y
+        V = X+Y
+        U = X+Y
         U[X>0.19]=0
         U[X<0.19]=1.5
         V = 0.0*V
