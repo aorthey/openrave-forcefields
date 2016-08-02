@@ -60,6 +60,7 @@ def InterpolateViapointsCustom(path):
     tv = np.zeros(nviapoints)
     for i in range(nviapoints-1):
             tv[i+1] = tv[i]+np.linalg.norm(path[:,i]-path[:,i+1])
+
     tcklist = []
     for idof in range(0,path.shape[0]):
         tcklist.append(interpolate.splrep(tv,path[idof,:],s=0,k=3))

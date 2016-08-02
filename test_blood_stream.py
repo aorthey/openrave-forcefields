@@ -27,8 +27,6 @@ np.set_printoptions(precision=2)
 
 if __name__ == "__main__":
 
-        import sys
-
         #def trace(frame, event, arg):
         #        print "%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)
         #        return trace
@@ -49,10 +47,10 @@ if __name__ == "__main__":
         ##planner = MotionPlannerKinodynamic(robot, env)
         rave_path = planner.GetPath()
 
-        #traj = Trajectory.from_ravetraj(rave_path)
+        traj = Trajectory.from_ravetraj(rave_path)
         #traj = Trajectory.from_file('trajectories/clc_error')
         #traj = Trajectory.from_file('trajectories/topp_outofrange')
-        traj = Trajectory.from_file('trajectories/topp_clc')
+        #traj = Trajectory.from_file('trajectories/topp_clc')
 
         traj.info()
         traj.draw(env)

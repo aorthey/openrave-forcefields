@@ -15,7 +15,6 @@ import pylab as plt
 from util_force import *
 from util_mvc import *
 from util_mvc_approx import *
-#from topp_interface2 import TOPPInterface
 from topp_interface import TOPPInterface
 import copy
 
@@ -71,6 +70,7 @@ class Trajectory():
                 self.Nwaypoints = self.waypoints.shape[1]
                 self.bspline = self.computeSplineFromWaypoints(self.waypoints)
                 [self.waypoints,dW,ddW] = self.get_waypoints_second_order()
+                #self.topp = TOPPInterface(self.waypoints, env)
 
         def save(self, filename):
                 np.save(filename, self.waypoints)
@@ -342,12 +342,6 @@ class Trajectory():
                         return True
 
         def PlotParametrization(self, env):
-                [W,dW,ddW] = self.get_waypoints_second_order()
-
-                [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                F = self.get_forces_at_waypoints(W, env)
-                [R,amin,amax] = self.getControlMatrix(W)
-                #self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, F,R,amin,amax,W,dW,env)
                 self.topp = TOPPInterface(W, env)
                 if self.topp.ReparameterizeTrajectory():
                         self.topp.PlotTrajectory(env)
@@ -355,34 +349,23 @@ class Trajectory():
                 else:
                         print "Trajectory has no ReParameterization"
 
-        def getTOPPTrajectoryWithTangentForceField(self, env, W, dW):
-                [Ndim, Nwaypoints] = self.getWaypointDim(W)
-                Fzero = self.get_tangent_forces_at_waypoints(W, dW, env)
-                [R,amin,amax] = self.getControlMatrix(W)
-
-                #self.topp = TOPPInterface(self, self.durationVector, self.trajectorystring, Fzero,R,amin,amax,W,dW,env)
-                self.topp = TOPPInterface(W, env)
-                if self.topp.ReparameterizeTrajectory():
-                        return self.topp
-                else:
-                        print "WARNING: with tangent force field, TOPP couldn't find a valid \
-                        velocity profile. Path not executable."
-                        print W.shape
-                        print Fzero
-                        print W
-                        self.info()
-                        sys.exit(1)
-                        return None
 
         def getCriticalPointFromWaypoints(self, env, W, oldNc = 0):
-
                 self.topp = TOPPInterface(W, env)
                 Nc = self.topp.getCriticalPoint()-1
-
                 if Nc < 0:
                         print "return oldNc=",oldNc
                         Nc = oldNc
                 return Nc
+
+        def getCriticalPoint(self, env):
+                #L = self.get_length()
+                #[W,dW,ddW] = self.get_waypoints_second_order()
+                N = self.getCriticalPointFromWaypoints(env, self.waypoints)
+                if N is None:
+                        print "No critical point found"
+                        sys.exit(1)
+                return N
 
         def getVelocityIntervalWithoutForceField(self, env, W):
 
@@ -391,23 +374,20 @@ class Trajectory():
                 if self.topp.ReparameterizeTrajectory():
                         return self.topp.traj0
                 else:
+                        #### without a force field any path should be executable
+                        #### at near zero speed => catch it if not
                         print "WARNING1: without force field, TOPP couldn't find a valid \
                         velocity profile. Path not continuous or system not STLC"
-                        #print W.shape
-                        #self.info()
                         print "discrtimestep=",self.topp.discrtimestep
                         #print "trajectorystring=\"\"\"",self.topp.traj0,"\"\"\""
                         #PrintNumpy("a",self.topp.a)
                         #PrintNumpy("b",self.topp.b)
                         #PrintNumpy("c",self.topp.c)
-                        print self.topp.Nwaypoints,W.shape
-
                         self.topp.zeroForce_ = True
                         for i in range(0,W.shape[1],100):
                                 print "SPEED INTERVAL",W.shape[1]-i,self.topp.getSpeedIntervalAtPoint(W.shape[1]-i)
 
                         print self.topp.getCriticalPoint()
-                        sys.exit(0)
 
                         traj = self.topp.traj0
                         q = np.array([traj.Eval(t) for t in np.linspace(0,traj.duration,1e5)]).T
@@ -429,57 +409,18 @@ class Trajectory():
                         print W
                         sys.exit(1)
 
-        def getTOPPTrajectory(self, env, W, dW, F):
+        #def getTOPPTrajectory(self, env, W, dW, F):
 
-                #self.topp = TOPPInterface(self, self.durationVector,
-                #                self.trajectorystring,
-                #                Fzero,R,amin,amax,W,dW,env)
-                self.topp = TOPPInterface(W, env)
-                if self.topp.ReparameterizeTrajectory():
-                        return self.topp
-                else:
-                        print W.shape
-                        print W
-                        self.info()
-                        sys.exit(1)
-                        return None
+        #        self.topp = TOPPInterface(W, env)
+        #        if self.topp.ReparameterizeTrajectory():
+        #                return self.topp
+        #        else:
+        #                print W.shape
+        #                print W
+        #                self.info()
+        #                sys.exit(1)
+        #                return None
 
-
-        def GetSpeedIntervalAtCriticalPoint(self, env, Win, dWin, Nc_in, dt = None):
-
-                W = Win[:,0:Nc_in]
-                dW = dWin[:,0:Nc_in]
-
-                #self.topp = TOPPInterface(self, durationVector, trajsubstr,
-                                #F,R,amin,amax,W,dW, env)
-                self.topp = TOPPInterface(W, env)
-
-                #print W,dW
-                [semin,semax] = self.topp.getSpeedIntervalAtCriticalPoint(
-                                Nc_in,
-                                durationVector,
-                                trajsubstr, dt)
-                #print "TOPP velocity at CP",Nc_in,":",semin,semax
-                ### AVP on the subtrajectory between 0 and Nc
-                #if Nc > 0:
-                #        [bspline, trajstr, durationVector] = self.computeTrajectorySubstringForTOPP(W, Nc)
-                #        [semin, semax] = self.topp.getSpeedIntervalAtCriticalPoint(Nc, durationVector, trajstr)
-                #else:
-                #        semin = 0.0
-                #        semax = 0.0
-                #print "MAX SPEED AT CRITICAL PT",Nc,"/",Nwaypoints," is:",semin,semax
-                return [semin,semax]
-
-        def getCriticalPoint(self, env):
-                L = self.get_length()
-                [W,dW,ddW] = self.get_waypoints_second_order()
-
-                N = self.getCriticalPointFromWaypoints(env, W)
-                if N is not None:
-                        print "CRITICAL POINT:",N,"/",W.shape[1]
-                        print W[:,N]
-                else:
-                        print "No critical point found"
 
         @classmethod
         def from_ravetraj(cls, ravetraj):

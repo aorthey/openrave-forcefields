@@ -194,7 +194,6 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, dpnext, F, dt):
 
         boundary_distance = 0.0
         [Acontrol,bcontrol] = GetControlConstraintMatricesAdjust(p,F,epsilon=boundary_distance)
-        boundary_distance = 0.01
 
         #### adjust ddq to new conditions
         # minimize || M*ddq - R*u - F ||

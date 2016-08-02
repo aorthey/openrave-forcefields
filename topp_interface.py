@@ -46,7 +46,6 @@ class TOPPInterface():
                 self.length = self.traj0.duration
 
                 dendpoint = np.linalg.norm(self.traj0.Eval(self.length)-W[:,-1])
-
                 if dendpoint > self.TRAJECTORY_ACCURACY_REQUIRED:
                         print "###############"
                         print "TOPP INTERFACE ERROR"
@@ -211,25 +210,24 @@ class TOPPInterface():
                 else:
                         semin = x.sdendmin
                         semax = x.sdendmax
-                        #if x.sdendmin<=1e-5:
-                        #        ret2 = x.RunComputeProfiles(0.0, semin)
-                        #        if ret2 != 1:
-                        #                print N,ret,ret2,semin,semax
-                        #                np.savetxt('topp/a',a)
-                        #                np.savetxt('topp/b',b)
-                        #                np.savetxt('topp/c',c)
+                        if semin<=1e-5:
+                                ret2 = x.RunComputeProfiles(0.0, semin)
+                                if ret2 != 1:
+                                        print N,ret,ret2,semin,semax
+                                        np.savetxt('topp/a2',a)
+                                        np.savetxt('topp/b2',b)
+                                        np.savetxt('topp/c2',c)
 
-                        #                tstr = "trajectorystring=\"\"\" %s \"\"\""%(str(trajN))
-                        #                print tstr
-                        #                with open("topp/traj0", "w") as fh:
-                        #                        fh.write("%s" % str(trajN))
+                                        tstr = "trajectorystring=\"\"\" %s \"\"\""%(str(trajN))
+                                        with open("topp/traj2", "w") as fh:
+                                                fh.write("%s" % str(trajN))
 
-                        #                sys.exit(0)
+                                        sys.exit(0)
 
-                        #                #print "trajectorystring=\"\"\"",self.topp.traj0,"\"\"\""
-                        #                #PrintNumpy("a",self.topp.a)
-                        #                #PrintNumpy("b",self.topp.b)
-                        #                #PrintNumpy("c",self.topp.c)
+                                        #print "trajectorystring=\"\"\"",self.topp.traj0,"\"\"\""
+                                        #PrintNumpy("a",self.topp.a)
+                                        #PrintNumpy("b",self.topp.b)
+                                        #PrintNumpy("c",self.topp.c)
 
                 return [semin, semax]
 
