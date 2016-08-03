@@ -359,7 +359,6 @@ class Trajectory():
                 return Nc
 
         def getCriticalPoint(self, env):
-                #L = self.get_length()
                 #[W,dW,ddW] = self.get_waypoints_second_order()
                 N = self.getCriticalPointFromWaypoints(env, self.waypoints)
                 if N is None:
@@ -379,16 +378,10 @@ class Trajectory():
                         print "WARNING1: without force field, TOPP couldn't find a valid \
                         velocity profile. Path not continuous or system not STLC"
                         print "discrtimestep=",self.topp.discrtimestep
-                        #print "trajectorystring=\"\"\"",self.topp.traj0,"\"\"\""
-                        #PrintNumpy("a",self.topp.a)
-                        #PrintNumpy("b",self.topp.b)
-                        #PrintNumpy("c",self.topp.c)
-                        self.topp.zeroForce_ = True
-                        for i in range(0,W.shape[1],100):
-                                print "SPEED INTERVAL",W.shape[1]-i,self.topp.getSpeedIntervalAtPoint(W.shape[1]-i)
 
-                        print self.topp.getCriticalPoint()
+                        self.topp.SaveToFile('clc2')
 
+                        CP = self.topp.getCriticalPoint()
                         traj = self.topp.traj0
                         q = np.array([traj.Eval(t) for t in np.linspace(0,traj.duration,1e5)]).T
                         plot(q[0,:],q[1,:],'-r',linewidth=2)
@@ -458,7 +451,7 @@ class Trajectory():
                 dpts = np.zeros((K,N))
                 ddpts = np.zeros((K,N))
                 ctr = 0
-                for t in np.linspace(0.0, 1.0, num=N):
+                for t in np.linspace(0.0, self.get_length(), num=N):
                         [f0,df0] = self.evaluate_at(t,der=1)
                         pts[:,ctr] = f0
                         dpts[:,ctr] = df0
@@ -472,15 +465,16 @@ class Trajectory():
                 return [pts,dpts]
 
         def get_length(self):
-                dd = 0.0
-                T = np.linspace(0.0, 1.0, num=self.waypoints.shape[1])
-                for i in range(0,len(T)-1):
-                        t = T[i]
-                        tdt = T[i+1]
-                        [ft,df0] = self.evaluate_at(t)
-                        [ftdt,df0] = self.evaluate_at(tdt)
-                        dd = dd + np.linalg.norm(ft-ftdt)
-                return dd
+                return self.length
+                #dd = 0.0
+                #T = np.linspace(0.0, 1.0, num=self.waypoints.shape[1])
+                #for i in range(0,len(T)-1):
+                #        t = T[i]
+                #        tdt = T[i+1]
+                #        [ft,df0] = self.evaluate_at(t)
+                #        [ftdt,df0] = self.evaluate_at(tdt)
+                #        dd = dd + np.linalg.norm(ft-ftdt)
+                #return dd
 
         def get_handle_draw_waypoints(self, env, W, dW, ddW):
                 Ndims = W.shape[0]
@@ -618,8 +612,14 @@ class Trajectory():
                 Ndim = W.shape[0]
                 Nwaypoints = W.shape[1]
                 bspline=[]
+
+                tvec = np.linspace(0,1,Nwaypoints)
+                for i in range(Nwaypoints-1):
+                            tvec[i+1] = tvec[i]+linalg.norm(W[:,i]-W[:,i+1])
+
+                self.length = tvec[i+1]
+
                 for i in range(0,Ndim):
-                        tvec = np.linspace(0,1,Nwaypoints)
                         WP = W[i,:]
                         trajectory = splrep(tvec,WP,k=self.POLYNOMIAL_DEGREE,s=self.SMOOTH_CONSTANT)
                         bspline.append(trajectory)

@@ -134,30 +134,21 @@ class ProjectorSimple():
                 Nc3 = t3.getCriticalPoint(env)
 
 
-                traj2 = t2.topp.traj0
-                traj3 = t3.topp.traj0
-
-                Npts = 1e5
-                tvect2 = np.linspace(0,traj2.duration, Npts)
-                tvect3 = np.linspace(0,traj3.duration, Npts)
-                qvect2 = np.array([traj2.Eval(t) for t in tvect2]).T
-                qvect3 = np.array([traj3.Eval(t) for t in tvect3]).T
-
-                plt.plot(qvect2[0,:],qvect2[1,:],'-r',linewidth=3)
-                plt.plot(qvect3[0,:],qvect3[1,:],'-g',linewidth=3)
-                plt.plot(Q0[0,Nc],Q0[1,Nc],'or',markersize=5)
-                plt.plot(Qori[0,Nc3],Qori[1,Nc3],'og',markersize=5)
+                #traj2 = t2.topp.traj0
+                #traj3 = t3.topp.traj0
+                #Npts = 1e5
+                #tvect2 = np.linspace(0,traj2.duration, Npts)
+                #tvect3 = np.linspace(0,traj3.duration, Npts)
+                #qvect2 = np.array([traj2.Eval(t) for t in tvect2]).T
+                #qvect3 = np.array([traj3.Eval(t) for t in tvect3]).T
+                #plt.plot(qvect2[0,:],qvect2[1,:],'-r',linewidth=3)
+                #plt.plot(qvect3[0,:],qvect3[1,:],'-g',linewidth=3)
+                #plt.plot(Q0[0,Nc],Q0[1,Nc],'or',markersize=5)
+                #plt.plot(Qori[0,Nc3],Qori[1,Nc3],'og',markersize=5)
+                #plt.show()
 
                 print "BEFORE SIMPLE PROJECTABILITY:",Nc3,"/",Qori.shape[1]
                 print "AFTER  SIMPLE PROJECTABILITY:",Nc,"/",Q0.shape[1]
-
-                tn = Trajectory(Q0[:,0:Nc])
-                tn.getCriticalPoint(env)
-
-                for k in range(1,10):
-                        Nk = Nc - k
-                        print Nk,tn.topp.getSpeedIntervalAtPoint(Nk)
-                plt.show()
 
                 if Nc >= Q0.shape[1]-1:
                         return True

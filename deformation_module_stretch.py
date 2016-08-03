@@ -52,7 +52,7 @@ class DeformationModuleStretch(DeformationModule):
                         idxW1_end = idxW1[-1]
 
                         for idx in idxW1:
-                                Wdir[:,idx] = -tangent-0.05*normal
+                                Wdir[:,idx] = -tangent-0.1*normal
 
                         dUtmp1 = np.zeros((Ndim,Nwaypoints))
                         for i in range(0,Nwaypoints):

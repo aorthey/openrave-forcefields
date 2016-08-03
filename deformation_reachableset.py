@@ -25,12 +25,13 @@ class DeformationReachableSet(Deformation):
         #lambda_4 = 0.01
 
         ### experimental values for wafr: 0.0005, 0.01
+        ### lambda_1 = 0.0005
+        ### lambda_2 = 0.01
 
         ### counter-wrench
         lambda_1 = 0.0005
-
         ### stretching
-        lambda_2 = 0.01
+        lambda_2 = 0.000
 
         smoothing_factor = 20.0
 

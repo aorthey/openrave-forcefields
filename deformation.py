@@ -516,7 +516,7 @@ class Deformation():
                 return FN
 
         def SafetyCheckUpdate(self, dU):
-                epsilon=1e-10
+                epsilon=1e-5
                 dstart = np.linalg.norm(dU[:,0])
                 dend = np.linalg.norm(dU[:,-1])
                 if dstart > epsilon:
