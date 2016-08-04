@@ -80,7 +80,7 @@ class DeformationReachableSet(Deformation):
                 d1 = DeformationModuleCounterWrench( DeformInfo )
                 d2 = DeformationModuleStretch( DeformInfo )
                 dU += d1.get_update( self.lambda_1 )
-                dU += d2.get_update( self.lambda_2 )
+                #dU += d2.get_update( self.lambda_2 )
 
                 DeformInfo['dU'] = dU
                 dend = DeformationModuleEndPointProjection( DeformInfo )

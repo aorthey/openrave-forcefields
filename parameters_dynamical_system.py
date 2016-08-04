@@ -293,15 +293,9 @@ def GetBestControlPathInvariant( p, dq, ddq, pnext, dpnext, F, dt):
                         ######################################################
                         ### TEST
                         ######################################################
-
-                        #print dnew
-                        #print np.array(u.value)
-                        #print qdd.shape
-
                         qdd[2] = 0
                         qdnext = dq + dt*qdd
                         qnext = p + dt*dq + dt2*qdd
-                        #print "ECOS dt",dt,"dp2x",np.linalg.norm(p-qcontrol),"dx2pnext",np.linalg.norm(pnext-qcontrol),"qcontrol",qcontrol,"p",p,"pnext",pnext
                 else:
                         qnext = None
                         qdnext = None

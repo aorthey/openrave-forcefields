@@ -127,9 +127,13 @@ class ProjectorSimple():
                 #        return False
 
                 ### check if topp finds solution
+                print "t2"
+                np.savetxt("topp/segfault_W1",Q0)
                 t2 = Trajectory(Q0)
                 Nc = t2.getCriticalPoint(env)
 
+                print "t3"
+                np.savetxt("topp/segfault_W2",Qori)
                 t3 = Trajectory(Qori)
                 Nc3 = t3.getCriticalPoint(env)
 

@@ -70,7 +70,6 @@ class Trajectory():
                 self.Nwaypoints = self.waypoints.shape[1]
                 self.bspline = self.computeSplineFromWaypoints(self.waypoints)
                 [self.waypoints,dW,ddW] = self.get_waypoints_second_order()
-                #self.topp = TOPPInterface(self.waypoints, env)
 
         def save(self, filename):
                 np.save(filename, self.waypoints)
