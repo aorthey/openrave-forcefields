@@ -47,8 +47,7 @@ class TOPPInterface():
         fs_ticks = 24
         fs_legend = 31
 
-        discrtimestep = 1e-3
-
+        discrtimestep = 5*1e-3
         TRAJECTORY_ACCURACY_REQUIRED = 1e-10
         traj0 = []
         env_ptr = None
@@ -183,10 +182,12 @@ class TOPPInterface():
                 #x.extrareps = 10
 
                 self.critical_point = self.Nwaypoints
+                print self.Nwaypoints
                 try:
                         ret = x.RunComputeProfiles(0.0,0.0)
                         if ret == 4:
                                 CP_dt = x.GetCriticalPoint()
+                                print "CPdt",CP_dt
                                 t_CP = CP_dt * x.integrationtimestep
                                 self.critical_point = self.CriticalTimeToWaypoint(t_CP)
                                 print "TOPP: MVC hit zero | CP:",
